@@ -1,3 +1,7 @@
 {
-  "block.effortlessbuilding.test_block": "Test Block"
+  "block.effortlessbuilding.test_block": "Test Block",
+  "item.effortlessbuilding.test_item": "Test Item",
+  "key.categories.effortlessbuilding": "Effortless Building",
+  "key.effortlessbuilding.open_test_screen": "Open Test Screen",
+  "screen.effortlessbuilding.alt_screen": "Alt Menu"
 }

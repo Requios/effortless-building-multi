@@ -17,6 +17,9 @@
     "entrypoints": {
         "main": [
             "nl.requios.effortlessbuilding.EffortlessBuilding"
+        ],
+        "client": [
+            "nl.requios.effortlessbuilding.EffortlessBuildingClient"
         ]
     },
     "mixins": [

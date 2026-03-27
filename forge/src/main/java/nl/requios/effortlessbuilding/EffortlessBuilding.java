@@ -1,18 +1,31 @@
 package nl.requios.effortlessbuilding;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.bus.api.IEventBus;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
+import nl.requios.effortlessbuilding.item.ModItems;
+import nl.requios.effortlessbuilding.screen.AltScreen;
+import nl.requios.effortlessbuilding.screen.TestScreen;
+import org.lwjgl.glfw.GLFW;
 
 @Mod(Constants.MOD_ID)
 public class EffortlessBuilding {
+
+    private static KeyMapping openTestScreen;
 
     public EffortlessBuilding(IEventBus modEventBus) {
         Constants.LOG.info("Hello Forge world!");
@@ -20,15 +33,49 @@ public class EffortlessBuilding {
         modEventBus.addListener((RegisterEvent event) -> {
             event.register(Registries.BLOCK, helper ->
                 helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_block"), ModBlocks.TEST_BLOCK));
-            event.register(Registries.ITEM, helper ->
-                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_block"), new BlockItem(ModBlocks.TEST_BLOCK, new Item.Properties())));
+            event.register(Registries.ITEM, helper -> {
+                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_block"), new BlockItem(ModBlocks.TEST_BLOCK, new Item.Properties()));
+                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_item"), ModItems.TEST_ITEM);
+            });
         });
 
         modEventBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
             if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
                 event.accept(ModBlocks.TEST_BLOCK);
+            } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+                event.accept(ModItems.TEST_ITEM);
             }
         });
+
+        if (FMLEnvironment.dist.isClient()) {
+            modEventBus.addListener((RegisterKeyMappingsEvent event) -> {
+                openTestScreen = new KeyMapping(
+                    "key.effortlessbuilding.open_test_screen",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_KP_ADD,
+                    "key.categories.effortlessbuilding"
+                );
+                event.register(openTestScreen);
+            });
+
+            MinecraftForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent event) -> {
+                if (event.phase == TickEvent.Phase.END && openTestScreen != null && openTestScreen.consumeClick()) {
+                    Minecraft.getInstance().setScreen(new TestScreen());
+                }
+
+                if (event.phase == TickEvent.Phase.END) {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.screen == null) {
+                        long window = mc.getWindow().getWindow();
+                        boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
+                                          InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+                        if (altHeld) {
+                            mc.setScreen(new AltScreen());
+                        }
+                    }
+                }
+            });
+        }
 
         CommonClass.init();
     }
