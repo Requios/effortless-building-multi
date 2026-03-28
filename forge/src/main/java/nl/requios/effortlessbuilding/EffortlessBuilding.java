@@ -18,6 +18,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
+import nl.requios.effortlessbuilding.network.ForgeChannel;
 import nl.requios.effortlessbuilding.screen.AltScreen;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
@@ -46,6 +47,8 @@ public class EffortlessBuilding {
                 event.accept(ModItems.TEST_ITEM);
             }
         });
+
+        ForgeChannel.init();
 
         if (FMLEnvironment.dist.isClient()) {
             modEventBus.addListener((RegisterKeyMappingsEvent event) -> {

@@ -1,31 +1,23 @@
 package nl.requios.effortlessbuilding;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
-import nl.requios.effortlessbuilding.screen.AltScreen;
-import nl.requios.effortlessbuilding.screen.TestScreen;
-import org.lwjgl.glfw.GLFW;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 
 @Mod(Constants.MOD_ID)
 public class EffortlessBuilding {
-
-    private static KeyMapping openTestScreen;
 
     public EffortlessBuilding(IEventBus eventBus) {
         Constants.LOG.info("Hello NeoForge world!");
@@ -47,33 +39,14 @@ public class EffortlessBuilding {
             }
         });
 
-        if (FMLEnvironment.dist.isClient()) {
-            eventBus.addListener((RegisterKeyMappingsEvent event) -> {
-                openTestScreen = new KeyMapping(
-                    "key.effortlessbuilding.open_test_screen",
-                    InputConstants.Type.KEYSYM,
-                    GLFW.GLFW_KEY_KP_ADD,
-                    "key.categories.effortlessbuilding"
-                );
-                event.register(openTestScreen);
-            });
-
-            NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post event) -> {
-                if (openTestScreen != null && openTestScreen.consumeClick()) {
-                    Minecraft.getInstance().setScreen(new TestScreen());
-                }
-
-                Minecraft mc = Minecraft.getInstance();
-                if (mc.screen == null) {
-                    long window = mc.getWindow().getWindow();
-                    boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
-                                      InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
-                    if (altHeld) {
-                        mc.setScreen(new AltScreen());
-                    }
-                }
-            });
-        }
+        eventBus.addListener((RegisterPayloadHandlersEvent event) -> {
+            var registrar = event.registrar(Constants.MOD_ID);
+            registrar.playToServer(
+                    PlaceBuildModePacket.TYPE,
+                    PlaceBuildModePacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handlePlaceBuildMode(payload, (ServerPlayer) context.player())));
+        });
 
         CommonClass.init();
     }

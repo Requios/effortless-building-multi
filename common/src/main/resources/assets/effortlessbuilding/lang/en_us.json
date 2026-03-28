@@ -3,5 +3,9 @@
   "item.effortlessbuilding.test_item": "Test Item",
   "key.categories.effortlessbuilding": "Effortless Building",
   "key.effortlessbuilding.open_test_screen": "Open Test Screen",
-  "screen.effortlessbuilding.alt_screen": "Alt Menu"
+  "screen.effortlessbuilding.alt_screen": "Build Mode",
+  "build_mode.effortlessbuilding.disabled": "Disabled",
+  "build_mode.effortlessbuilding.line": "Line",
+  "build_mode.effortlessbuilding.line.start_set": "Line start set at (%d, %d, %d)",
+  "build_mode.effortlessbuilding.line.placed": "Line placed: %d blocks"
 }
