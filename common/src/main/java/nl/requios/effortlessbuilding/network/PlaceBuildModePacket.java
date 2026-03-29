@@ -1,10 +1,12 @@
 package nl.requios.effortlessbuilding.network;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
@@ -20,12 +22,20 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #secondPos} — second click position (always present for non-disabled modes)</li>
  *   <li>{@link #thirdPos} — third click position; null for two-click modes</li>
  * </ul>
+ *
+ * <p>Hit semantics (from the first click):
+ * <ul>
+ *   <li>{@link #hitFace} — the face of the block that was clicked; drives log axis, slab half, etc.</li>
+ *   <li>{@link #hitLocation} — exact world hit point; Y fraction within the block drives slab top/bottom.</li>
+ * </ul>
  */
 public record PlaceBuildModePacket(
         BuildModeEnum buildMode,
         BlockPos firstPos,
         BlockPos secondPos,
         @Nullable BlockPos thirdPos,
+        Direction hitFace,
+        Vec3 hitLocation,
         ModeOptions.ActionEnum fill,
         ModeOptions.ActionEnum cubeFill,
         ModeOptions.ActionEnum raisedEdge,
@@ -46,6 +56,10 @@ public record PlaceBuildModePacket(
         buf.writeLong(p.secondPos.asLong());
         buf.writeBoolean(p.thirdPos != null);
         if (p.thirdPos != null) buf.writeLong(p.thirdPos.asLong());
+        buf.writeVarInt(p.hitFace.ordinal());
+        buf.writeDouble(p.hitLocation.x);
+        buf.writeDouble(p.hitLocation.y);
+        buf.writeDouble(p.hitLocation.z);
         buf.writeVarInt(p.fill.ordinal());
         buf.writeVarInt(p.cubeFill.ordinal());
         buf.writeVarInt(p.raisedEdge.ordinal());
@@ -57,11 +71,14 @@ public record PlaceBuildModePacket(
         BlockPos firstPos = BlockPos.of(buf.readLong());
         BlockPos secondPos = BlockPos.of(buf.readLong());
         BlockPos thirdPos = buf.readBoolean() ? BlockPos.of(buf.readLong()) : null;
+        Direction hitFace = Direction.values()[buf.readVarInt()];
+        Vec3 hitLocation = new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble());
         ModeOptions.ActionEnum fill = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum cubeFill = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum raisedEdge = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum circleStart = ModeOptions.ActionEnum.values()[buf.readVarInt()];
-        return new PlaceBuildModePacket(buildMode, firstPos, secondPos, thirdPos, fill, cubeFill, raisedEdge, circleStart);
+        return new PlaceBuildModePacket(buildMode, firstPos, secondPos, thirdPos,
+                hitFace, hitLocation, fill, cubeFill, raisedEdge, circleStart);
     }
 
     @Override

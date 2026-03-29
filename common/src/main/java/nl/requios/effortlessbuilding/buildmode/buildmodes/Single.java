@@ -5,6 +5,9 @@ import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.buildmode.BaseBuildMode;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class Single extends BaseBuildMode {
 
@@ -27,5 +30,10 @@ public class Single extends BaseBuildMode {
 		if (pos != null) {
 			blocks.setStartPos(new BlockEntry(pos));
 		}
+	}
+
+	@Override
+	public List<BlockPos> getServerBlocks(Player player, BlockPos firstPos, BlockPos secondPos, @Nullable BlockPos thirdPos) {
+		return List.of(firstPos);
 	}
 }

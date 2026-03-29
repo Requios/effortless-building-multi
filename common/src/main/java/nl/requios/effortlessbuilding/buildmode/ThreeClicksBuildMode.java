@@ -32,12 +32,11 @@ public abstract class ThreeClicksBuildMode extends BaseBuildMode {
 
 		} else if (clicks == 2) {
 			// Second click — find second position.
-			if (blocks.size() == 0) {
-				clicks = 0;
+			var secondPos = findSecondPos(player, firstBlockEntry.blockPos, true);
+			if (secondPos == null) {
+				clicks = 1;
 				return false;
 			}
-
-			var secondPos = findSecondPos(player, firstBlockEntry.blockPos, true);
 			secondBlockEntry = new BlockEntry(secondPos);
 
 		} else {

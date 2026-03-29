@@ -6,12 +6,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.platform.Services;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 public class PacketHandler {
 
@@ -44,11 +47,22 @@ public class PacketHandler {
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
         if (!(held.getItem() instanceof BlockItem blockItem)) return;
 
-        var defaultState = blockItem.getBlock().defaultBlockState();
+        // Preserve the Y fraction within the first clicked block so slabs and similar
+        // blocks get the correct half across all positions in the shape.
+        double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
+
         int placed = 0;
         for (BlockPos pos : positions) {
             if (level.getBlockState(pos).canBeReplaced()) {
-                level.setBlock(pos, defaultState, 3);
+                // Build a hit result anchored to this specific block position so that
+                // getStateForPlacement can correctly compute per-position properties
+                // (e.g. slab half uses hitLocation.y - clickedPos.getY()).
+                Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
+                BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
+                BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
+                BlockState state = blockItem.getBlock().getStateForPlacement(ctx);
+                if (state == null) state = blockItem.getBlock().defaultBlockState();
+                level.setBlock(pos, state, 3);
                 placed++;
             }
         }
@@ -82,5 +96,13 @@ public class PacketHandler {
         }
 
         Constants.LOG.debug("[EffortlessBuilding] Broke {} blocks for {} (mode {})", broken, player.getName().getString(), packet.buildMode());
+    }
+
+    /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */
+    private static final class OpenBlockPlaceContext extends BlockPlaceContext {
+        OpenBlockPlaceContext(net.minecraft.world.level.Level level, net.minecraft.world.entity.player.Player player,
+                              InteractionHand hand, ItemStack stack, BlockHitResult hit) {
+            super(level, player, hand, stack, hit);
+        }
     }
 }

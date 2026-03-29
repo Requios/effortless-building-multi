@@ -2,6 +2,7 @@ package nl.requios.effortlessbuilding.buildmode;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -39,6 +40,15 @@ public class BuildModes {
 	@Nullable
 	private static ClickAction pendingAction = null;
 
+	// The BlockHitResult from the first click of the current sequence.
+	// Stored so the packet can carry the clicked face and hit location for rotation.
+	@Nullable
+	private static BlockHitResult firstClickHit = null;
+
+	public static @Nullable BlockHitResult getFirstClickHit() {
+		return firstClickHit;
+	}
+
 	public static @Nullable ClickAction getPendingAction() {
 		return pendingAction;
 	}
@@ -46,6 +56,7 @@ public class BuildModes {
 	public static void cancelCurrentSequence() {
 		CLIENT.getBuildMode().instance.initialize();
 		pendingAction = null;
+		firstClickHit = null;
 	}
 
 	/**
@@ -114,6 +125,7 @@ public class BuildModes {
 			if (hit.getType() != HitResult.Type.BLOCK) return;
 			clickedPos = resolveFirstClickPos(hit, action, mc.level);
 			pendingAction = action;
+			firstClickHit = hit;
 		} else {
 			// Subsequent clicks may be in the air; use player block position as placeholder.
 			// The mode's findCoordinates() will compute the real positions from look direction.
@@ -132,8 +144,11 @@ public class BuildModes {
 				BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
 
 				if (action == ClickAction.PLACING) {
+					Direction hitFace = firstClickHit != null ? firstClickHit.getDirection() : Direction.UP;
+					Vec3 hitLocation = firstClickHit != null ? firstClickHit.getLocation() : Vec3.atCenterOf(blocks.firstPos);
 					PacketHandler.sendToServer(new PlaceBuildModePacket(
 							mode, blocks.firstPos, secondPos, thirdPos,
+							hitFace, hitLocation,
 							ModeOptions.getFill(), ModeOptions.getCubeFill(),
 							ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart()));
 				} else {
@@ -148,6 +163,7 @@ public class BuildModes {
 
 			mode.instance.initialize();
 			pendingAction = null;
+			firstClickHit = null;
 		}
 	}
 
