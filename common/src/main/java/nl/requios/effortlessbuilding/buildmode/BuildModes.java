@@ -1,17 +1,16 @@
 package nl.requios.effortlessbuilding.buildmode;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 public class BuildModes {
 
@@ -27,28 +26,35 @@ public class BuildModes {
 	private BuildModeEnum previousBuildMode = BuildModeEnum.DISABLED;
 	private BuildModeEnum beforeDisabledBuildMode = BuildModeEnum.SINGLE;
 
-	// Called from MixinBlockItem — only acts on the client side.
-	public static void handlePlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
-		if (!context.getLevel().isClientSide()) return;
-
+	// Called from MixinMinecraft — handles right-click with extended reach.
+	// Client-side only.
+	public static void handleRightClick(Minecraft mc) {
 		BuildModeEnum mode = CLIENT.buildMode;
-		if (mode == BuildModeEnum.DISABLED) return;
+		Player player = mc.player;
+		if (player == null || mc.level == null) return;
 
-		Player player = context.getPlayer();
-		if (player == null) return;
+		BlockPos clickedPos;
+		if (mode.instance.isFirstClick()) {
+			// First click must hit a real block (extended reach).
+			Vec3 start = player.getEyePosition();
+			Vec3 end = start.add(player.getLookAngle().scale(BUILD_MODE_REACH));
+			ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+			BlockHitResult hit = mc.level.clip(ctx);
+			if (hit.getType() != HitResult.Type.BLOCK) return;
+			clickedPos = hit.getBlockPos();
+		} else {
+			// Subsequent clicks may be in the air; use player block position as placeholder.
+			// The mode's findCoordinates() will compute the real positions from look direction.
+			clickedPos = player.blockPosition();
+		}
 
-		BlockPos clickedPos = context.getClickedPos();
 		BlockSet blocks = new BlockSet();
 		boolean shouldPlace = mode.instance.onClick(blocks, clickedPos, player);
 
 		if (shouldPlace) {
-			// Clicks are NOT reset inside onClick when returning true, so findCoordinates still works.
 			mode.instance.findCoordinates(blocks, player);
 
 			if (blocks.firstPos != null && blocks.lastPos != null) {
-				// For three-click modes, getIntermediatePos() holds the second click position.
-				// blocks.lastPos holds the final (third) click position.
-				// For two-click modes, getIntermediatePos() returns null and blocks.lastPos is the second click.
 				BlockPos intermediate = mode.instance.getIntermediatePos();
 				BlockPos secondPos = intermediate != null ? intermediate : blocks.lastPos;
 				BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
@@ -67,13 +73,8 @@ public class BuildModes {
 				Constants.LOG.warn("[EffortlessBuilding] Build mode {} produced no block positions", mode);
 			}
 
-			// Reset mode state after extracting coordinates.
 			mode.instance.initialize();
 		}
-
-		// Cancel vanilla single-block placement; build mode owns this click.
-		cir.setReturnValue(InteractionResult.sidedSuccess(true));
-		cir.cancel();
 	}
 
 	public void findCoordinates(BlockSet blocks, Player player) {

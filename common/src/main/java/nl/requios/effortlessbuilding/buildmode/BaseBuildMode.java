@@ -23,4 +23,9 @@ public abstract class BaseBuildMode implements IBuildMode {
 	public void findCoordinates(BlockSet blocks, Player player) {
 		// No-op for modes that don't need coordinate calculation (Disabled, Single).
 	}
+
+	@Override
+	public boolean isFirstClick() {
+		return clicks == 0;
+	}
 }

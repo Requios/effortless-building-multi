@@ -31,4 +31,9 @@ public interface IBuildMode {
 	default @Nullable BlockPos getIntermediatePos() {
 		return null;
 	}
+
+	// Returns true when the next onClick() call will be the first click of a new sequence.
+	default boolean isFirstClick() {
+		return true;
+	}
 }

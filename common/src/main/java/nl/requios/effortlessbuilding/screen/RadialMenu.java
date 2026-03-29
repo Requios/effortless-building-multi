@@ -50,7 +50,7 @@ public class RadialMenu extends Screen {
 
 	private final double ringInnerEdge = 30;
 	private final double ringOuterEdge = 65;
-	private final double categoryLineWidth = 1;
+	private final double categoryLineWidth = 2;
 	private final double textDistance = 75;
 	private final double buttonDistance = 105;
 	private final float fadeSpeed = 0.3f;

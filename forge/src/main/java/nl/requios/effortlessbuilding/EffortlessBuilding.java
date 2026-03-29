@@ -18,6 +18,8 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
+import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
+import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.network.ForgeChannel;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
@@ -27,6 +29,7 @@ import org.lwjgl.glfw.GLFW;
 public class EffortlessBuilding {
 
     private static KeyMapping openTestScreen;
+    private static boolean prevUseDown = false;
 
     public EffortlessBuilding(IEventBus modEventBus) {
         Constants.LOG.info("Hello Forge world!");
@@ -75,6 +78,17 @@ public class EffortlessBuilding {
                         if (altHeld) {
                             mc.setScreen(RadialMenu.instance);
                         }
+
+                        // Fire build-mode click on rising edge of right-click (once per press, not every held tick).
+                        if (mc.player != null && mc.level != null) {
+                            boolean useDown = mc.options.keyUse.isDown();
+                            if (useDown && !prevUseDown && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                                BuildModes.handleRightClick(mc);
+                            }
+                            prevUseDown = useDown;
+                        }
+                    } else {
+                        prevUseDown = false;
                     }
                 }
             });

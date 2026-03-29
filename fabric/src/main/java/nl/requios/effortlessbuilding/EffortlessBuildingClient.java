@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
+import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
+import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
@@ -13,6 +15,7 @@ import org.lwjgl.glfw.GLFW;
 public class EffortlessBuildingClient implements ClientModInitializer {
 
     public static KeyMapping openTestScreen;
+    private static boolean prevUseDown = false;
 
     @Override
     public void onInitializeClient() {
@@ -35,6 +38,17 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 if (altHeld) {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
+
+                // Fire build-mode click on rising edge of right-click (once per press, not every held tick).
+                if (client.player != null && client.level != null) {
+                    boolean useDown = client.options.keyUse.isDown();
+                    if (useDown && !prevUseDown && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                        BuildModes.handleRightClick(Minecraft.getInstance());
+                    }
+                    prevUseDown = useDown;
+                }
+            } else {
+                prevUseDown = false;
             }
         });
     }
