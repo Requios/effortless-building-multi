@@ -4,12 +4,17 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
@@ -51,6 +56,18 @@ public class BuildModes {
 
 	public static @Nullable ClickAction getPendingAction() {
 		return pendingAction;
+	}
+
+	/**
+	 * Returns {@code true} if right-clicking with this item should trigger the
+	 * build-mode sequence: block items and non-empty bucket items (water, lava, etc.).
+	 */
+	public static boolean isBuildTriggerItem(ItemStack stack) {
+		if (stack.getItem() instanceof BlockItem) return true;
+		if (stack.getItem() instanceof BucketItem) {
+			return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
+		}
+		return false;
 	}
 
 	public static void cancelCurrentSequence() {

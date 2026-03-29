@@ -61,9 +61,11 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     if (rightJustPressed) {
                         if (BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING) {
                             BuildModes.cancelCurrentSequence();
-                        } else {
+                        } else if (BuildModes.isBuildTriggerItem(client.player.getMainHandItem())
+                                || BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
                             BuildModes.handleRightClick(Minecraft.getInstance());
                         }
+                        // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
                         if (BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {

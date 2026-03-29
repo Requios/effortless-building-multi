@@ -5,8 +5,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
+import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -45,26 +49,35 @@ public class PacketHandler {
         }
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
-        if (!(held.getItem() instanceof BlockItem blockItem)) return;
-
-        // Preserve the Y fraction within the first clicked block so slabs and similar
-        // blocks get the correct half across all positions in the shape.
-        double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
 
         int placed = 0;
-        for (BlockPos pos : positions) {
-            if (level.getBlockState(pos).canBeReplaced()) {
-                // Build a hit result anchored to this specific block position so that
-                // getStateForPlacement can correctly compute per-position properties
-                // (e.g. slab half uses hitLocation.y - clickedPos.getY()).
-                Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
-                BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
-                BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
-                BlockState state = blockItem.getBlock().getStateForPlacement(ctx);
-                if (state == null) state = blockItem.getBlock().defaultBlockState();
-                level.setBlock(pos, state, 3);
-                placed++;
+        if (held.getItem() instanceof BlockItem blockItem) {
+            // Preserve the Y fraction so slabs get the correct half across all positions.
+            double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
+            for (BlockPos pos : positions) {
+                if (level.getBlockState(pos).canBeReplaced()) {
+                    Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
+                    BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
+                    BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
+                    BlockState state = blockItem.getBlock().getStateForPlacement(ctx);
+                    if (state == null) state = blockItem.getBlock().defaultBlockState();
+                    level.setBlock(pos, state, 3);
+                    placed++;
+                }
             }
+        } else if (held.getItem() instanceof BucketItem bucketItem) {
+            var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
+            if (!fluid.isSame(Fluids.EMPTY)) {
+                BlockState fluidState = fluid.defaultFluidState().createLegacyBlock();
+                for (BlockPos pos : positions) {
+                    if (level.getBlockState(pos).canBeReplaced()) {
+                        level.setBlock(pos, fluidState, 3);
+                        placed++;
+                    }
+                }
+            }
+        } else {
+            return;
         }
 
         Constants.LOG.debug("[EffortlessBuilding] Placed {} blocks for {} (mode {})", placed, player.getName().getString(), packet.buildMode());

@@ -65,9 +65,11 @@ public class NeoForgeClientSetup {
                     if (rightJustPressed) {
                         if (BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING) {
                             BuildModes.cancelCurrentSequence();
-                        } else {
+                        } else if (BuildModes.isBuildTriggerItem(mc.player.getMainHandItem())
+                                || BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
                             BuildModes.handleRightClick(mc);
                         }
+                        // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
                         if (BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {

@@ -13,7 +13,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.material.Fluids;
+import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -38,7 +41,7 @@ public class BlockPreviewRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        boolean emptyHand = !(mc.player.getMainHandItem().getItem() instanceof BlockItem);
+        boolean emptyHand = !BuildModes.isBuildTriggerItem(mc.player.getMainHandItem());
         boolean sequenceActive = BuildModes.getPendingAction() != null;
 
         // Empty hand with no active sequence: skip block preview, show extended-reach
@@ -54,13 +57,21 @@ public class BlockPreviewRenderer {
         BuildModes.ClickAction pendingAction = BuildModes.getPendingAction();
         boolean isBreaking = pendingAction == BuildModes.ClickAction.BREAKING;
 
-        // Pass 1: block preview (placing only).
+        // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
-            boolean renderedBlockModel = false;
             var held = mc.player.getMainHandItem();
+            BlockState previewState = null;
             if (held.getItem() instanceof BlockItem blockItem) {
+                previewState = getPlacementState(blockItem, mc);
+            } else if (held.getItem() instanceof BucketItem bucketItem) {
+                var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
+                if (!fluid.isSame(Fluids.EMPTY)) {
+                    previewState = fluid.defaultFluidState().createLegacyBlock();
+                }
+            }
+            if (previewState != null) {
+                final BlockState state = previewState;
                 try {
-                    BlockState state = getPlacementState(blockItem, mc);
                     var wrappedSource = new AlphaMultiBufferSource(bufferSource, 160);
                     for (BlockPos pos : positions) {
                         poseStack.pushPose();
@@ -74,26 +85,9 @@ public class BlockPreviewRenderer {
                         poseStack.popPose();
                     }
                     bufferSource.endBatch(RenderType.translucent());
-                    renderedBlockModel = true;
                 } catch (Exception ignored) {
-                    // fall through to white cube fallback
+                    // Render failed; outline-only fallback handled by Pass 2.
                 }
-            }
-
-            if (!renderedBlockModel) {
-                // Fallback: translucent white cubes at 80% scale.
-                var quads = bufferSource.getBuffer(RenderType.debugFilledBox());
-                for (BlockPos pos : positions) {
-                    double x = pos.getX() - camX;
-                    double y = pos.getY() - camY;
-                    double z = pos.getZ() - camZ;
-                    double m = 0.1; // margin = (1 - 0.8) / 2
-                    LevelRenderer.addChainedFilledBoxVertices(poseStack, quads,
-                            x + m, y + m, z + m,
-                            x + 1 - m, y + 1 - m, z + 1 - m,
-                            0.9f, 0.9f, 0.9f, 0.5f);
-                }
-                bufferSource.endBatch(RenderType.debugFilledBox());
             }
         }
 
