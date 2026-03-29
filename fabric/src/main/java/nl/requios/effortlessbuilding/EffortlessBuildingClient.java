@@ -6,7 +6,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
-import nl.requios.effortlessbuilding.screen.AltScreen;
+import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
 
@@ -33,7 +33,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
                                   InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
                 if (altHeld) {
-                    Minecraft.getInstance().setScreen(new AltScreen());
+                    Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
             }
         });

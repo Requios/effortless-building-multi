@@ -19,7 +19,7 @@ import net.minecraftforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
 import nl.requios.effortlessbuilding.network.ForgeChannel;
-import nl.requios.effortlessbuilding.screen.AltScreen;
+import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
 
@@ -73,7 +73,7 @@ public class EffortlessBuilding {
                         boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
                                           InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
                         if (altHeld) {
-                            mc.setScreen(new AltScreen());
+                            mc.setScreen(RadialMenu.instance);
                         }
                     }
                 }

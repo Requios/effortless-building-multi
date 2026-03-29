@@ -8,7 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import nl.requios.effortlessbuilding.screen.AltScreen;
+import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
 
@@ -46,7 +46,7 @@ public class NeoForgeClientSetup {
                 boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
                                   InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
                 if (altHeld) {
-                    mc.setScreen(new AltScreen());
+                    mc.setScreen(RadialMenu.instance);
                 }
             }
         }
