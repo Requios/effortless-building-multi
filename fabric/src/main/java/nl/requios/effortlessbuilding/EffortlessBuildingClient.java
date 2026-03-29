@@ -3,11 +3,14 @@ package nl.requios.effortlessbuilding;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
@@ -26,6 +29,15 @@ public class EffortlessBuildingClient implements ClientModInitializer {
             GLFW.GLFW_KEY_KP_ADD,
             "key.categories.effortlessbuilding"
         ));
+
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            if (context.consumers() == null || context.matrixStack() == null) return;
+            var camPos = context.camera().getPosition();
+            BlockPreviewRenderer.render(
+                    context.matrixStack(),
+                    (MultiBufferSource.BufferSource) context.consumers(),
+                    camPos.x, camPos.y, camPos.z);
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (openTestScreen.consumeClick()) {

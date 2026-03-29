@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -13,6 +14,9 @@ import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BuildModes {
 
@@ -44,6 +48,47 @@ public class BuildModes {
 		pendingAction = null;
 	}
 
+	/**
+	 * Resolves the block position to use for the first click of a sequence.
+	 * <ul>
+	 *   <li>Breaking: the block that was hit.</li>
+	 *   <li>Placing: the block adjacent to the hit face, unless the hit block is
+	 *       replaceable (tall grass, flowers, etc.), in which case it is replaced in-place.</li>
+	 * </ul>
+	 */
+	private static BlockPos resolveFirstClickPos(BlockHitResult hit, ClickAction action, Level level) {
+		BlockPos hitPos = hit.getBlockPos();
+		if (action == ClickAction.BREAKING) return hitPos;
+		if (level.getBlockState(hitPos).canBeReplaced()) return hitPos;
+		return hitPos.relative(hit.getDirection());
+	}
+
+	// Client-side only. Returns the block positions that should be shown in the preview this frame.
+	// Does NOT modify any mode state.
+	public static List<BlockPos> getPreviewPositions(Minecraft mc) {
+		BuildModeEnum mode = CLIENT.buildMode;
+		if (mode == BuildModeEnum.DISABLED) return List.of();
+		Player player = mc.player;
+		if (player == null || mc.level == null) return List.of();
+
+		if (mode.instance.isFirstClick()) {
+			// No sequence in progress — show target block via extended raytrace.
+			// Default to PLACING logic (adjacent block, respecting replaceables).
+			Vec3 start = player.getEyePosition();
+			Vec3 end = start.add(player.getLookAngle().scale(BUILD_MODE_REACH));
+			ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+			BlockHitResult hit = mc.level.clip(ctx);
+			if (hit.getType() != HitResult.Type.BLOCK) return List.of();
+			return List.of(resolveFirstClickPos(hit, ClickAction.PLACING, mc.level));
+		} else {
+			// Mid-sequence — compute live shape using stored clicks + current look.
+			BlockSet previewBlocks = new BlockSet();
+			mode.instance.findCoordinates(previewBlocks, player);
+			if (previewBlocks.isEmpty()) return List.of();
+			return new ArrayList<>(previewBlocks.keySet());
+		}
+	}
+
 	// Client-side only. Handles a right-click (place) with extended reach.
 	public static void handleRightClick(Minecraft mc) {
 		handleClick(mc, ClickAction.PLACING);
@@ -67,7 +112,7 @@ public class BuildModes {
 			ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
 			BlockHitResult hit = mc.level.clip(ctx);
 			if (hit.getType() != HitResult.Type.BLOCK) return;
-			clickedPos = hit.getBlockPos();
+			clickedPos = resolveFirstClickPos(hit, action, mc.level);
 			pendingAction = action;
 		} else {
 			// Subsequent clicks may be in the air; use player block position as placeholder.

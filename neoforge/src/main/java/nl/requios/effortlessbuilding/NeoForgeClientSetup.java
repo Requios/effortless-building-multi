@@ -8,8 +8,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
@@ -81,6 +83,15 @@ public class NeoForgeClientSetup {
                 prevRightDown = false;
                 prevLeftDown = false;
             }
+        }
+
+        @SubscribeEvent
+        public static void onRenderLevel(RenderLevelStageEvent event) {
+            if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) return;
+            var camPos = event.getCamera().getPosition();
+            var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+            BlockPreviewRenderer.render(event.getPoseStack(), bufferSource,
+                    camPos.x, camPos.y, camPos.z);
         }
     }
 }
