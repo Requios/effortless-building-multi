@@ -26,7 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class BlockPreviewRenderer {
 
@@ -91,16 +93,18 @@ public class BlockPreviewRenderer {
             }
         }
 
-        // Pass 2: wireframe outline.
+        // Pass 2: smart wireframe — boundary edges only (interior shared edges cancel out).
         float or = 1f, og = isBreaking ? 0f : 1f, ob = isBreaking ? 0f : 1f;
         var lines = bufferSource.getBuffer(RenderType.lines());
-        for (BlockPos pos : positions) {
-            double x = pos.getX() - camX;
-            double y = pos.getY() - camY;
-            double z = pos.getZ() - camZ;
-            AABB outline = new AABB(x - 0.002, y - 0.002, z - 0.002,
-                    x + 1.002, y + 1.002, z + 1.002);
-            LevelRenderer.renderLineBox(poseStack, lines, outline, or, og, ob, 1.0f);
+        var pose = poseStack.last();
+        for (EdgeKey edge : computeBorderEdges(positions)) {
+            double x0 = edge.x() - camX, y0 = edge.y() - camY, z0 = edge.z() - camZ;
+            double x1 = x0 + (edge.axis() == 0 ? 1 : 0);
+            double y1 = y0 + (edge.axis() == 1 ? 1 : 0);
+            double z1 = z0 + (edge.axis() == 2 ? 1 : 0);
+            float nx = edge.axis() == 0 ? 1f : 0f, ny = edge.axis() == 1 ? 1f : 0f, nz = edge.axis() == 2 ? 1f : 0f;
+            lines.addVertex(pose, (float) x0, (float) y0, (float) z0).setColor(or, og, ob, 1f).setNormal(pose, nx, ny, nz);
+            lines.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(or, og, ob, 1f).setNormal(pose, nx, ny, nz);
         }
         RenderSystem.lineWidth(3.0f);
         bufferSource.endBatch(RenderType.lines());
@@ -162,6 +166,41 @@ public class BlockPreviewRenderer {
         var lines = bufferSource.getBuffer(RenderType.lines());
         LevelRenderer.renderLineBox(poseStack, lines, outline, 0.0f, 0.0f, 0.0f, 0.4f);
         bufferSource.endBatch(RenderType.lines());
+    }
+
+    private record EdgeKey(int axis, int x, int y, int z) {}
+
+    /**
+     * Returns only the boundary edges of the block set using a parity/toggle algorithm.
+     * Each block contributes 12 edges; when two adjacent blocks share an edge it is
+     * toggled twice (added then removed), so only edges with a single contribution survive.
+     */
+    private static Set<EdgeKey> computeBorderEdges(List<BlockPos> positions) {
+        Set<EdgeKey> edges = new HashSet<>();
+        for (BlockPos pos : positions) {
+            int x = pos.getX(), y = pos.getY(), z = pos.getZ();
+            // 4 X-aligned edges
+            toggleEdge(edges, 0, x, y,     z    );
+            toggleEdge(edges, 0, x, y + 1, z    );
+            toggleEdge(edges, 0, x, y,     z + 1);
+            toggleEdge(edges, 0, x, y + 1, z + 1);
+            // 4 Y-aligned edges
+            toggleEdge(edges, 1, x,     y, z    );
+            toggleEdge(edges, 1, x + 1, y, z    );
+            toggleEdge(edges, 1, x,     y, z + 1);
+            toggleEdge(edges, 1, x + 1, y, z + 1);
+            // 4 Z-aligned edges
+            toggleEdge(edges, 2, x,     y,     z);
+            toggleEdge(edges, 2, x + 1, y,     z);
+            toggleEdge(edges, 2, x,     y + 1, z);
+            toggleEdge(edges, 2, x + 1, y + 1, z);
+        }
+        return edges;
+    }
+
+    private static void toggleEdge(Set<EdgeKey> edges, int axis, int x, int y, int z) {
+        var key = new EdgeKey(axis, x, y, z);
+        if (!edges.remove(key)) edges.add(key);
     }
 
     /**
