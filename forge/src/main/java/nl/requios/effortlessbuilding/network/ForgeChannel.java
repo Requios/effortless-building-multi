@@ -4,6 +4,7 @@ import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.SimpleChannel;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 
 public class ForgeChannel {
 
@@ -23,9 +24,22 @@ public class ForgeChannel {
                     ctx.setPacketHandled(true);
                 })
                 .add();
+
+        INSTANCE.messageBuilder(BreakBuildModePacket.class)
+                .encoder((msg, buf) -> BreakBuildModePacket.STREAM_CODEC.encode(buf, msg))
+                .decoder(buf -> BreakBuildModePacket.STREAM_CODEC.decode(buf))
+                .consumerNetworkThread((msg, ctx) -> {
+                    ctx.enqueueWork(() -> PacketHandler.handleBreakBuildMode(msg, ctx.getSender()));
+                    ctx.setPacketHandled(true);
+                })
+                .add();
     }
 
     public static void sendToServer(PlaceBuildModePacket packet) {
+        INSTANCE.send(packet, PacketDistributor.SERVER.noArg());
+    }
+
+    public static void sendToServer(BreakBuildModePacket packet) {
         INSTANCE.send(packet, PacketDistributor.SERVER.noArg());
     }
 }

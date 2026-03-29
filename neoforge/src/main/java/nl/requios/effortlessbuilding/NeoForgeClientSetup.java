@@ -36,7 +36,8 @@ public class NeoForgeClientSetup {
     // Game-bus events (ClientTickEvent).
     @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
     public static class GameEvents {
-        private static boolean prevUseDown = false;
+        private static boolean prevRightDown = false;
+        private static boolean prevLeftDown = false;
 
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
@@ -53,16 +54,32 @@ public class NeoForgeClientSetup {
                     mc.setScreen(RadialMenu.instance);
                 }
 
-                // Fire build-mode click on rising edge of right-click (once per press, not every held tick).
-                if (mc.player != null && mc.level != null) {
-                    boolean useDown = mc.options.keyUse.isDown();
-                    if (useDown && !prevUseDown && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
-                        BuildModes.handleRightClick(mc);
+                if (mc.player != null && mc.level != null && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                    boolean rightDown = mc.options.keyUse.isDown();
+                    boolean leftDown = mc.options.keyAttack.isDown();
+                    boolean rightJustPressed = rightDown && !prevRightDown;
+                    boolean leftJustPressed = leftDown && !prevLeftDown;
+
+                    if (rightJustPressed) {
+                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING) {
+                            BuildModes.cancelCurrentSequence();
+                        } else {
+                            BuildModes.handleRightClick(mc);
+                        }
                     }
-                    prevUseDown = useDown;
+                    if (leftJustPressed) {
+                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
+                            BuildModes.cancelCurrentSequence();
+                        } else {
+                            BuildModes.handleLeftClick(mc);
+                        }
+                    }
+                    prevRightDown = rightDown;
+                    prevLeftDown = leftDown;
                 }
             } else {
-                prevUseDown = false;
+                prevRightDown = false;
+                prevLeftDown = false;
             }
         }
     }

@@ -15,7 +15,8 @@ import org.lwjgl.glfw.GLFW;
 public class EffortlessBuildingClient implements ClientModInitializer {
 
     public static KeyMapping openTestScreen;
-    private static boolean prevUseDown = false;
+    private static boolean prevRightDown = false;
+    private static boolean prevLeftDown = false;
 
     @Override
     public void onInitializeClient() {
@@ -39,16 +40,32 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
 
-                // Fire build-mode click on rising edge of right-click (once per press, not every held tick).
-                if (client.player != null && client.level != null) {
-                    boolean useDown = client.options.keyUse.isDown();
-                    if (useDown && !prevUseDown && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
-                        BuildModes.handleRightClick(Minecraft.getInstance());
+                if (client.player != null && client.level != null && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                    boolean rightDown = client.options.keyUse.isDown();
+                    boolean leftDown = client.options.keyAttack.isDown();
+                    boolean rightJustPressed = rightDown && !prevRightDown;
+                    boolean leftJustPressed = leftDown && !prevLeftDown;
+
+                    if (rightJustPressed) {
+                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING) {
+                            BuildModes.cancelCurrentSequence();
+                        } else {
+                            BuildModes.handleRightClick(Minecraft.getInstance());
+                        }
                     }
-                    prevUseDown = useDown;
+                    if (leftJustPressed) {
+                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
+                            BuildModes.cancelCurrentSequence();
+                        } else {
+                            BuildModes.handleLeftClick(Minecraft.getInstance());
+                        }
+                    }
+                    prevRightDown = rightDown;
+                    prevLeftDown = leftDown;
                 }
             } else {
-                prevUseDown = false;
+                prevRightDown = false;
+                prevLeftDown = false;
             }
         });
     }

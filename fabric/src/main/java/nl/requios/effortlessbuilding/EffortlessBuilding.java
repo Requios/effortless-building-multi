@@ -12,6 +12,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
+import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 
@@ -30,10 +31,13 @@ public class EffortlessBuilding implements ModInitializer {
 
         // Register C2S packets
         PayloadTypeRegistry.playC2S().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(BreakBuildModePacket.TYPE, BreakBuildModePacket.STREAM_CODEC);
 
-        // Register server-side handler
+        // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handlePlaceBuildMode(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(BreakBuildModePacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleBreakBuildMode(payload, context.player())));
 
         CommonClass.init();
     }

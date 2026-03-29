@@ -8,14 +8,18 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import org.jetbrains.annotations.Nullable;
 
 public class BuildModes {
 
+	public enum ClickAction { PLACING, BREAKING }
+
 	// Client-side singleton — build modes are purely client-side during preview.
-	// When placement is confirmed the client sends a PlaceBuildModePacket to the server.
+	// When placement is confirmed the client sends a packet to the server.
 	public static final BuildModes CLIENT = new BuildModes();
 
 	// Placeholder constants until a power/permission system is wired up.
@@ -26,9 +30,31 @@ public class BuildModes {
 	private BuildModeEnum previousBuildMode = BuildModeEnum.DISABLED;
 	private BuildModeEnum beforeDisabledBuildMode = BuildModeEnum.SINGLE;
 
-	// Called from MixinMinecraft — handles right-click with extended reach.
-	// Client-side only.
+	// Tracks whether a multi-click sequence is in progress and which button started it.
+	// Null when no sequence is in progress (first click not yet made).
+	@Nullable
+	private static ClickAction pendingAction = null;
+
+	public static @Nullable ClickAction getPendingAction() {
+		return pendingAction;
+	}
+
+	public static void cancelCurrentSequence() {
+		CLIENT.getBuildMode().instance.initialize();
+		pendingAction = null;
+	}
+
+	// Client-side only. Handles a right-click (place) with extended reach.
 	public static void handleRightClick(Minecraft mc) {
+		handleClick(mc, ClickAction.PLACING);
+	}
+
+	// Client-side only. Handles a left-click (break) with extended reach.
+	public static void handleLeftClick(Minecraft mc) {
+		handleClick(mc, ClickAction.BREAKING);
+	}
+
+	private static void handleClick(Minecraft mc, ClickAction action) {
 		BuildModeEnum mode = CLIENT.buildMode;
 		Player player = mc.player;
 		if (player == null || mc.level == null) return;
@@ -42,6 +68,7 @@ public class BuildModes {
 			BlockHitResult hit = mc.level.clip(ctx);
 			if (hit.getType() != HitResult.Type.BLOCK) return;
 			clickedPos = hit.getBlockPos();
+			pendingAction = action;
 		} else {
 			// Subsequent clicks may be in the air; use player block position as placeholder.
 			// The mode's findCoordinates() will compute the real positions from look direction.
@@ -59,21 +86,23 @@ public class BuildModes {
 				BlockPos secondPos = intermediate != null ? intermediate : blocks.lastPos;
 				BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
 
-				PacketHandler.sendToServer(new PlaceBuildModePacket(
-						mode,
-						blocks.firstPos,
-						secondPos,
-						thirdPos,
-						ModeOptions.getFill(),
-						ModeOptions.getCubeFill(),
-						ModeOptions.getRaisedEdge(),
-						ModeOptions.getCircleStart()
-				));
+				if (action == ClickAction.PLACING) {
+					PacketHandler.sendToServer(new PlaceBuildModePacket(
+							mode, blocks.firstPos, secondPos, thirdPos,
+							ModeOptions.getFill(), ModeOptions.getCubeFill(),
+							ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart()));
+				} else {
+					PacketHandler.sendToServer(new BreakBuildModePacket(
+							mode, blocks.firstPos, secondPos, thirdPos,
+							ModeOptions.getFill(), ModeOptions.getCubeFill(),
+							ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart()));
+				}
 			} else {
 				Constants.LOG.warn("[EffortlessBuilding] Build mode {} produced no block positions", mode);
 			}
 
 			mode.instance.initialize();
+			pendingAction = null;
 		}
 	}
 

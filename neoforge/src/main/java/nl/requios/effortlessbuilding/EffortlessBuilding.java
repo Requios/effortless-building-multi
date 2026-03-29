@@ -13,6 +13,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.item.ModItems;
+import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 
@@ -46,6 +47,11 @@ public class EffortlessBuilding {
                     PlaceBuildModePacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handlePlaceBuildMode(payload, (ServerPlayer) context.player())));
+            registrar.playToServer(
+                    BreakBuildModePacket.TYPE,
+                    BreakBuildModePacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleBreakBuildMode(payload, (ServerPlayer) context.player())));
         });
 
         CommonClass.init();

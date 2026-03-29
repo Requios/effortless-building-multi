@@ -11,14 +11,15 @@ import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.platform.Services;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PacketHandler {
 
-    /**
-     * Send a build-mode placement request from the client to the server.
-     * Delegates to the platform-specific network implementation via {@link Services#NETWORK}.
-     */
     public static void sendToServer(PlaceBuildModePacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToServer(BreakBuildModePacket packet) {
         Services.NETWORK.sendToServer(packet);
     }
 
@@ -53,5 +54,33 @@ public class PacketHandler {
         }
 
         Constants.LOG.debug("[EffortlessBuilding] Placed {} blocks for {} (mode {})", placed, player.getName().getString(), packet.buildMode());
+    }
+
+    /**
+     * Called on the server when a {@link BreakBuildModePacket} is received.
+     * Recalculates block positions using the mode's own algorithm and breaks them.
+     */
+    public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+
+        ModeOptions.applyForCalculation(packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
+
+        List<BlockPos> positions = packet.buildMode().instance.getServerBlocks(
+                player, packet.firstPos(), packet.secondPos(), packet.thirdPos());
+
+        if (positions.isEmpty()) {
+            Constants.LOG.warn("[EffortlessBuilding] Received BreakBuildModePacket but mode {} returned no blocks", packet.buildMode());
+            return;
+        }
+
+        int broken = 0;
+        for (BlockPos pos : positions) {
+            if (!level.getBlockState(pos).isAir()) {
+                level.destroyBlock(pos, true, player);
+                broken++;
+            }
+        }
+
+        Constants.LOG.debug("[EffortlessBuilding] Broke {} blocks for {} (mode {})", broken, player.getName().getString(), packet.buildMode());
     }
 }
