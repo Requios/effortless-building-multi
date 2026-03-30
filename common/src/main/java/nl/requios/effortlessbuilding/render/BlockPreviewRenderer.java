@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -57,6 +58,35 @@ public class BlockPreviewRenderer {
         if (positions.isEmpty()) return;
 
         BuildModes.ClickAction pendingAction = BuildModes.getPendingAction();
+
+        // Action bar: block count + bounding-box dimensions.
+        if (sequenceActive) {
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+            for (BlockPos pos : positions) {
+                if (pos.getX() < minX) minX = pos.getX();
+                if (pos.getX() > maxX) maxX = pos.getX();
+                if (pos.getY() < minY) minY = pos.getY();
+                if (pos.getY() > maxY) maxY = pos.getY();
+                if (pos.getZ() < minZ) minZ = pos.getZ();
+                if (pos.getZ() > maxZ) maxZ = pos.getZ();
+            }
+            int dx = maxX - minX + 1, dy = maxY - minY + 1, dz = maxZ - minZ + 1;
+            int[] dims = java.util.Arrays.stream(new int[]{dx, dy, dz}).filter(d -> d > 1).toArray();
+            String msg;
+            if (dims.length <= 1) {
+                msg = String.valueOf(positions.size());
+            } else {
+                StringBuilder sb = new StringBuilder().append(positions.size()).append(" (");
+                for (int i = 0; i < dims.length; i++) {
+                    if (i > 0) sb.append('\u00d7');
+                    sb.append(dims[i]);
+                }
+                sb.append(')');
+                msg = sb.toString();
+            }
+            mc.player.displayClientMessage(Component.literal(msg), true);
+        }
         boolean isBreaking = pendingAction == BuildModes.ClickAction.BREAKING;
 
         // Pass 1: block/fluid preview (placing only).
