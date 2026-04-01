@@ -1,8 +1,12 @@
 package nl.requios.effortlessbuilding.buildmode;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -71,6 +75,10 @@ public class BuildModes {
 	}
 
 	public static void cancelCurrentSequence() {
+		if (pendingAction != null) {
+			Minecraft.getInstance().getSoundManager().play(
+					SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_OUT, 1f));
+		}
 		CLIENT.getBuildMode().instance.initialize();
 		pendingAction = null;
 		firstClickHit = null;
@@ -156,6 +164,20 @@ public class BuildModes {
 			mode.instance.findCoordinates(blocks, player);
 
 			if (blocks.firstPos != null && blocks.lastPos != null) {
+				SoundType soundType;
+				if (action == ClickAction.PLACING) {
+					ItemStack held = player.getMainHandItem();
+					soundType = held.getItem() instanceof BlockItem blockItem
+							? blockItem.getBlock().defaultBlockState().getSoundType()
+							: SoundType.STONE;
+					mc.level.playLocalSound(blocks.firstPos, soundType.getPlaceSound(), SoundSource.BLOCKS,
+							soundType.getVolume(), soundType.getPitch(), false);
+				} else {
+					soundType = mc.level.getBlockState(blocks.firstPos).getSoundType();
+					mc.level.playLocalSound(blocks.firstPos, soundType.getBreakSound(), SoundSource.BLOCKS,
+							soundType.getVolume(), soundType.getPitch(), false);
+				}
+
 				BlockPos intermediate = mode.instance.getIntermediatePos();
 				BlockPos secondPos = intermediate != null ? intermediate : blocks.lastPos;
 				BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;

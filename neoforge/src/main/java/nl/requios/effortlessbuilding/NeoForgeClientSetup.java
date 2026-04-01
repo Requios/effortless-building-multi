@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
@@ -85,6 +86,11 @@ public class NeoForgeClientSetup {
                 prevRightDown = false;
                 prevLeftDown = false;
             }
+        }
+
+        @SubscribeEvent
+        public static void onRenderGui(RenderGuiEvent.Post event) {
+            BlockPreviewRenderer.renderSubtitle(event.getGuiGraphics());
         }
 
         @SubscribeEvent

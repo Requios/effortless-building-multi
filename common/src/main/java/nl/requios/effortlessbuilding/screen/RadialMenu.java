@@ -53,7 +53,7 @@ public class RadialMenu extends Screen {
 	private final double categoryLineWidth = 2;
 	private final double textDistance = 75;
 	private final double buttonDistance = 105;
-	private final float fadeSpeed = 0.3f;
+	private final float fadeSpeed = 0.4f;
 	private final int buildModeDescriptionHeight = 100;
 	private final int actionDescriptionWidth = 200;
 
@@ -100,10 +100,12 @@ public class RadialMenu extends Screen {
 		visibility += fadeSpeed * partialTicks;
 		if (visibility > 1f) visibility = 1f;
 
-		final int startColor = (int) (visibility * 98) << 24;
-		final int endColor = (int) (visibility * 128) << 24;
+		// Ease-out scale: starts at 0.8, reaches 1.0 as visibility reaches 1.0
+		final double scale = 0.8 + 0.2 * visibility;
 
-		graphics.fillGradient(0, 0, width, height, startColor, endColor);
+		final int bgColor = (int) (visibility * 150) << 24;
+
+		graphics.fill(0, 0, width, height, bgColor);
 
 //		RenderSystem.disableTexture();
 		RenderSystem.disableDepthTest();
@@ -157,10 +159,10 @@ public class RadialMenu extends Screen {
 
 		//Draw buildmode backgrounds
 		drawRadialButtonBackgrounds(currentBuildMode, buffer, middleX, middleY, mouseXCenter, mouseYCenter, mouseRadians,
-				quarterCircle, modes);
+				quarterCircle, modes, scale);
 
 		//Draw action backgrounds
-		drawSideButtonBackgrounds(buffer, middleX, middleY, mouseXCenter, mouseYCenter, buttons);
+		drawSideButtonBackgrounds(buffer, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
 
 		MeshData meshData = buffer.buildOrThrow();
 		BufferUploader.drawWithShader(meshData);
@@ -168,20 +170,22 @@ public class RadialMenu extends Screen {
 		RenderSystem.disableBlend();
 //		RenderSystem.enableTexture();
 
-		drawIcons(graphics, middleX, middleY, modes, buttons);
+		drawIcons(graphics, middleX, middleY, modes, buttons, scale);
 
-		drawTexts(graphics, currentBuildMode, middleX, middleY, modes, buttons, options, mouseXX, mouseYY);
+		drawTexts(graphics, currentBuildMode, middleX, middleY, modes, buttons, options, mouseXX, mouseYY, scale);
 
 		graphics.pose().popPose();
 	}
 
 	private void drawRadialButtonBackgrounds(BuildModeEnum currentBuildMode, BufferBuilder buffer, double middleX, double middleY,
-											 double mouseXCenter, double mouseYCenter, double mouseRadians, double quarterCircle, ArrayList<MenuRegion> modes) {
+											 double mouseXCenter, double mouseYCenter, double mouseRadians, double quarterCircle, ArrayList<MenuRegion> modes, double scale) {
 		if (!modes.isEmpty()) {
 			final int totalModes = Math.max(3, modes.size());
 			final double fragment = Math.PI * 0.005; //gap between buttons in radians at inner edge
 			final double fragment2 = Math.PI * 0.0025; //gap between buttons in radians at outer edge
 			final double radiansPerObject = 2.0 * Math.PI / totalModes;
+			final double innerEdge = ringInnerEdge * scale;
+			final double outerEdge = ringOuterEdge * scale;
 
 			for (int i = 0; i < modes.size(); i++) {
 				MenuRegion menuRegion = modes.get(i);
@@ -193,15 +197,15 @@ public class RadialMenu extends Screen {
 				menuRegion.y1 = Math.sin(beginRadians);
 				menuRegion.y2 = Math.sin(endRadians);
 
-				final double x1m1 = Math.cos(beginRadians + fragment) * ringInnerEdge;
-				final double x2m1 = Math.cos(endRadians - fragment) * ringInnerEdge;
-				final double y1m1 = Math.sin(beginRadians + fragment) * ringInnerEdge;
-				final double y2m1 = Math.sin(endRadians - fragment) * ringInnerEdge;
+				final double x1m1 = Math.cos(beginRadians + fragment) * innerEdge;
+				final double x2m1 = Math.cos(endRadians - fragment) * innerEdge;
+				final double y1m1 = Math.sin(beginRadians + fragment) * innerEdge;
+				final double y2m1 = Math.sin(endRadians - fragment) * innerEdge;
 
-				final double x1m2 = Math.cos(beginRadians + fragment2) * ringOuterEdge;
-				final double x2m2 = Math.cos(endRadians - fragment2) * ringOuterEdge;
-				final double y1m2 = Math.sin(beginRadians + fragment2) * ringOuterEdge;
-				final double y2m2 = Math.sin(endRadians - fragment2) * ringOuterEdge;
+				final double x1m2 = Math.cos(beginRadians + fragment2) * outerEdge;
+				final double x2m2 = Math.cos(endRadians - fragment2) * outerEdge;
+				final double y1m2 = Math.sin(beginRadians + fragment2) * outerEdge;
+				final double y2m2 = Math.sin(endRadians - fragment2) * outerEdge;
 
 				final boolean isSelected = currentBuildMode.ordinal() == i;
 				final boolean isMouseInQuad = inTriangle(x1m1, y1m1, x2m2, y2m2, x2m1, y2m1, mouseXCenter, mouseYCenter)
@@ -225,7 +229,7 @@ public class RadialMenu extends Screen {
 
 				//Category line
 				color = menuRegion.mode.category.color;
-				final double categoryLineOuterEdge = ringInnerEdge + categoryLineWidth;
+				final double categoryLineOuterEdge = (ringInnerEdge + categoryLineWidth) * scale;
 
 				final double x1m3 = Math.cos(beginRadians + fragment) * categoryLineOuterEdge;
 				final double x2m3 = Math.cos(endRadians - fragment) * categoryLineOuterEdge;
@@ -240,10 +244,11 @@ public class RadialMenu extends Screen {
 		}
 	}
 
-	private void drawSideButtonBackgrounds(BufferBuilder buffer, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons) {
+	private void drawSideButtonBackgrounds(BufferBuilder buffer, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons, double scale) {
 		for (final MenuButton btn : buttons) {
 
-			final boolean isHighlighted = btn.x1 <= mouseXCenter && btn.x2 >= mouseXCenter && btn.y1 <= mouseYCenter && btn.y2 >= mouseYCenter;
+			final double bx1 = btn.x1 * scale, bx2 = btn.x2 * scale, by1 = btn.y1 * scale, by2 = btn.y2 * scale;
+			final boolean isHighlighted = bx1 <= mouseXCenter && bx2 >= mouseXCenter && by1 <= mouseYCenter && by2 >= mouseYCenter;
 
 			boolean isSelected =
 					btn.action == ModeOptions.getBuildSpeed() ||
@@ -265,15 +270,15 @@ public class RadialMenu extends Screen {
 				doAction = btn.action;
 			}
 
-			buffer.addVertex((float)(middleX + btn.x1), (float)(middleY + btn.y1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + btn.x1), (float)(middleY + btn.y2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + btn.x2), (float)(middleY + btn.y2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + btn.x2), (float)(middleY + btn.y1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
 		}
 	}
 
 	private void drawIcons(GuiGraphics graphics, double middleX, double middleY,
-						   ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons) {
+						   ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, double scale) {
 		graphics.pose().pushPose();
 //		RenderSystem.enableTexture();
 		RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
@@ -282,17 +287,17 @@ public class RadialMenu extends Screen {
 		//Draw buildmode icons
 		for (final MenuRegion menuRegion : modes) {
 
-			final double x = (menuRegion.x1 + menuRegion.x2) * 0.5 * (ringOuterEdge * 0.55 + 0.45 * ringInnerEdge);
-			final double y = (menuRegion.y1 + menuRegion.y2) * 0.5 * (ringOuterEdge * 0.55 + 0.45 * ringInnerEdge);
-			
+			final double x = (menuRegion.x1 + menuRegion.x2) * 0.5 * (ringOuterEdge * 0.55 + 0.45 * ringInnerEdge) * scale;
+			final double y = (menuRegion.y1 + menuRegion.y2) * 0.5 * (ringOuterEdge * 0.55 + 0.45 * ringInnerEdge) * scale;
+
 			menuRegion.mode.icon.render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
 		}
 
 		//Draw action icons
 		for (final MenuButton button : buttons) {
 
-			final double x = (button.x1 + button.x2) / 2 + 0.01;
-			final double y = (button.y1 + button.y2) / 2 + 0.01;
+			final double x = (button.x1 + button.x2) / 2 * scale;
+			final double y = (button.y1 + button.y2) / 2 * scale;
 
 			button.action.icon.render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
 		}
@@ -300,13 +305,13 @@ public class RadialMenu extends Screen {
 		graphics.pose().popPose();
 	}
 
-	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY) {
+	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {
 		//font.drawStringWithShadow("Actions", (int) (middleX - buttonDistance - 13) - font.getStringWidth("Actions") * 0.5f, (int) middleY - 38, 0xffffffff);
 
 		//Draw option strings
 		for (int i = 0; i < currentBuildMode.options.length; i++) {
 			OptionEnum option = options[i];
-			graphics.drawString(font, I18n.get(option.name), (int) (middleX + buttonDistance - 9), (int) middleY - 37 + i * 39, optionTextColor, true);
+			graphics.drawString(font, I18n.get(option.name), (int) (middleX + buttonDistance * scale - 9), (int) middleY - 37 + i * 39, optionTextColor, true);
 		}
 
 		String credits = "Effortless Building";
@@ -321,8 +326,8 @@ public class RadialMenu extends Screen {
 				final double x = (menuRegion.x1 + menuRegion.x2) * 0.5;
 				final double y = (menuRegion.y1 + menuRegion.y2) * 0.5;
 
-				int fixed_x = (int) (x * textDistance);
-				int fixed_y = (int) (y * textDistance) - font.lineHeight / 2;
+				int fixed_x = (int) (x * textDistance * scale);
+				int fixed_y = (int) (y * textDistance * scale) - font.lineHeight / 2;
 				String text = I18n.get(menuRegion.mode.getNameKey());
 
 				if (x <= -0.2) {
