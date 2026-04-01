@@ -12,6 +12,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
@@ -36,6 +37,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         BuildChain.CLIENT.addSystem(ModifierSystem.CLIENT);
         // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
         BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
+        ModifierPersistence.load();
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
                 BlockPreviewRenderer.renderSubtitle(graphics));

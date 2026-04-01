@@ -2,6 +2,7 @@ package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -368,6 +369,12 @@ public class ModifiersScreen extends Screen {
     private static net.minecraft.core.BlockPos playerPos() {
         var player = Minecraft.getInstance().player;
         return player != null ? player.blockPosition() : net.minecraft.core.BlockPos.ZERO;
+    }
+
+    @Override
+    public void onClose() {
+        ModifierPersistence.save();
+        super.onClose();
     }
 
     @Override

@@ -29,6 +29,10 @@ public class ModifierSystem implements IBuildSystem {
         modifiers.add(modifier);
     }
 
+    public void clearModifiers() {
+        modifiers.clear();
+    }
+
     public void removeModifier(int index) {
         if (index >= 0 && index < modifiers.size()) {
             modifiers.remove(index);
