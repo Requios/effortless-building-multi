@@ -13,27 +13,31 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
+import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
-import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
 
 public class NeoForgeClientSetup {
 
-    static KeyMapping openTestScreen;
+    static KeyMapping openModifiersScreen;
 
     // Mod-bus events (RegisterKeyMappingsEvent).
     @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
     public static class ModEvents {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-            openTestScreen = new KeyMapping(
-                    "key.effortlessbuilding.open_test_screen",
+            openModifiersScreen = new KeyMapping(
+                    "key.effortlessbuilding.open_modifiers_screen",
                     InputConstants.Type.KEYSYM,
                     GLFW.GLFW_KEY_KP_ADD,
                     "key.categories.effortlessbuilding"
             );
-            event.register(openTestScreen);
+            event.register(openModifiersScreen);
+            BuildChain.CLIENT.addSystem(ModifierSystem.CLIENT);
+            // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
+            BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
         }
     }
 
@@ -45,8 +49,8 @@ public class NeoForgeClientSetup {
 
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
-            if (openTestScreen != null && openTestScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new TestScreen());
+            if (openModifiersScreen != null && openModifiersScreen.consumeClick()) {
+                Minecraft.getInstance().setScreen(new ModifiersScreen());
             }
 
             Minecraft mc = Minecraft.getInstance();

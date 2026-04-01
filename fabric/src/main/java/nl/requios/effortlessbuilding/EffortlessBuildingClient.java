@@ -12,25 +12,30 @@ import com.mojang.blaze3d.platform.InputConstants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
+import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
-import nl.requios.effortlessbuilding.screen.TestScreen;
 import org.lwjgl.glfw.GLFW;
 
 public class EffortlessBuildingClient implements ClientModInitializer {
 
-    public static KeyMapping openTestScreen;
+    public static KeyMapping openModifiersScreen;
     private static boolean prevRightDown = false;
     private static boolean prevLeftDown = false;
 
     @Override
     public void onInitializeClient() {
-        openTestScreen = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-            "key.effortlessbuilding.open_test_screen",
+        openModifiersScreen = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+            "key.effortlessbuilding.open_modifiers_screen",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_KP_ADD,
             "key.categories.effortlessbuilding"
         ));
+
+        BuildChain.CLIENT.addSystem(ModifierSystem.CLIENT);
+        // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
+        BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
                 BlockPreviewRenderer.renderSubtitle(graphics));
@@ -45,8 +50,8 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (openTestScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new TestScreen());
+            if (openModifiersScreen.consumeClick()) {
+                Minecraft.getInstance().setScreen(new ModifiersScreen());
             }
 
             if (client.screen == null) {

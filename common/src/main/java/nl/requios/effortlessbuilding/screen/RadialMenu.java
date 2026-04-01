@@ -421,6 +421,14 @@ public class RadialMenu extends Screen {
 		if (action != null) {
 			playRadialMenuSound();
 
+			if (action == ActionEnum.OPEN_MODIFIER_SETTINGS) {
+				// Set the flag before calling setScreen so the onClose triggered by
+				// setScreen doesn't re-enter performAction a second time.
+				performedActionUsingMouse = true;
+				minecraft.setScreen(new ModifiersScreen());
+				return;
+			}
+
 			ModeOptions.performAction(minecraft.player, action);
 
 			if (fromMouseClick) performedActionUsingMouse = true;
