@@ -408,6 +408,10 @@ public class RadialMenu extends Screen {
 			playRadialMenuSound();
 
 			BuildModes.CLIENT.setBuildMode(switchTo);
+			if (minecraft.player != null) {
+				minecraft.player.displayClientMessage(
+						Component.translatable(switchTo.getNameKey()), true);
+			}
 
 			if (fromMouseClick) performedActionUsingMouse = true;
 		}

@@ -9,6 +9,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
+import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
@@ -63,19 +64,19 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING) {
-                            BuildModes.cancelCurrentSequence();
-                        } else if (BuildModes.isBuildTriggerItem(client.player.getMainHandItem())
-                                || BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
-                            BuildModes.handleRightClick(Minecraft.getInstance());
+                        if (BuildChain.getBuildState() == BuildChain.BuildState.BREAKING) {
+                            BuildChain.cancelCurrentSequence();
+                        } else if (BuildChain.isBuildTriggerItem(client.player.getMainHandItem())
+                                || BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
+                            BuildChain.handleRightClick(Minecraft.getInstance());
                         }
                         // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
-                        if (BuildModes.getPendingAction() == BuildModes.ClickAction.PLACING) {
-                            BuildModes.cancelCurrentSequence();
+                        if (BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
+                            BuildChain.cancelCurrentSequence();
                         } else {
-                            BuildModes.handleLeftClick(Minecraft.getInstance());
+                            BuildChain.handleLeftClick(Minecraft.getInstance());
                         }
                     }
                     prevRightDown = rightDown;

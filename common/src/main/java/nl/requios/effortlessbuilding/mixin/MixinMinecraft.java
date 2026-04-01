@@ -2,6 +2,7 @@ package nl.requios.effortlessbuilding.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
+import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,8 +22,8 @@ public class MixinMinecraft {
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
-        boolean sequenceActive = BuildModes.getPendingAction() != null;
-        if (BuildModes.isBuildTriggerItem(mc.player.getMainHandItem()) || sequenceActive) ci.cancel();
+        boolean sequenceActive = BuildChain.getBuildState() != null;
+        if (BuildChain.isBuildTriggerItem(mc.player.getMainHandItem()) || sequenceActive) ci.cancel();
     }
 
     // Cancel vanilla block breaking (left-click on block) when a build mode is active.

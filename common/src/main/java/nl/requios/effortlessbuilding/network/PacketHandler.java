@@ -11,12 +11,14 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.platform.Services;
+import nl.requios.effortlessbuilding.utilities.BlockEntry;
+import nl.requios.effortlessbuilding.utilities.BlockSet;
 
 import java.util.List;
 
@@ -40,13 +42,16 @@ public class PacketHandler {
         // Apply the options the client used so getAllBlocks/getFinalBlocks produce the same result.
         ModeOptions.applyForCalculation(packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
 
-        List<BlockPos> positions = packet.buildMode().instance.getServerBlocks(
+        List<BlockPos> rawPositions = packet.buildMode().instance.getServerBlocks(
                 player, packet.firstPos(), packet.secondPos(), packet.thirdPos());
 
-        if (positions.isEmpty()) {
+        if (rawPositions.isEmpty()) {
             Constants.LOG.warn("[EffortlessBuilding] Received PlaceBuildModePacket but mode {} returned no blocks", packet.buildMode());
             return;
         }
+
+        BlockSet blockSet = toBlockSet(rawPositions);
+        BuildChain.SERVER.processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
 
@@ -54,7 +59,7 @@ public class PacketHandler {
         if (held.getItem() instanceof BlockItem blockItem) {
             // Preserve the Y fraction so slabs get the correct half across all positions.
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
-            for (BlockPos pos : positions) {
+            for (BlockPos pos : blockSet.keySet()) {
                 if (level.getBlockState(pos).canBeReplaced()) {
                     Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
                     BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
@@ -69,7 +74,7 @@ public class PacketHandler {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
             if (!fluid.isSame(Fluids.EMPTY)) {
                 BlockState fluidState = fluid.defaultFluidState().createLegacyBlock();
-                for (BlockPos pos : positions) {
+                for (BlockPos pos : blockSet.keySet()) {
                     if (level.getBlockState(pos).canBeReplaced()) {
                         level.setBlock(pos, fluidState, 3);
                         placed++;
@@ -92,16 +97,19 @@ public class PacketHandler {
 
         ModeOptions.applyForCalculation(packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
 
-        List<BlockPos> positions = packet.buildMode().instance.getServerBlocks(
+        List<BlockPos> rawPositions = packet.buildMode().instance.getServerBlocks(
                 player, packet.firstPos(), packet.secondPos(), packet.thirdPos());
 
-        if (positions.isEmpty()) {
+        if (rawPositions.isEmpty()) {
             Constants.LOG.warn("[EffortlessBuilding] Received BreakBuildModePacket but mode {} returned no blocks", packet.buildMode());
             return;
         }
 
+        BlockSet blockSet = toBlockSet(rawPositions);
+        BuildChain.SERVER.processBlocks(blockSet, player, BuildChain.BuildState.BREAKING);
+
         int broken = 0;
-        for (BlockPos pos : positions) {
+        for (BlockPos pos : blockSet.keySet()) {
             if (!level.getBlockState(pos).isAir()) {
                 level.destroyBlock(pos, true, player);
                 broken++;
@@ -109,6 +117,19 @@ public class PacketHandler {
         }
 
         Constants.LOG.debug("[EffortlessBuilding] Broke {} blocks for {} (mode {})", broken, player.getName().getString(), packet.buildMode());
+    }
+
+    /** Wraps a flat list of positions into a {@link BlockSet} for chain processing. */
+    private static BlockSet toBlockSet(List<BlockPos> positions) {
+        BlockSet blockSet = new BlockSet();
+        for (BlockPos pos : positions) {
+            blockSet.add(new BlockEntry(pos));
+        }
+        if (!positions.isEmpty()) {
+            blockSet.firstPos = positions.get(0);
+            blockSet.lastPos = positions.get(positions.size() - 1);
+        }
+        return blockSet;
     }
 
     /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */

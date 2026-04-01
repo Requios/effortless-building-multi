@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -30,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.SoundType;
+import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 
@@ -70,8 +70,8 @@ public class BlockPreviewRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        boolean emptyHand = !BuildModes.isBuildTriggerItem(mc.player.getMainHandItem());
-        boolean sequenceActive = BuildModes.getPendingAction() != null;
+        boolean emptyHand = !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem());
+        boolean sequenceActive = BuildChain.getBuildState() != null;
 
         // Empty hand with no active sequence: skip block preview, show extended-reach
         // outline only if the target block is beyond normal vanilla reach.
@@ -80,7 +80,7 @@ public class BlockPreviewRenderer {
             return;
         }
 
-        List<BlockPos> positions = BuildModes.getPreviewPositions(mc);
+        List<BlockPos> positions = BuildChain.getPreviewPositions(mc);
         if (positions.isEmpty()) {
             lastPreviewSize = 0;
             return;
@@ -88,7 +88,7 @@ public class BlockPreviewRenderer {
 
         // Play a tick when the preview block count changes during an active sequence.
         if (sequenceActive && positions.size() != lastPreviewSize) {
-            boolean breaking = BuildModes.getPendingAction() == BuildModes.ClickAction.BREAKING;
+            boolean breaking = BuildChain.getBuildState() == BuildChain.BuildState.BREAKING;
             SoundType soundType = breaking
                     ? mc.level.getBlockState(positions.get(0)).getSoundType()
                     : (mc.player.getMainHandItem().getItem() instanceof BlockItem blockItem
@@ -100,7 +100,7 @@ public class BlockPreviewRenderer {
         }
         lastPreviewSize = positions.size();
 
-        BuildModes.ClickAction pendingAction = BuildModes.getPendingAction();
+        BuildChain.BuildState pendingAction = BuildChain.getBuildState();
 
         // Action bar: block count + bounding-box dimensions.
         if (sequenceActive) {
@@ -130,7 +130,7 @@ public class BlockPreviewRenderer {
             }
             mc.player.displayClientMessage(Component.literal(msg), true);
         }
-        boolean isBreaking = pendingAction == BuildModes.ClickAction.BREAKING;
+        boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
 
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
@@ -243,7 +243,7 @@ public class BlockPreviewRenderer {
         // Mid-sequence: use the first click's hit result so that face-dependent properties
         // (log axis, upside-down stairs/slabs) match the actual placement.
         // The player object is always current, so getHorizontalDirection() (stair facing) stays live.
-        BlockHitResult hit = BuildModes.getFirstClickHit();
+        BlockHitResult hit = BuildChain.getFirstClickHit();
 
         if (hit == null) {
             // Pre-click: raytrace to show what would be placed at the current target.
@@ -264,11 +264,11 @@ public class BlockPreviewRenderer {
     }
 
     public static void renderSubtitle(GuiGraphics graphics) {
-        BuildModes.ClickAction pendingAction = BuildModes.getPendingAction();
+        BuildChain.BuildState pendingAction = BuildChain.getBuildState();
         if (pendingAction == null) return;
 
         Minecraft mc = Minecraft.getInstance();
-        Component text = pendingAction == BuildModes.ClickAction.PLACING ? PLACING_TEXT : BREAKING_TEXT;
+        Component text = pendingAction == BuildChain.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
