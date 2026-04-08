@@ -23,7 +23,12 @@ import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 import org.jetbrains.annotations.Nullable;
+
+import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.level.material.Fluids;
+import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 
 /**
  * Client-only counterpart to {@link BuildChain}.
@@ -38,6 +43,9 @@ public class BuildChainClient {
 
     /** Client-side singleton — registered systems run during preview and before packet dispatch. */
     public static final BuildChain CLIENT = new BuildChain();
+
+    /** Client-side item usage tracker — updated each frame during preview. */
+    public static final ItemUsageTracker ITEM_USAGE = new ItemUsageTracker();
 
     // -------------------------------------------------------------------------
     // Sequence state
@@ -65,6 +73,11 @@ public class BuildChainClient {
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
         Player player = mc.player;
         if (player == null || mc.level == null) return;
+
+        // Survival players cannot use mod-assisted breaking
+        if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild) {
+            return;
+        }
 
         BlockPos clickedPos;
         if (mode.instance.isFirstClick()) {
@@ -143,13 +156,14 @@ public class BuildChainClient {
 
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
 
+        BlockSet result;
         if (mode != BuildModeEnum.DISABLED && !mode.instance.isFirstClick()) {
             BlockSet previewBlocks = new BlockSet();
             mode.instance.findCoordinates(previewBlocks, player);
             BuildChain.BuildState action = buildState != null ? buildState : BuildChain.BuildState.PLACING;
             CLIENT.processBlocks(previewBlocks, player, action);
             if (previewBlocks.isEmpty()) return null;
-            return previewBlocks;
+            result = previewBlocks;
         } else {
             Vec3 start = player.getEyePosition();
             Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
@@ -160,7 +174,33 @@ public class BuildChainClient {
             BlockSet blockSet = new BlockSet();
             blockSet.add(new BlockEntry(targetPos));
             CLIENT.processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
-            return blockSet;
+            result = blockSet;
+        }
+
+        // Update item usage tracker for the preview
+        updateItemUsage(player, result);
+        return result;
+    }
+
+    /**
+     * Updates the client-side {@link ItemUsageTracker} based on the current preview block set.
+     */
+    private static void updateItemUsage(Player player, BlockSet blockSet) {
+        var held = player.getMainHandItem();
+        net.minecraft.world.item.Item heldItem = null;
+        if (held.getItem() instanceof BlockItem) {
+            heldItem = held.getItem();
+        } else if (held.getItem() instanceof BucketItem bucketItem) {
+            var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
+            if (!fluid.isSame(Fluids.EMPTY)) {
+                heldItem = held.getItem();
+            }
+        }
+
+        if (heldItem != null) {
+            ITEM_USAGE.compute(player, blockSet.keySet(), heldItem, player.getAbilities().instabuild);
+        } else {
+            ITEM_USAGE.initialize();
         }
     }
 

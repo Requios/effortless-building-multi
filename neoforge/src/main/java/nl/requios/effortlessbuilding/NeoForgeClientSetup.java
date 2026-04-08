@@ -83,7 +83,7 @@ public class NeoForgeClientSetup {
                     if (leftJustPressed) {
                         if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
                             BuildChainClient.cancelCurrentSequence();
-                        } else {
+                        } else if (mc.player.getAbilities().instabuild) {
                             BuildChainClient.handleLeftClick(mc);
                         }
                     }

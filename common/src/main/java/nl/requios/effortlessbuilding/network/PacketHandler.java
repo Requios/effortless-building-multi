@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +19,7 @@ import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 
 public class PacketHandler {
 
@@ -32,7 +34,8 @@ public class PacketHandler {
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      * Uses the unified {@link BuildChain#computeServerBlocks} pipeline,
-     * then applies world mutations.
+     * then applies world mutations.  In survival, items are consumed from
+     * inventory and positions beyond the player's supply are skipped.
      */
     public static void handlePlaceBuildMode(PlaceBuildModePacket packet, ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -48,11 +51,20 @@ public class PacketHandler {
         }
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
+        boolean creative = player.isCreative();
 
         int placed = 0;
         if (held.getItem() instanceof BlockItem blockItem) {
+            Item heldItem = held.getItem();
+
+            // In survival, figure out how many blocks we can afford
+            int available = creative ? Integer.MAX_VALUE
+                    : InventoryHelper.findTotalItemsInInventory(player, heldItem);
+
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
             for (BlockPos pos : blockSet.keySet()) {
+                if (!creative && placed >= available) break;
+
                 if (level.getBlockState(pos).canBeReplaced()) {
                     Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
                     BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
@@ -67,15 +79,28 @@ public class PacketHandler {
                     placed++;
                 }
             }
+
+            // Consume items from inventory in survival
+            if (!creative && placed > 0) {
+                InventoryHelper.consumeItems(player, heldItem, placed);
+            }
         } else if (held.getItem() instanceof BucketItem bucketItem) {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
             if (!fluid.isSame(Fluids.EMPTY)) {
                 BlockState fluidState = fluid.defaultFluidState().createLegacyBlock();
+                // In survival, a bucket is single-use
+                int maxPlace = creative ? Integer.MAX_VALUE : 1;
                 for (BlockPos pos : blockSet.keySet()) {
+                    if (placed >= maxPlace) break;
                     if (level.getBlockState(pos).canBeReplaced()) {
                         level.setBlock(pos, fluidState, 3);
                         placed++;
                     }
+                }
+                // Consume the bucket in survival (replace with empty bucket)
+                if (!creative && placed > 0) {
+                    player.setItemInHand(InteractionHand.MAIN_HAND,
+                            new ItemStack(net.minecraft.world.item.Items.BUCKET));
                 }
             }
         } else {
@@ -87,10 +112,15 @@ public class PacketHandler {
 
     /**
      * Called on the server when a {@link BreakBuildModePacket} is received.
-     * Uses the unified {@link BuildChain#computeServerBlocks} pipeline,
-     * then applies world mutations.
+     * Only allowed in creative mode — survival players cannot mass-break.
      */
     public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
+        // Mod-assisted breaking is creative-only
+        if (!player.isCreative()) {
+            Constants.LOG.warn("[EffortlessBuilding] Survival player {} tried to use build-mode breaking, ignoring", player.getName().getString());
+            return;
+        }
+
         ServerLevel level = player.serverLevel();
 
         BlockSet blockSet = BuildChain.SERVER.computeServerBlocks(

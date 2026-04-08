@@ -50,7 +50,6 @@ public class MirrorModifier implements IModifier {
     }
 
     private void applyAxisMirror(BlockSet blocks, int axis) {
-        double rSq = (double) radius * radius;
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());
         for (BlockPos pos : snapshot) {
             double mx = pos.getX(), my = pos.getY(), mz = pos.getZ();
@@ -62,11 +61,12 @@ public class MirrorModifier implements IModifier {
             BlockPos mirrored = BlockPos.containing(mx, my, mz);
             if (mirrored.equals(pos)) continue;
 
-            // Skip mirrored copy if it falls outside the radius.
-            double dx = mirrored.getX() + 0.5 - originX;
-            double dy = mirrored.getY() + 0.5 - originY;
-            double dz = mirrored.getZ() + 0.5 - originZ;
-            if (dx * dx + dy * dy + dz * dz > rSq) continue;
+            // Skip mirrored copy if it falls outside the radius (Manhattan / Chebyshev).
+            // radius=10 → a 20×20×20 working cube centred on the origin.
+            double dx = Math.abs(mirrored.getX() + 0.5 - originX);
+            double dy = Math.abs(mirrored.getY() + 0.5 - originY);
+            double dz = Math.abs(mirrored.getZ() + 0.5 - originZ);
+            if (dx > radius || dy > radius || dz > radius) continue;
 
             BlockEntry entry = new BlockEntry(mirrored);
             BlockEntry original = blocks.get(pos);

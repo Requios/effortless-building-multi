@@ -52,18 +52,6 @@ public class BlockSet extends HashMap<BlockPos, BlockEntry> implements Iterable<
         }
     }
 
-    public HashSet<BlockPos> getCoordinates() {
-        return new HashSet<>(keySet());
-    }
-
-    public BlockEntry getFirstBlockEntry() {
-        return get(firstPos);
-    }
-
-    public BlockEntry getLastBlockEntry() {
-        return get(lastPos);
-    }
-
     @NotNull
     @Override
     public Iterator<BlockEntry> iterator() {

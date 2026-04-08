@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -16,6 +17,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.material.Fluids;
+import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,6 +32,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -84,7 +87,7 @@ public class BlockPreviewRenderer {
         if (!isBreaking) {
             
             float blockScale = 1f;
-            int blockAlpha = 255;
+            int blockAlpha = 200;
             
             var held = mc.player.getMainHandItem();
             BlockState baseState = null;
@@ -99,6 +102,8 @@ public class BlockPreviewRenderer {
             if (baseState != null) {
                 try {
                     var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
+                    var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
+                    Set<BlockPos> missingPositions = BuildChainClient.ITEM_USAGE.missingPositions;
                     for (BlockPos pos : positions) {
                         // Apply per-block mirror/rotation transforms from the modifier pipeline.
                         BlockState state = baseState;
@@ -106,16 +111,20 @@ public class BlockPreviewRenderer {
                         if (entry != null) {
                             state = entry.applyTransforms(state);
                         }
+                        boolean isMissing = missingPositions.contains(pos);
                         poseStack.pushPose();
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
                         poseStack.translate(0.5, 0.5, 0.5);
                         poseStack.scale(blockScale, blockScale, blockScale);
                         poseStack.translate(-0.5, -0.5, -0.5);
-                        mc.getBlockRenderer().renderSingleBlock(state, poseStack, wrappedSource,
+                        mc.getBlockRenderer().renderSingleBlock(state, poseStack,
+                                isMissing ? missingSource : wrappedSource,
                                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
                         poseStack.popPose();
                     }
-                    bufferSource.endBatch(RenderType.translucent());
+                    // Flush all render types — entity-rendered blocks (beds, chests)
+                    // may use types other than translucent().
+                    bufferSource.endBatch();
                 } catch (Exception ignored) {
                     // Render failed; outline-only fallback handled by Pass 2.
                 }
@@ -134,9 +143,28 @@ public class BlockPreviewRenderer {
         float outlineWidth = 0.02f; // half-width in world units
         int oR = 255, oG = isBreaking ? 0 : 255, oB = isBreaking ? 0 : 255;
 
-        renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(positions),
-                camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
-        bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        // Separate valid positions from missing positions for different edge colors
+        Set<BlockPos> missingSet = BuildChainClient.ITEM_USAGE.missingPositions;
+        List<BlockPos> validPositions = new ArrayList<>();
+        List<BlockPos> missingPositions = new ArrayList<>();
+        for (BlockPos pos : positions) {
+            if (missingSet.contains(pos)) {
+                missingPositions.add(pos);
+            } else {
+                validPositions.add(pos);
+            }
+        }
+
+        if (!validPositions.isEmpty()) {
+            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(validPositions),
+                    camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
+            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        }
+        if (!missingPositions.isEmpty()) {
+            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositions),
+                    camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
+            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        }
     }
 
     private static void renderBoundingBoxFaces(PoseStack poseStack, MultiBufferSource bufferSource,
@@ -146,7 +174,7 @@ public class BlockPreviewRenderer {
 
         var consumer = bufferSource.getBuffer(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
         var pose = poseStack.last();
-        int r = 255, g = isBreaking ? 0 : 255, b = isBreaking ? 0 : 255;
+        int r = isBreaking ? 255 : 255, g = isBreaking ? 0 : 255, b = isBreaking ? 0 : 255;
         int a = 150;
         final float eps = 0.002f;
 
@@ -318,7 +346,10 @@ public class BlockPreviewRenderer {
 
         @Override
         public VertexConsumer getBuffer(RenderType renderType) {
-            return new AlphaVertexConsumer(delegate.getBuffer(RenderType.translucent()), alpha);
+            // Keep the original render type so entity-rendered blocks (beds, chests, banners)
+            // retain their correct textures. Only override alpha on the vertex consumer.
+            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderType.translucent() : renderType;
+            return new AlphaVertexConsumer(delegate.getBuffer(renderTypeToUse), alpha);
         }
     }
 
@@ -375,5 +406,42 @@ public class BlockPreviewRenderer {
                               BlockHitResult hit) {
             super(level, player, hand, stack, hit);
         }
+    }
+
+    /**
+     * Like {@link AlphaMultiBufferSource} but also forces a specific RGB tint on every vertex,
+     * used to mark missing-block positions red in the preview.
+     */
+    private static class TintedMultiBufferSource implements MultiBufferSource {
+        private final MultiBufferSource.BufferSource delegate;
+        private final int r, g, b, a;
+
+        TintedMultiBufferSource(MultiBufferSource.BufferSource delegate, int r, int g, int b, int a) {
+            this.delegate = delegate;
+            this.r = r; this.g = g; this.b = b; this.a = a;
+        }
+
+        @Override
+        public VertexConsumer getBuffer(RenderType renderType) {
+            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderType.translucent() : renderType;
+            return new TintedVertexConsumer(delegate.getBuffer(renderTypeToUse), r, g, b, a);
+        }
+    }
+
+    private static class TintedVertexConsumer implements VertexConsumer {
+        private final VertexConsumer delegate;
+        private final int r, g, b, a;
+
+        TintedVertexConsumer(VertexConsumer delegate, int r, int g, int b, int a) {
+            this.delegate = delegate;
+            this.r = r; this.g = g; this.b = b; this.a = a;
+        }
+
+        @Override public VertexConsumer addVertex(float x, float y, float z) { delegate.addVertex(x, y, z); return this; }
+        @Override public VertexConsumer setColor(int cr, int cg, int cb, int ca) { delegate.setColor(r, g, b, a); return this; }
+        @Override public VertexConsumer setUv(float u, float v) { delegate.setUv(u, v); return this; }
+        @Override public VertexConsumer setUv1(int u, int v) { delegate.setUv1(u, v); return this; }
+        @Override public VertexConsumer setUv2(int u, int v) { delegate.setUv2(u, v); return this; }
+        @Override public VertexConsumer setNormal(float nx, float ny, float nz) { delegate.setNormal(nx, ny, nz); return this; }
     }
 }
