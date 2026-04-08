@@ -209,24 +209,18 @@ public class BuildChain {
      * Returns the block set that should be highlighted in the preview this frame.
      * Each {@link BlockEntry} carries mirror/rotation flags so the renderer can
      * show per-block transforms matching what the server will actually place.
+     *
+     * <p>Always computes modifier copies for the target block, even when no build mode
+     * is active or the player hasn't started a sequence yet.
      */
     public static BlockSet getPreviewBlocks(Minecraft mc) {
-        BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
-        if (mode == BuildModeEnum.DISABLED) return null;
         Player player = mc.player;
         if (player == null || mc.level == null) return null;
 
-        if (mode.instance.isFirstClick()) {
-            // No sequence in progress — show target block via extended raytrace.
-            Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
-            ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
-            BlockHitResult hit = mc.level.clip(ctx);
-            if (hit.getType() != HitResult.Type.BLOCK) return null;
-            BlockSet single = new BlockSet();
-            single.add(new BlockEntry(resolveFirstClickPos(hit, BuildState.PLACING, mc.level)));
-            return single;
-        } else {
+        BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
+        boolean sequenceActive = buildState != null;
+
+        if (mode != BuildModeEnum.DISABLED && !mode.instance.isFirstClick()) {
             // Mid-sequence — compute live shape using stored clicks + current look.
             BlockSet previewBlocks = new BlockSet();
             mode.instance.findCoordinates(previewBlocks, player);
@@ -234,6 +228,19 @@ public class BuildChain {
             CLIENT.processBlocks(previewBlocks, player, action);
             if (previewBlocks.isEmpty()) return null;
             return previewBlocks;
+        } else {
+            // No sequence in progress — raytrace to find the target block,
+            // then run modifiers to show mirrored/rotated copies.
+            Vec3 start = player.getEyePosition();
+            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
+            ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+            BlockHitResult hit = mc.level.clip(ctx);
+            if (hit.getType() != HitResult.Type.BLOCK) return null;
+            BlockPos targetPos = resolveFirstClickPos(hit, BuildState.PLACING, mc.level);
+            BlockSet blockSet = new BlockSet();
+            blockSet.add(new BlockEntry(targetPos));
+            CLIENT.processBlocks(blockSet, player, BuildState.PLACING);
+            return blockSet;
         }
     }
 

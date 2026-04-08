@@ -50,23 +50,22 @@ public class BlockPreviewRenderer {
 
     public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                double camX, double camY, double camZ) {
-        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
-
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
         boolean emptyHand = !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem());
         boolean sequenceActive = BuildChain.getBuildState() != null;
-
-        // Empty hand with no active sequence: skip block preview, show extended-reach
-        // outline only if the target block is beyond normal vanilla reach.
-        if (emptyHand && !sequenceActive) {
-            renderExtendedReachOutline(poseStack, bufferSource, mc, camX, camY, camZ);
-            return;
-        }
+        boolean modeActive = BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED;
 
         BlockSet blockSet = BuildChain.getPreviewBlocks(mc);
         if (blockSet == null || blockSet.isEmpty()) {
+            RenderHandler.resetPreviewSize();
+            return;
+        }
+
+        // Don't show preview for a single block (the cursor target itself).
+        // Only render when modifiers or the build mode produced additional copies.
+        if (blockSet.size() <= 1 && !sequenceActive) {
             RenderHandler.resetPreviewSize();
             return;
         }
@@ -264,32 +263,6 @@ public class BlockPreviewRenderer {
                 mc.level, player, InteractionHand.MAIN_HAND, player.getMainHandItem(), hit);
         BlockState state = blockItem.getBlock().getStateForPlacement(placeCtx);
         return state != null ? state : blockItem.getBlock().defaultBlockState();
-    }
-
-
-    private static void renderExtendedReachOutline(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                                    Minecraft mc, double camX, double camY, double camZ) {
-        Player player = mc.player;
-        Vec3 start = player.getEyePosition();
-        Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
-        ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
-        BlockHitResult hit = mc.level.clip(ctx);
-        if (hit.getType() != HitResult.Type.BLOCK) return;
-
-        // Only draw if the block is beyond normal vanilla reach.
-        if (hit.getLocation().distanceToSqr(start) <= VANILLA_REACH_SQ) return;
-
-        BlockPos pos = hit.getBlockPos();
-        double x = pos.getX() - camX;
-        double y = pos.getY() - camY;
-        double z = pos.getZ() - camZ;
-        AABB outline = new AABB(x - 0.002, y - 0.002, z - 0.002,
-                x + 1.002, y + 1.002, z + 1.002);
-
-        // Match vanilla: thin dark semi-transparent outline.
-        var lines = bufferSource.getBuffer(RenderType.lines());
-        LevelRenderer.renderLineBox(poseStack, lines, outline, 0.0f, 0.0f, 0.0f, 0.4f);
-        bufferSource.endBatch(RenderType.lines());
     }
 
     private record EdgeKey(int axis, int x, int y, int z) {}

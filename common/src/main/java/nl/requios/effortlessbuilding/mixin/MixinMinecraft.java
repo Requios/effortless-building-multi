@@ -38,4 +38,18 @@ public class MixinMinecraft {
             cir.cancel();
         }
     }
+
+    // Cancel vanilla hold-to-mine (continueAttack) when a build mode is active.
+    // Without this, holding left-click still progresses block breaking even though
+    // startAttack was cancelled.
+    @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
+    private void onContinueAttack(boolean leftClick, CallbackInfo ci) {
+        if (!leftClick) return;
+        Minecraft mc = (Minecraft) (Object) this;
+        if (mc.player == null || mc.level == null) return;
+        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
+        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
+            ci.cancel();
+        }
+    }
 }

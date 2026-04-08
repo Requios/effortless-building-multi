@@ -9,6 +9,7 @@
     "MixinBlockItem"
   ],
   "client": [
+    "MixinGameRenderer",
     "MixinMinecraft"
   ],
   "server": [],
