@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
@@ -34,7 +35,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
             "key.categories.effortlessbuilding"
         ));
 
-        BuildChain.CLIENT.addSystem(ModifierSystem.CLIENT);
+        BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
         // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
         BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
         ModifierPersistence.load();
@@ -71,19 +72,19 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildChain.getBuildState() == BuildChain.BuildState.BREAKING) {
-                            BuildChain.cancelCurrentSequence();
+                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.BREAKING) {
+                            BuildChainClient.cancelCurrentSequence();
                         } else if (BuildChain.isBuildTriggerItem(client.player.getMainHandItem())
-                                || BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChain.handleRightClick(Minecraft.getInstance());
+                                || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
+                            BuildChainClient.handleRightClick(Minecraft.getInstance());
                         }
                         // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
-                        if (BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChain.cancelCurrentSequence();
+                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
+                            BuildChainClient.cancelCurrentSequence();
                         } else {
-                            BuildChain.handleLeftClick(Minecraft.getInstance());
+                            BuildChainClient.handleLeftClick(Minecraft.getInstance());
                         }
                     }
                     prevRightDown = rightDown;

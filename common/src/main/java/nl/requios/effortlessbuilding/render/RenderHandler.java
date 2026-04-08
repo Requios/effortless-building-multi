@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.SoundType;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 
@@ -127,7 +128,7 @@ public class RenderHandler {
     // =========================================================================
 
     private static void renderSubtitle(GuiGraphics graphics) {
-        BuildChain.BuildState pendingAction = BuildChain.getBuildState();
+        BuildChain.BuildState pendingAction = BuildChainClient.getBuildState();
         if (pendingAction == null) return;
 
         Minecraft mc = Minecraft.getInstance();

@@ -18,6 +18,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.item.ModItems;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
@@ -88,19 +89,19 @@ public class EffortlessBuilding {
                             boolean leftJustPressed = leftDown && !prevLeftDown;
 
                             if (rightJustPressed) {
-                                if (BuildChain.getBuildState() == BuildChain.BuildState.BREAKING) {
-                                    BuildChain.cancelCurrentSequence();
+                                if (BuildChainClient.getBuildState() == BuildChain.BuildState.BREAKING) {
+                                    BuildChainClient.cancelCurrentSequence();
                                 } else if (BuildChain.isBuildTriggerItem(mc.player.getMainHandItem())
-                                        || BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
-                                    BuildChain.handleRightClick(mc);
+                                        || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
+                                    BuildChainClient.handleRightClick(mc);
                                 }
                                 // else: non-placeable item, no sequence → vanilla handles it
                             }
                             if (leftJustPressed) {
-                                if (BuildChain.getBuildState() == BuildChain.BuildState.PLACING) {
-                                    BuildChain.cancelCurrentSequence();
+                                if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
+                                    BuildChainClient.cancelCurrentSequence();
                                 } else {
-                                    BuildChain.handleLeftClick(mc);
+                                    BuildChainClient.handleLeftClick(mc);
                                 }
                             }
                             prevRightDown = rightDown;

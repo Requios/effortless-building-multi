@@ -25,6 +25,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
@@ -54,10 +55,10 @@ public class BlockPreviewRenderer {
         if (mc.player == null || mc.level == null) return;
 
         boolean emptyHand = !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem());
-        boolean sequenceActive = BuildChain.getBuildState() != null;
+        boolean sequenceActive = BuildChainClient.getBuildState() != null;
         boolean modeActive = BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED;
 
-        BlockSet blockSet = BuildChain.getPreviewBlocks(mc);
+        BlockSet blockSet = BuildChainClient.getPreviewBlocks(mc);
         if (blockSet == null || blockSet.isEmpty()) {
             RenderHandler.resetPreviewSize();
             return;
@@ -72,7 +73,7 @@ public class BlockPreviewRenderer {
 
         List<BlockPos> positions = new ArrayList<>(blockSet.keySet());
 
-        BuildChain.BuildState pendingAction = BuildChain.getBuildState();
+        BuildChain.BuildState pendingAction = BuildChainClient.getBuildState();
 
         // Delegate sound + action-bar to RenderHandler.
         RenderHandler.updateFeedback(positions, sequenceActive, pendingAction);
@@ -82,8 +83,8 @@ public class BlockPreviewRenderer {
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
             
-            float blockScale = 0.5f;
-            int blockAlpha = 220;
+            float blockScale = 1f;
+            int blockAlpha = 255;
             
             var held = mc.player.getMainHandItem();
             BlockState baseState = null;
@@ -124,10 +125,10 @@ public class BlockPreviewRenderer {
         // Pass 2: bounding box faces with checkerboard texture.
         // Disable depth writes so the translucent faces don't occlude the
         // outline edges drawn in Pass 3.
-        RenderSystem.depthMask(false);
-        renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
-        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
-        RenderSystem.depthMask(true);
+//        RenderSystem.depthMask(false);
+//        renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
+//        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
+//        RenderSystem.depthMask(true);
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units
@@ -245,7 +246,7 @@ public class BlockPreviewRenderer {
         // Mid-sequence: use the first click's hit result so that face-dependent properties
         // (log axis, upside-down stairs/slabs) match the actual placement.
         // The player object is always current, so getHorizontalDirection() (stair facing) stays live.
-        BlockHitResult hit = BuildChain.getFirstClickHit();
+        BlockHitResult hit = BuildChainClient.getFirstClickHit();
 
         if (hit == null) {
             // Pre-click: raytrace to show what would be placed at the current target.
