@@ -16,6 +16,7 @@ import nl.requios.effortlessbuilding.modifier.RadialMirrorModifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 
 public class ModifiersScreen extends Screen {
@@ -46,7 +47,9 @@ public class ModifiersScreen extends Screen {
      * {@link #mouseScrolled} can increment/decrement without re-building widgets.
      */
     private record IntFieldEntry(EditBox field, IntConsumer setter) {}
+    private record DoubleFieldEntry(EditBox field, DoubleConsumer setter) {}
     private final List<IntFieldEntry> intFields = new ArrayList<>();
+    private final List<DoubleFieldEntry> doubleFields = new ArrayList<>();
 
     public ModifiersScreen() {
         super(Component.literal("Modifiers"));
@@ -59,6 +62,7 @@ public class ModifiersScreen extends Screen {
     @Override
     protected void init() {
         intFields.clear();
+        doubleFields.clear();
 
         int px = panelX(), py = panelY();
         buildListWidgets(px, py);
@@ -159,18 +163,19 @@ public class ModifiersScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("Z: " + onOff(mirror.mirrorZ)),
                             btn -> { mirror.mirrorZ = !mirror.mirrorZ; rebuildWidgets(); })
                     .bounds(sx + 116, sy, 54, 14).build());
-            // Origin fields
-            addIntField(sx, sy + ROW_GAP,     String.valueOf(mirror.originX), v -> mirror.originX = v);
-            addIntField(sx, sy + ROW_GAP * 2, String.valueOf(mirror.originY), v -> mirror.originY = v);
-            addIntField(sx, sy + ROW_GAP * 3, String.valueOf(mirror.originZ), v -> mirror.originZ = v);
+            // Origin fields (half-block step)
+            addDoubleField(sx, sy + ROW_GAP,     formatDouble(mirror.originX), v -> mirror.originX = v);
+            addDoubleField(sx, sy + ROW_GAP * 2, formatDouble(mirror.originY), v -> mirror.originY = v);
+            addDoubleField(sx, sy + ROW_GAP * 3, formatDouble(mirror.originZ), v -> mirror.originZ = v);
+            addIntField(sx, sy + ROW_GAP * 4, String.valueOf(mirror.radius),  v -> mirror.radius  = Math.max(1, v));
             // Set-to-player button
             addRenderableWidget(Button.builder(Component.literal("Set origin to player pos"),
                             btn -> {
-                                var pos = playerPos();
+                                var pos = playerBlockPos();
                                 mirror.originX = pos.getX(); mirror.originY = pos.getY(); mirror.originZ = pos.getZ();
                                 rebuildWidgets();
                             })
-                    .bounds(sx, sy + ROW_GAP * 4, 165, 14).build());
+                    .bounds(sx, sy + ROW_GAP * 5, 165, 14).build());
 
         } else if (modifier instanceof ArrayModifier array) {
             addIntField(sx, sy,               String.valueOf(array.count),   v -> array.count   = Math.max(0, v));
@@ -183,16 +188,18 @@ public class ModifiersScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("Mirror slices: " + onOff(radial.mirrorSlices)),
                             btn -> { radial.mirrorSlices = !radial.mirrorSlices; rebuildWidgets(); })
                     .bounds(sx, sy + ROW_GAP, 152, 14).build());
-            addIntField(sx, sy + ROW_GAP * 2, String.valueOf(radial.originX), v -> radial.originX = v);
-            addIntField(sx, sy + ROW_GAP * 3, String.valueOf(radial.originZ), v -> radial.originZ = v);
+            addDoubleField(sx, sy + ROW_GAP * 2, formatDouble(radial.originX), v -> radial.originX = v);
+            addDoubleField(sx, sy + ROW_GAP * 3, formatDouble(radial.originY), v -> radial.originY = v);
+            addDoubleField(sx, sy + ROW_GAP * 4, formatDouble(radial.originZ), v -> radial.originZ = v);
+            addIntField(sx, sy + ROW_GAP * 5, String.valueOf(radial.radius),  v -> radial.radius  = Math.max(1, v));
             // Set-to-player button
             addRenderableWidget(Button.builder(Component.literal("Set origin to player pos"),
                             btn -> {
-                                var pos = playerPos();
-                                radial.originX = pos.getX(); radial.originZ = pos.getZ();
+                                var pos = playerBlockPos();
+                                radial.originX = pos.getX(); radial.originY = pos.getY(); radial.originZ = pos.getZ();
                                 rebuildWidgets();
                             })
-                    .bounds(sx, sy + ROW_GAP * 4, 165, 14).build());
+                    .bounds(sx, sy + ROW_GAP * 6, 165, 14).build());
         }
     }
 
@@ -230,6 +237,42 @@ public class ModifiersScreen extends Screen {
         setter.accept(next);
     }
 
+    /**
+     * Adds a labeled double field row that steps by 0.5: [–] [EditBox] [+].
+     */
+    private void addDoubleField(int x, int y, String value, DoubleConsumer setter) {
+        EditBox field = new EditBox(font, x + LABEL_W + 16, y, EDIT_W, FIELD_H, Component.empty());
+        field.setValue(value);
+        field.setFilter(s -> s.matches("-?\\d*\\.?\\d*"));
+        field.setResponder(s -> {
+            try { setter.accept(Double.parseDouble(s)); }
+            catch (NumberFormatException ignored) {}
+        });
+
+        addRenderableWidget(Button.builder(Component.literal("−"),
+                        btn -> stepDoubleField(field, setter, -0.5))
+                .bounds(x + LABEL_W + 2, y, 12, FIELD_H).build());
+        addRenderableWidget(field);
+        addRenderableWidget(Button.builder(Component.literal("+"),
+                        btn -> stepDoubleField(field, setter, +0.5))
+                .bounds(x + LABEL_W + 80, y, 12, FIELD_H).build());
+
+        doubleFields.add(new DoubleFieldEntry(field, setter));
+    }
+
+    private void stepDoubleField(EditBox field, DoubleConsumer setter, double delta) {
+        double cur;
+        try { cur = Double.parseDouble(field.getValue()); }
+        catch (NumberFormatException e) { cur = 0; }
+        double next = cur + delta;
+        field.setValue(formatDouble(next));
+        setter.accept(next);
+    }
+
+    private static String formatDouble(double v) {
+        return v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(v);
+    }
+
     // =========================================================================
     // Input handling
     // =========================================================================
@@ -262,10 +305,18 @@ public class ModifiersScreen extends Screen {
         int delta = scrollY > 0 ? 1 : -1;
         for (IntFieldEntry entry : intFields) {
             EditBox field = entry.field();
-            // Hover area covers the – button, the field itself, and the + button.
             if (mouseX >= field.getX() - 14 && mouseX <= field.getX() + field.getWidth() + 14
                     && mouseY >= field.getY() && mouseY <= field.getY() + field.getHeight()) {
                 stepField(field, entry.setter(), delta);
+                return true;
+            }
+        }
+        double halfDelta = scrollY > 0 ? 0.5 : -0.5;
+        for (DoubleFieldEntry entry : doubleFields) {
+            EditBox field = entry.field();
+            if (mouseX >= field.getX() - 14 && mouseX <= field.getX() + field.getWidth() + 14
+                    && mouseY >= field.getY() && mouseY <= field.getY() + field.getHeight()) {
+                stepDoubleField(field, entry.setter(), halfDelta);
                 return true;
             }
         }
@@ -345,6 +396,7 @@ public class ModifiersScreen extends Screen {
             graphics.drawString(font, "Origin X:", sx, sy + ROW_GAP     + 4, 0xCCCCCC);
             graphics.drawString(font, "Origin Y:", sx, sy + ROW_GAP * 2 + 4, 0xCCCCCC);
             graphics.drawString(font, "Origin Z:", sx, sy + ROW_GAP * 3 + 4, 0xCCCCCC);
+            graphics.drawString(font, "Radius:",   sx, sy + ROW_GAP * 4 + 4, 0xCCCCCC);
         } else if (modifier instanceof ArrayModifier) {
             graphics.drawString(font, "Count:",    sx, sy                + 4, 0xCCCCCC);
             graphics.drawString(font, "Offset X:", sx, sy + ROW_GAP     + 4, 0xCCCCCC);
@@ -353,7 +405,9 @@ public class ModifiersScreen extends Screen {
         } else if (modifier instanceof RadialMirrorModifier) {
             graphics.drawString(font, "Slices:",   sx, sy                + 4, 0xCCCCCC);
             graphics.drawString(font, "Origin X:", sx, sy + ROW_GAP * 2 + 4, 0xCCCCCC);
-            graphics.drawString(font, "Origin Z:", sx, sy + ROW_GAP * 3 + 4, 0xCCCCCC);
+            graphics.drawString(font, "Origin Y:", sx, sy + ROW_GAP * 3 + 4, 0xCCCCCC);
+            graphics.drawString(font, "Origin Z:", sx, sy + ROW_GAP * 4 + 4, 0xCCCCCC);
+            graphics.drawString(font, "Radius:",   sx, sy + ROW_GAP * 5 + 4, 0xCCCCCC);
         }
     }
 
@@ -366,7 +420,7 @@ public class ModifiersScreen extends Screen {
 
     private static String onOff(boolean value) { return value ? "ON" : "OFF"; }
 
-    private static net.minecraft.core.BlockPos playerPos() {
+    private static net.minecraft.core.BlockPos playerBlockPos() {
         var player = Minecraft.getInstance().player;
         return player != null ? player.blockPosition() : net.minecraft.core.BlockPos.ZERO;
     }

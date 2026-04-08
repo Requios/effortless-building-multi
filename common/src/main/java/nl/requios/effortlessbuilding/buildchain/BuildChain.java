@@ -25,6 +25,7 @@ import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
+import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import org.jetbrains.annotations.Nullable;
 
@@ -205,14 +206,15 @@ public class BuildChain {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the block positions that should be highlighted in the preview this frame.
-     * Does not modify any mode or sequence state.
+     * Returns the block set that should be highlighted in the preview this frame.
+     * Each {@link BlockEntry} carries mirror/rotation flags so the renderer can
+     * show per-block transforms matching what the server will actually place.
      */
-    public static List<BlockPos> getPreviewPositions(Minecraft mc) {
+    public static BlockSet getPreviewBlocks(Minecraft mc) {
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
-        if (mode == BuildModeEnum.DISABLED) return List.of();
+        if (mode == BuildModeEnum.DISABLED) return null;
         Player player = mc.player;
-        if (player == null || mc.level == null) return List.of();
+        if (player == null || mc.level == null) return null;
 
         if (mode.instance.isFirstClick()) {
             // No sequence in progress — show target block via extended raytrace.
@@ -220,16 +222,18 @@ public class BuildChain {
             Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
-            if (hit.getType() != HitResult.Type.BLOCK) return List.of();
-            return List.of(resolveFirstClickPos(hit, BuildState.PLACING, mc.level));
+            if (hit.getType() != HitResult.Type.BLOCK) return null;
+            BlockSet single = new BlockSet();
+            single.add(new BlockEntry(resolveFirstClickPos(hit, BuildState.PLACING, mc.level)));
+            return single;
         } else {
             // Mid-sequence — compute live shape using stored clicks + current look.
             BlockSet previewBlocks = new BlockSet();
             mode.instance.findCoordinates(previewBlocks, player);
             BuildState action = buildState != null ? buildState : BuildState.PLACING;
             CLIENT.processBlocks(previewBlocks, player, action);
-            if (previewBlocks.isEmpty()) return List.of();
-            return new ArrayList<>(previewBlocks.keySet());
+            if (previewBlocks.isEmpty()) return null;
+            return previewBlocks;
         }
     }
 
@@ -245,6 +249,45 @@ public class BuildChain {
         BuildModes.CLIENT.getBuildMode().instance.initialize();
         buildState = null;
         firstClickHit = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared server-side pipeline
+    // -------------------------------------------------------------------------
+
+    /**
+     * Computes and processes the full block set for a server-side build action.
+     * This is the single authoritative pipeline that both place and break handlers use.
+     *
+     * @return the processed {@link BlockSet}, or {@code null} if the mode produced no blocks.
+     */
+    public @Nullable BlockSet computeServerBlocks(BuildModeEnum mode,
+                                                   BlockPos firstPos, BlockPos secondPos,
+                                                   @Nullable BlockPos thirdPos,
+                                                   Player player, BuildState action,
+                                                   ModeOptions.ActionEnum fill, ModeOptions.ActionEnum cubeFill,
+                                                   ModeOptions.ActionEnum raisedEdge, ModeOptions.ActionEnum circleStart) {
+        ModeOptions.applyForCalculation(fill, cubeFill, raisedEdge, circleStart);
+
+        List<BlockPos> rawPositions = mode.instance.getServerBlocks(player, firstPos, secondPos, thirdPos);
+        if (rawPositions.isEmpty()) return null;
+
+        BlockSet blockSet = toBlockSet(rawPositions);
+        processBlocks(blockSet, player, action);
+        return blockSet;
+    }
+
+    /** Wraps a flat list of positions into a {@link BlockSet} for chain processing. */
+    public static BlockSet toBlockSet(List<BlockPos> positions) {
+        BlockSet blockSet = new BlockSet();
+        for (BlockPos pos : positions) {
+            blockSet.add(new BlockEntry(pos));
+        }
+        if (!positions.isEmpty()) {
+            blockSet.firstPos = positions.getFirst();
+            blockSet.lastPos = positions.getLast();
+        }
+        return blockSet;
     }
 
     // -------------------------------------------------------------------------

@@ -14,7 +14,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
-import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
+import nl.requios.effortlessbuilding.render.RenderHandler;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import org.lwjgl.glfw.GLFW;
@@ -40,12 +40,12 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         ModifierPersistence.load();
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
-                BlockPreviewRenderer.renderSubtitle(graphics));
+                RenderHandler.onRenderGui(graphics));
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (context.consumers() == null || context.matrixStack() == null) return;
             var camPos = context.camera().getPosition();
-            BlockPreviewRenderer.render(
+            RenderHandler.onRenderLevel(
                     context.matrixStack(),
                     (MultiBufferSource.BufferSource) context.consumers(),
                     camPos.x, camPos.y, camPos.z);

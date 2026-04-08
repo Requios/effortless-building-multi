@@ -8,6 +8,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -42,6 +43,22 @@ public class BlockEntry {
         mirrorY = blockEntry.mirrorY;
         mirrorZ = blockEntry.mirrorZ;
         rotation = blockEntry.rotation;
+    }
+    
+    /**
+     * Applies the mirror and rotation transforms stored on this entry to the given
+     * {@link BlockState}.  Used by the server placement handler and potentially by
+     * client preview rendering.
+     *
+     * <p>Order: mirrorX → mirrorZ → mirrorY → rotation.
+     */
+    public BlockState applyTransforms(BlockState state) {
+        // FRONT_BACK flips East↔West (X axis), LEFT_RIGHT flips North↔South (Z axis).
+        if (mirrorX) state = state.mirror(Mirror.FRONT_BACK);
+        if (mirrorZ) state = state.mirror(Mirror.LEFT_RIGHT);
+        if (mirrorY) state = BlockUtilities.applyVerticalMirror(state);
+        if (rotation != Rotation.NONE) state = state.rotate(rotation);
+        return state;
     }
 
 //    public void setItemAndFindNewBlockState(ItemStack itemStack, Level world, Direction originalDirection, Direction clickedFace, Vec3 relativeHitVec) {

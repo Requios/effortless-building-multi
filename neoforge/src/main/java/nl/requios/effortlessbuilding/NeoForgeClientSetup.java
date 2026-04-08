@@ -15,7 +15,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
-import nl.requios.effortlessbuilding.render.BlockPreviewRenderer;
+import nl.requios.effortlessbuilding.render.RenderHandler;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import org.lwjgl.glfw.GLFW;
@@ -97,7 +97,7 @@ public class NeoForgeClientSetup {
 
         @SubscribeEvent
         public static void onRenderGui(RenderGuiEvent.Post event) {
-            BlockPreviewRenderer.renderSubtitle(event.getGuiGraphics());
+            RenderHandler.onRenderGui(event.getGuiGraphics());
         }
 
         @SubscribeEvent
@@ -105,7 +105,7 @@ public class NeoForgeClientSetup {
             if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) return;
             var camPos = event.getCamera().getPosition();
             var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-            BlockPreviewRenderer.render(event.getPoseStack(), bufferSource,
+            RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,
                     camPos.x, camPos.y, camPos.z);
         }
     }

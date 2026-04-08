@@ -3,11 +3,8 @@ package nl.requios.effortlessbuilding.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -27,37 +24,25 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.level.block.SoundType;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.utilities.BlockEntry;
+import nl.requios.effortlessbuilding.utilities.BlockSet;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class BlockPreviewRenderer {
 
-    public static float previewScale = 0.65f;
-    public static int previewAlpha = 220;
-
-    private static int lastPreviewSize = 0;
-
-    private static final Component PLACING_TEXT = Component.literal("Left-click to ")
-            .withStyle(ChatFormatting.WHITE)
-            .append(Component.literal("cancel").withStyle(ChatFormatting.DARK_AQUA))
-            .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal("place").withStyle(ChatFormatting.DARK_AQUA));
-
-    private static final Component BREAKING_TEXT = Component.literal("Left-click to ")
-            .withStyle(ChatFormatting.WHITE)
-            .append(Component.literal("break").withStyle(ChatFormatting.RED))
-            .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal("cancel").withStyle(ChatFormatting.RED));
 
     private static final ResourceLocation CHECKERBOARD_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/highlighted_checkerboard.png");
+            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/checkerboard.png");
+
+    private static final ResourceLocation OUTLINE_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/blank.png");
 
     // Vanilla survival block reach; used to suppress the extended-reach outline
     // when the player is already within normal interaction range.
@@ -80,80 +65,51 @@ public class BlockPreviewRenderer {
             return;
         }
 
-        List<BlockPos> positions = BuildChain.getPreviewPositions(mc);
-        if (positions.isEmpty()) {
-            lastPreviewSize = 0;
+        BlockSet blockSet = BuildChain.getPreviewBlocks(mc);
+        if (blockSet == null || blockSet.isEmpty()) {
+            RenderHandler.resetPreviewSize();
             return;
         }
 
-        // Play a tick when the preview block count changes during an active sequence.
-        if (sequenceActive && positions.size() != lastPreviewSize) {
-            boolean breaking = BuildChain.getBuildState() == BuildChain.BuildState.BREAKING;
-            SoundType soundType = breaking
-                    ? mc.level.getBlockState(positions.get(0)).getSoundType()
-                    : (mc.player.getMainHandItem().getItem() instanceof BlockItem blockItem
-                            ? blockItem.getBlock().defaultBlockState().getSoundType()
-                            : SoundType.STONE);
-            var sound = breaking ? soundType.getBreakSound() : soundType.getPlaceSound();
-            mc.level.playLocalSound(positions.get(0), sound, SoundSource.BLOCKS,
-                    soundType.getVolume() * 0.25f, soundType.getPitch(), false);
-        }
-        lastPreviewSize = positions.size();
+        List<BlockPos> positions = new ArrayList<>(blockSet.keySet());
 
         BuildChain.BuildState pendingAction = BuildChain.getBuildState();
 
-        // Action bar: block count + bounding-box dimensions.
-        if (sequenceActive) {
-            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-            for (BlockPos pos : positions) {
-                if (pos.getX() < minX) minX = pos.getX();
-                if (pos.getX() > maxX) maxX = pos.getX();
-                if (pos.getY() < minY) minY = pos.getY();
-                if (pos.getY() > maxY) maxY = pos.getY();
-                if (pos.getZ() < minZ) minZ = pos.getZ();
-                if (pos.getZ() > maxZ) maxZ = pos.getZ();
-            }
-            int dx = maxX - minX + 1, dy = maxY - minY + 1, dz = maxZ - minZ + 1;
-            int[] dims = java.util.Arrays.stream(new int[]{dx, dy, dz}).filter(d -> d > 1).toArray();
-            String msg;
-            if (dims.length <= 1) {
-                msg = String.valueOf(positions.size());
-            } else {
-                StringBuilder sb = new StringBuilder().append(positions.size()).append(" (");
-                for (int i = 0; i < dims.length; i++) {
-                    if (i > 0) sb.append('\u00d7');
-                    sb.append(dims[i]);
-                }
-                sb.append(')');
-                msg = sb.toString();
-            }
-            mc.player.displayClientMessage(Component.literal(msg), true);
-        }
+        // Delegate sound + action-bar to RenderHandler.
+        RenderHandler.updateFeedback(positions, sequenceActive, pendingAction);
+
         boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
 
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
+            
+            float blockScale = 0.5f;
+            int blockAlpha = 220;
+            
             var held = mc.player.getMainHandItem();
-            BlockState previewState = null;
+            BlockState baseState = null;
             if (held.getItem() instanceof BlockItem blockItem) {
-                previewState = getPlacementState(blockItem, mc);
+                baseState = getPlacementState(blockItem, mc);
             } else if (held.getItem() instanceof BucketItem bucketItem) {
                 var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
                 if (!fluid.isSame(Fluids.EMPTY)) {
-                    previewState = fluid.defaultFluidState().createLegacyBlock();
+                    baseState = fluid.defaultFluidState().createLegacyBlock();
                 }
             }
-            if (previewState != null) {
-                final BlockState state = previewState;
+            if (baseState != null) {
                 try {
-                    var wrappedSource = new AlphaMultiBufferSource(bufferSource, 200);
+                    var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                     for (BlockPos pos : positions) {
+                        // Apply per-block mirror/rotation transforms from the modifier pipeline.
+                        BlockState state = baseState;
+                        BlockEntry entry = blockSet.get(pos);
+                        if (entry != null) {
+                            state = entry.applyTransforms(state);
+                        }
                         poseStack.pushPose();
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
-                        // Scale to 80% around the block center.
                         poseStack.translate(0.5, 0.5, 0.5);
-                        poseStack.scale(previewScale, previewScale, previewScale);
+                        poseStack.scale(blockScale, blockScale, blockScale);
                         poseStack.translate(-0.5, -0.5, -0.5);
                         mc.getBlockRenderer().renderSingleBlock(state, poseStack, wrappedSource,
                                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
@@ -167,25 +123,20 @@ public class BlockPreviewRenderer {
         }
 
         // Pass 2: bounding box faces with checkerboard texture.
+        // Disable depth writes so the translucent faces don't occlude the
+        // outline edges drawn in Pass 3.
+        RenderSystem.depthMask(false);
         renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
         bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
+        RenderSystem.depthMask(true);
 
-        // Pass 3: wireframe — boundary edges only (interior shared edges cancel out).
-        float or = 1f, og = isBreaking ? 0f : 1f, ob = isBreaking ? 0f : 1f;
-        var lines = bufferSource.getBuffer(RenderType.lines());
-        var pose = poseStack.last();
-        for (EdgeKey edge : computeBorderEdges(positions)) {
-            double x0 = edge.x() - camX, y0 = edge.y() - camY, z0 = edge.z() - camZ;
-            double x1 = x0 + (edge.axis() == 0 ? 1 : 0);
-            double y1 = y0 + (edge.axis() == 1 ? 1 : 0);
-            double z1 = z0 + (edge.axis() == 2 ? 1 : 0);
-            float nx = edge.axis() == 0 ? 1f : 0f, ny = edge.axis() == 1 ? 1f : 0f, nz = edge.axis() == 2 ? 1f : 0f;
-            lines.addVertex(pose, (float) x0, (float) y0, (float) z0).setColor(or, og, ob, 1f).setNormal(pose, nx, ny, nz);
-            lines.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(or, og, ob, 1f).setNormal(pose, nx, ny, nz);
-        }
-        RenderSystem.lineWidth(3.0f);
-        bufferSource.endBatch(RenderType.lines());
-        RenderSystem.lineWidth(1.0f);
+        // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
+        float outlineWidth = 0.02f; // half-width in world units
+        int oR = 255, oG = isBreaking ? 0 : 255, oB = isBreaking ? 0 : 255;
+
+        renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(positions),
+                camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
+        bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
     }
 
     private static void renderBoundingBoxFaces(PoseStack poseStack, MultiBufferSource bufferSource,
@@ -196,7 +147,7 @@ public class BlockPreviewRenderer {
         var consumer = bufferSource.getBuffer(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
         var pose = poseStack.last();
         int r = 255, g = isBreaking ? 0 : 255, b = isBreaking ? 0 : 255;
-        int a = 200;
+        int a = 150;
         final float eps = 0.002f;
 
         for (BlockPos pos : positions) {
@@ -232,6 +183,58 @@ public class BlockPreviewRenderer {
     }
 
     /**
+     * Renders each border edge as a camera-facing quad (billboard) with real
+     * world-space thickness, since {@code RenderSystem.lineWidth()} is clamped
+     * to 1 on most OpenGL core-profile drivers.
+     */
+    private static void renderEdgeQuads(PoseStack poseStack, MultiBufferSource bufferSource,
+                                         Set<EdgeKey> edges, double camX, double camY, double camZ,
+                                         float halfWidth, int r, int g, int b, int a) {
+        var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        var pose = poseStack.last();
+
+        for (EdgeKey edge : edges) {
+            float x0 = (float)(edge.x() - camX);
+            float y0 = (float)(edge.y() - camY);
+            float z0 = (float)(edge.z() - camZ);
+            float x1 = x0 + (edge.axis() == 0 ? 1 : 0);
+            float y1 = y0 + (edge.axis() == 1 ? 1 : 0);
+            float z1 = z0 + (edge.axis() == 2 ? 1 : 0);
+
+            // Edge direction (unit length, axis-aligned).
+            float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+
+            // Extend both endpoints by halfWidth so adjacent edges overlap at
+            // corners, producing clean mitered joints instead of gaps.
+            x0 -= dx * halfWidth; y0 -= dy * halfWidth; z0 -= dz * halfWidth;
+            x1 += dx * halfWidth; y1 += dy * halfWidth; z1 += dz * halfWidth;
+
+            // Midpoint is also the view direction (camera sits at origin in camera-relative space).
+            float mx = (x0 + x1) * 0.5f;
+            float my = (y0 + y1) * 0.5f;
+            float mz = (z0 + z1) * 0.5f;
+
+
+            // Perpendicular = cross(edgeDir, viewDir), normalized & scaled to halfWidth.
+            float cx = dy * mz - dz * my;
+            float cy = dz * mx - dx * mz;
+            float cz = dx * my - dy * mx;
+            float len = (float) Math.sqrt(cx * cx + cy * cy + cz * cz);
+            if (len < 1e-6f) continue; // edge seen head-on — invisible
+            float s = halfWidth / len;
+            cx *= s; cy *= s; cz *= s;
+
+            addFace(consumer, pose,
+                    x0 - cx, y0 - cy, z0 - cz,
+                    x0 + cx, y0 + cy, z0 + cz,
+                    x1 + cx, y1 + cy, z1 + cz,
+                    x1 - cx, y1 - cy, z1 - cz,
+                    0, 1, 0,
+                    r, g, b, a);
+        }
+    }
+
+    /**
      * Returns the block state that would actually be placed given the player's current look.
      * Raytraces to get a real {@link BlockHitResult} and feeds it into {@link BlockPlaceContext}
      * so that {@code getStateForPlacement} sees the correct clicked face and player facing.
@@ -263,26 +266,6 @@ public class BlockPreviewRenderer {
         return state != null ? state : blockItem.getBlock().defaultBlockState();
     }
 
-    public static void renderSubtitle(GuiGraphics graphics) {
-        BuildChain.BuildState pendingAction = BuildChain.getBuildState();
-        if (pendingAction == null) return;
-
-        Minecraft mc = Minecraft.getInstance();
-        Component text = pendingAction == BuildChain.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
-
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-        var font = mc.font;
-
-        graphics.pose().pushPose();
-        graphics.pose().translate(screenWidth / 2.0, screenHeight - 54, 0.0);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        int w = font.width(text);
-        graphics.drawString(font, text, -w / 2, -4, 0xffffffff, true);
-        RenderSystem.disableBlend();
-        graphics.pose().popPose();
-    }
 
     private static void renderExtendedReachOutline(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                                     Minecraft mc, double camX, double camY, double camZ) {

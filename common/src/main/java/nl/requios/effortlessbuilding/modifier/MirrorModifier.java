@@ -13,15 +13,19 @@ import java.util.List;
 /**
  * Mirrors the block set across one or more axis-aligned planes.
  *
- * <p>The mirror plane for axis X passes through x = {@code originX} (i.e. the origin block
- * lies on the plane and maps to itself; adjacent blocks are reflected symmetrically).
- * Each enabled axis doubles the block count; all three enabled gives 8× symmetry.
+ * <p>Origins are stored as doubles to support half-block offsets (e.g. 0.5
+ * places the plane on a block edge instead of through the block centre).
+ *
+ * <p>Each enabled axis doubles the block count; all three enabled gives 8× symmetry.
+ * Blocks (both original and mirrored) that fall outside {@code radius} from the
+ * origin are removed.
  */
 public class MirrorModifier implements IModifier {
 
     private boolean enabled = true;
-    public int originX = 0, originY = 64, originZ = 0;
+    public double originX = 0, originY = 64, originZ = 0;
     public boolean mirrorX = true, mirrorY = false, mirrorZ = false;
+    public int radius = 20;
 
     @Override
     public Component getDisplayName() {
@@ -40,30 +44,34 @@ public class MirrorModifier implements IModifier {
 
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
-        // Each axis is applied to the already-grown set so combinations are covered naturally.
         if (mirrorX) applyAxisMirror(blocks, 0);
         if (mirrorY) applyAxisMirror(blocks, 1);
         if (mirrorZ) applyAxisMirror(blocks, 2);
     }
 
     private void applyAxisMirror(BlockSet blocks, int axis) {
-        // Snapshot before iterating so newly-added entries are not reflected again.
+        double rSq = (double) radius * radius;
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());
         for (BlockPos pos : snapshot) {
-            int mx = pos.getX(), my = pos.getY(), mz = pos.getZ();
+            double mx = pos.getX(), my = pos.getY(), mz = pos.getZ();
             switch (axis) {
-                case 0 -> mx = 2 * originX - pos.getX();
-                case 1 -> my = 2 * originY - pos.getY();
-                case 2 -> mz = 2 * originZ - pos.getZ();
+                case 0 -> mx = 2 * originX - pos.getX() - 1;
+                case 1 -> my = 2 * originY - pos.getY() - 1;
+                case 2 -> mz = 2 * originZ - pos.getZ() - 1;
             }
-            BlockPos mirrored = new BlockPos(mx, my, mz);
-            if (mirrored.equals(pos)) continue; // on the mirror plane, skip duplicate
+            BlockPos mirrored = BlockPos.containing(mx, my, mz);
+            if (mirrored.equals(pos)) continue;
+
+            // Skip mirrored copy if it falls outside the radius.
+            double dx = mirrored.getX() + 0.5 - originX;
+            double dy = mirrored.getY() + 0.5 - originY;
+            double dz = mirrored.getZ() + 0.5 - originZ;
+            if (dx * dx + dy * dy + dz * dz > rSq) continue;
 
             BlockEntry entry = new BlockEntry(mirrored);
             BlockEntry original = blocks.get(pos);
             if (original != null) {
                 entry.copyRotationSettingsFrom(original);
-                // Flip the relevant mirror flag so the placed block faces the right way.
                 if (axis == 0) entry.mirrorX = !entry.mirrorX;
                 else if (axis == 1) entry.mirrorY = !entry.mirrorY;
                 else entry.mirrorZ = !entry.mirrorZ;

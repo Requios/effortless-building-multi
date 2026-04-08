@@ -59,6 +59,7 @@ public class ModifierPersistence {
             obj.addProperty("originX", mirror.originX);
             obj.addProperty("originY", mirror.originY);
             obj.addProperty("originZ", mirror.originZ);
+            obj.addProperty("radius", mirror.radius);
         } else if (modifier instanceof ArrayModifier array) {
             obj.addProperty("type", "array");
             obj.addProperty("count", array.count);
@@ -70,7 +71,9 @@ public class ModifierPersistence {
             obj.addProperty("slices", radial.slices);
             obj.addProperty("mirrorSlices", radial.mirrorSlices);
             obj.addProperty("originX", radial.originX);
+            obj.addProperty("originY", radial.originY);
             obj.addProperty("originZ", radial.originZ);
+            obj.addProperty("radius", radial.radius);
         }
     }
 
@@ -105,9 +108,10 @@ public class ModifierPersistence {
                 mirror.mirrorX  = getBoolean(obj, "mirrorX",  mirror.mirrorX);
                 mirror.mirrorY  = getBoolean(obj, "mirrorY",  mirror.mirrorY);
                 mirror.mirrorZ  = getBoolean(obj, "mirrorZ",  mirror.mirrorZ);
-                mirror.originX  = getInt(obj, "originX", mirror.originX);
-                mirror.originY  = getInt(obj, "originY", mirror.originY);
-                mirror.originZ  = getInt(obj, "originZ", mirror.originZ);
+                mirror.originX  = getDouble(obj, "originX", mirror.originX);
+                mirror.originY  = getDouble(obj, "originY", mirror.originY);
+                mirror.originZ  = getDouble(obj, "originZ", mirror.originZ);
+                mirror.radius   = getInt(obj, "radius",  mirror.radius);
                 yield mirror;
             }
             case "array" -> {
@@ -122,8 +126,10 @@ public class ModifierPersistence {
                 RadialMirrorModifier radial = new RadialMirrorModifier();
                 radial.slices       = getInt(obj, "slices",       radial.slices);
                 radial.mirrorSlices = getBoolean(obj, "mirrorSlices", radial.mirrorSlices);
-                radial.originX      = getInt(obj, "originX", radial.originX);
-                radial.originZ      = getInt(obj, "originZ", radial.originZ);
+                radial.originX      = getDouble(obj, "originX", radial.originX);
+                radial.originY      = getDouble(obj, "originY", radial.originY);
+                radial.originZ      = getDouble(obj, "originZ", radial.originZ);
+                radial.radius       = getInt(obj, "radius",  radial.radius);
                 yield radial;
             }
             default -> null;
@@ -134,6 +140,10 @@ public class ModifierPersistence {
 
     private static int getInt(JsonObject obj, String key, int fallback) {
         return obj.has(key) ? obj.get(key).getAsInt() : fallback;
+    }
+
+    private static double getDouble(JsonObject obj, String key, double fallback) {
+        return obj.has(key) ? obj.get(key).getAsDouble() : fallback;
     }
 
     private static boolean getBoolean(JsonObject obj, String key, boolean fallback) {
