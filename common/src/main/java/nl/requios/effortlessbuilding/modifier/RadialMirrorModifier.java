@@ -20,10 +20,9 @@ import java.util.List;
  * <p>Blocks (both original and rotated copies) that fall outside {@code radius}
  * from the origin (XZ distance) are removed.
  */
-public class RadialMirrorModifier implements IModifier {
+public class RadialMirrorModifier extends AbstractModifier {
 
-    private boolean enabled = true;
-    public double originX = 0, originY = 64, originZ = 0;
+    public double originX, originY = 64, originZ;
     public int slices = 4;
     public boolean mirrorSlices = false;
     public int radius = 20;
@@ -33,15 +32,6 @@ public class RadialMirrorModifier implements IModifier {
         return Component.literal("Radial Mirror");
     }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {

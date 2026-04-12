@@ -13,7 +13,6 @@ import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.UndoPacket;
@@ -35,9 +34,6 @@ public class NeoForgeClientSetup {
             event.register(KeyBindings.undo);
             event.register(KeyBindings.redo);
             BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
-            // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
-            BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
-            ModifierPersistence.load();
         }
     }
 

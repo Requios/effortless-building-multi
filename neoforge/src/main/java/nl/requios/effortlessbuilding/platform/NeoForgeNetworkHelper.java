@@ -1,10 +1,13 @@
 package nl.requios.effortlessbuilding.platform;
 
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
+import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.platform.services.INetworkHelper;
 
 public class NeoForgeNetworkHelper implements INetworkHelper {
@@ -27,5 +30,15 @@ public class NeoForgeNetworkHelper implements INetworkHelper {
     @Override
     public void sendToServer(RedoPacket packet) {
         PacketDistributor.sendToServer(packet);
+    }
+
+    @Override
+    public void sendToServer(UpdateModifiersC2SPacket packet) {
+        PacketDistributor.sendToServer(packet);
+    }
+
+    @Override
+    public void sendToClient(ServerPlayer player, SyncModifiersS2CPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
     }
 }

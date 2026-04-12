@@ -2,7 +2,9 @@ package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
+import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -39,8 +41,13 @@ public class ModifiersScreen extends Screen {
     /** Vertical step between successive settings rows. */
     private static final int ROW_GAP  = 22;
 
-    // Tracks which modifier row is selected for the settings panel.
+    // Tracks which modifier row is selected for the settings panel (index into filtered list).
     private int selectedIndex = -1;
+
+    /** Filtered view: only modifiers matching the player's current dimension. */
+    private List<IModifier> filteredModifiers = new ArrayList<>();
+    /** Maps filtered index → real index in ModifierSystem.CLIENT. */
+    private List<Integer> filteredToReal = new ArrayList<>();
 
     /**
      * Each int field row holds the EditBox and its value-setter so that
@@ -63,6 +70,7 @@ public class ModifiersScreen extends Screen {
     protected void init() {
         intFields.clear();
         doubleFields.clear();
+        rebuildFilteredList();
 
         int px = panelX(), py = panelY();
         buildListWidgets(px, py);
@@ -73,16 +81,42 @@ public class ModifiersScreen extends Screen {
                 .build());
     }
 
+    /** Rebuilds the filtered modifier list for the player's current dimension. */
+    private void rebuildFilteredList() {
+        filteredModifiers.clear();
+        filteredToReal.clear();
+        String currentDim = currentDimension();
+        List<IModifier> all = ModifierSystem.CLIENT.getModifiers();
+        for (int i = 0; i < all.size(); i++) {
+            IModifier m = all.get(i);
+            String dim = m.getDimension();
+            if (dim == null || dim.isEmpty() || dim.equals(currentDim)) {
+                filteredModifiers.add(m);
+                filteredToReal.add(i);
+            }
+        }
+        if (selectedIndex >= filteredModifiers.size()) {
+            selectedIndex = filteredModifiers.size() - 1;
+        }
+    }
+
+    /** Returns the current dimension string, e.g. {@code "minecraft:overworld"}. */
+    private static String currentDimension() {
+        var player = Minecraft.getInstance().player;
+        return player != null ? player.level().dimension().location().toString() : "";
+    }
+
     // ---- left: modifier list ----
 
     private void buildListWidgets(int px, int py) {
-        List<IModifier> modifiers = ModifierSystem.CLIENT.getModifiers();
+        List<IModifier> modifiers = filteredModifiers;
         int lx = px + 4;
         int rowBase = py + 24;
         int count = modifiers.size();
 
         for (int i = 0; i < count; i++) {
-            final int idx = i;
+            final int filteredIdx = i;
+            final int realIdx = filteredToReal.get(i);
             IModifier modifier = modifiers.get(i);
             int ry = rowBase + i * ROW_H;
 
@@ -93,28 +127,27 @@ public class ModifiersScreen extends Screen {
                     .bounds(lx, ry + 4, 28, 14)
                     .build());
 
-            // ↑ / ↓ reorder buttons
+            // ↑ / ↓ reorder buttons (operate on real indices)
             Button upBtn = addRenderableWidget(Button.builder(
                             Component.literal("↑"),
-                            btn -> { ModifierSystem.CLIENT.moveModifier(idx, -1); selectedIndex = idx - 1; rebuildWidgets(); })
+                            btn -> { ModifierSystem.CLIENT.moveModifier(realIdx, -1); selectedIndex = filteredIdx - 1; rebuildWidgets(); })
                     .bounds(lx + LIST_W - 44, ry + 4, 12, 14)
                     .build());
-            if (idx == 0) upBtn.active = false;
+            if (filteredIdx == 0) upBtn.active = false;
 
             Button downBtn = addRenderableWidget(Button.builder(
                             Component.literal("↓"),
-                            btn -> { ModifierSystem.CLIENT.moveModifier(idx, +1); selectedIndex = idx + 1; rebuildWidgets(); })
+                            btn -> { ModifierSystem.CLIENT.moveModifier(realIdx, +1); selectedIndex = filteredIdx + 1; rebuildWidgets(); })
                     .bounds(lx + LIST_W - 30, ry + 4, 12, 14)
                     .build());
-            if (idx == count - 1) downBtn.active = false;
+            if (filteredIdx == count - 1) downBtn.active = false;
 
-            // Remove button
+            // Remove button (operate on real index)
             addRenderableWidget(Button.builder(
                             Component.literal("X"),
                             btn -> {
-                                ModifierSystem.CLIENT.removeModifier(idx);
-                                int size = ModifierSystem.CLIENT.getModifiers().size();
-                                if (selectedIndex >= size) selectedIndex = size - 1;
+                                ModifierSystem.CLIENT.removeModifier(realIdx);
+                                if (selectedIndex >= filteredModifiers.size() - 1) selectedIndex = filteredModifiers.size() - 2;
                                 rebuildWidgets();
                             })
                     .bounds(lx + LIST_W - 16, ry + 4, 14, 14)
@@ -124,20 +157,33 @@ public class ModifiersScreen extends Screen {
         // Add buttons — bottom of list panel
         int addY = py + PANEL_H - 22;
         addRenderableWidget(Button.builder(Component.literal("+ Mirror"), btn -> {
-            ModifierSystem.CLIENT.addModifier(new MirrorModifier());
-            selectedIndex = ModifierSystem.CLIENT.getModifiers().size() - 1;
+            MirrorModifier mirror = new MirrorModifier();
+            var pos = playerBlockPos();
+            mirror.originX = pos.getX(); mirror.originY = pos.getY(); mirror.originZ = pos.getZ();
+            mirror.setDimension(currentDimension());
+            ModifierSystem.CLIENT.addModifier(mirror);
+            rebuildFilteredList();
+            selectedIndex = filteredModifiers.size() - 1;
             rebuildWidgets();
         }).bounds(px + 4, addY, 58, 16).build());
 
         addRenderableWidget(Button.builder(Component.literal("+ Array"), btn -> {
-            ModifierSystem.CLIENT.addModifier(new ArrayModifier());
-            selectedIndex = ModifierSystem.CLIENT.getModifiers().size() - 1;
+            ArrayModifier array = new ArrayModifier();
+            array.setDimension(currentDimension());
+            ModifierSystem.CLIENT.addModifier(array);
+            rebuildFilteredList();
+            selectedIndex = filteredModifiers.size() - 1;
             rebuildWidgets();
         }).bounds(px + 66, addY, 52, 16).build());
 
         addRenderableWidget(Button.builder(Component.literal("+ Radial"), btn -> {
-            ModifierSystem.CLIENT.addModifier(new RadialMirrorModifier());
-            selectedIndex = ModifierSystem.CLIENT.getModifiers().size() - 1;
+            RadialMirrorModifier radial = new RadialMirrorModifier();
+            var pos = playerBlockPos();
+            radial.originX = pos.getX(); radial.originY = pos.getY(); radial.originZ = pos.getZ();
+            radial.setDimension(currentDimension());
+            ModifierSystem.CLIENT.addModifier(radial);
+            rebuildFilteredList();
+            selectedIndex = filteredModifiers.size() - 1;
             rebuildWidgets();
         }).bounds(px + 122, addY, 56, 16).build());
     }
@@ -145,7 +191,7 @@ public class ModifiersScreen extends Screen {
     // ---- right: settings for selected modifier ----
 
     private void buildSettingsWidgets(int px, int py) {
-        List<IModifier> modifiers = ModifierSystem.CLIENT.getModifiers();
+        List<IModifier> modifiers = filteredModifiers;
         if (selectedIndex < 0 || selectedIndex >= modifiers.size()) return;
 
         IModifier modifier = modifiers.get(selectedIndex);
@@ -283,7 +329,7 @@ public class ModifiersScreen extends Screen {
         int px = panelX(), py = panelY();
         int lx = px + 4;
         int rowBase = py + 24;
-        List<IModifier> modifiers = ModifierSystem.CLIENT.getModifiers();
+        List<IModifier> modifiers = filteredModifiers;
 
         for (int i = 0; i < modifiers.size(); i++) {
             int ry = rowBase + i * ROW_H;
@@ -337,7 +383,7 @@ public class ModifiersScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         int px = panelX(), py = panelY();
-        List<IModifier> modifiers = ModifierSystem.CLIENT.getModifiers();
+        List<IModifier> modifiers = filteredModifiers;
 
         // Panel backdrop + border
         graphics.fill(px, py, px + PANEL_W, py + PANEL_H, 0xD0101010);
@@ -427,7 +473,9 @@ public class ModifiersScreen extends Screen {
 
     @Override
     public void onClose() {
-        ModifierPersistence.save();
+        // Send the updated modifier list to the server for persistence
+        String json = ModifierSerializer.serialize(ModifierSystem.CLIENT.getModifiers());
+        PacketHandler.sendToServer(new UpdateModifiersC2SPacket(json));
         super.onClose();
     }
 

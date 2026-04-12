@@ -61,13 +61,16 @@ public class ModifierRenderer {
         float oy = (float)(mirror.originY - camY);
         float oz = (float)(mirror.originZ - camZ);
 
+        // Small offset along the plane normal to avoid z-fighting with block faces.
+        float e = 0.005f;
+
         // X plane (red) — YZ rectangle at originX
         if (mirror.mirrorX) {
             addFace(consumer, pose,
-                    ox, oy - radius, oz - radius,
-                    ox, oy - radius, oz + radius,
-                    ox, oy + radius, oz + radius,
-                    ox, oy + radius, oz - radius,
+                    ox + e, oy - radius, oz - radius,
+                    ox + e, oy - radius, oz + radius,
+                    ox + e, oy + radius, oz + radius,
+                    ox + e, oy + radius, oz - radius,
                     1, 0, 0,
                     255, 80, 80, 50);
         }
@@ -75,10 +78,10 @@ public class ModifierRenderer {
         // Y plane (green) — XZ rectangle at originY
         if (mirror.mirrorY) {
             addFace(consumer, pose,
-                    ox - radius, oy, oz - radius,
-                    ox + radius, oy, oz - radius,
-                    ox + radius, oy, oz + radius,
-                    ox - radius, oy, oz + radius,
+                    ox - radius, oy + e, oz - radius,
+                    ox + radius, oy + e, oz - radius,
+                    ox + radius, oy + e, oz + radius,
+                    ox - radius, oy + e, oz + radius,
                     0, 1, 0,
                     80, 255, 80, 50);
         }
@@ -86,10 +89,10 @@ public class ModifierRenderer {
         // Z plane (blue) — XY rectangle at originZ
         if (mirror.mirrorZ) {
             addFace(consumer, pose,
-                    ox - radius, oy - radius, oz,
-                    ox + radius, oy - radius, oz,
-                    ox + radius, oy + radius, oz,
-                    ox - radius, oy + radius, oz,
+                    ox - radius, oy - radius, oz + e,
+                    ox + radius, oy - radius, oz + e,
+                    ox + radius, oy + radius, oz + e,
+                    ox - radius, oy + radius, oz + e,
                     0, 0, 1,
                     80, 80, 255, 50);
         }

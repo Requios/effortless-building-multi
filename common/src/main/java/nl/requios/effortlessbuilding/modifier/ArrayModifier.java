@@ -16,9 +16,8 @@ import java.util.List;
  * <p>Example: count=2, offset=(5, 0, 0) produces the original shape plus two copies
  * shifted by (5, 0, 0) and (10, 0, 0) respectively.
  */
-public class ArrayModifier implements IModifier {
+public class ArrayModifier extends AbstractModifier {
 
-    private boolean enabled = true;
     public int count = 1;
     public int offsetX = 1, offsetY = 0, offsetZ = 0;
 
@@ -27,15 +26,6 @@ public class ArrayModifier implements IModifier {
         return Component.literal("Array");
     }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {

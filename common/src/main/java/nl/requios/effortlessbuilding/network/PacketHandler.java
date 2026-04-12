@@ -19,6 +19,10 @@ import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
+import nl.requios.effortlessbuilding.modifier.IModifier;
+import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
+import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
+import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
@@ -26,6 +30,7 @@ import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PacketHandler {
@@ -46,6 +51,14 @@ public class PacketHandler {
         Services.NETWORK.sendToServer(packet);
     }
 
+    public static void sendToServer(UpdateModifiersC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncModifiersS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      */
@@ -61,6 +74,10 @@ public class PacketHandler {
             Constants.LOG.warn("[EffortlessBuilding] Received PlaceBuildModePacket but mode {} returned no blocks", packet.buildMode());
             return;
         }
+
+        // Apply the player's server-side modifiers (mirror, array, radial, etc.)
+        ModifierServerStorage.getModifiers(player.getUUID())
+                .processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
@@ -155,6 +172,10 @@ public class PacketHandler {
             return;
         }
 
+        // Apply the player's server-side modifiers (mirror, array, radial, etc.)
+        ModifierServerStorage.getModifiers(player.getUUID())
+                .processBlocks(blockSet, player, BuildChain.BuildState.BREAKING);
+
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
         BlockState airState = Blocks.AIR.defaultBlockState();
 
@@ -200,6 +221,30 @@ public class PacketHandler {
         } else {
             player.displayClientMessage(
                     Component.translatable("effortlessbuilding.message.nothing_to_redo"), true);
+        }
+    }
+
+    /**
+     * Called on the server when an {@link UpdateModifiersC2SPacket} is received.
+     */
+    public static void handleUpdateModifiers(UpdateModifiersC2SPacket packet, ServerPlayer player) {
+        List<IModifier> modifiers = ModifierSerializer.deserialize(packet.json());
+        ModifierServerStorage.setModifiers(player.getUUID(), modifiers);
+        ModifierServerStorage.savePlayer(player.server, player.getUUID());
+        // Echo back to client as confirmation
+        sendToClient(player, new SyncModifiersS2CPacket(
+                ModifierServerStorage.serializePlayer(player.getUUID())));
+    }
+
+    /**
+     * Called on the client when a {@link SyncModifiersS2CPacket} is received.
+     * Replaces the client-side modifier list with the server's authoritative copy.
+     */
+    public static void handleSyncModifiers(SyncModifiersS2CPacket packet) {
+        List<IModifier> modifiers = ModifierSerializer.deserialize(packet.json());
+        ModifierSystem.CLIENT.clearModifiers();
+        for (IModifier m : modifiers) {
+            ModifierSystem.CLIENT.addModifier(m);
         }
     }
 

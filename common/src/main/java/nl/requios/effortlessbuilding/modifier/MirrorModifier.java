@@ -20,10 +20,9 @@ import java.util.List;
  * Blocks (both original and mirrored) that fall outside {@code radius} from the
  * origin are removed.
  */
-public class MirrorModifier implements IModifier {
+public class MirrorModifier extends AbstractModifier {
 
-    private boolean enabled = true;
-    public double originX = 0, originY = 64, originZ = 0;
+    public double originX, originY = 64, originZ;
     public boolean mirrorX = true, mirrorY = false, mirrorZ = false;
     public int radius = 20;
 
@@ -32,15 +31,6 @@ public class MirrorModifier implements IModifier {
         return Component.literal("Mirror");
     }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {

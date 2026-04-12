@@ -3,6 +3,7 @@ package nl.requios.effortlessbuilding;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -12,9 +13,9 @@ import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.render.RenderHandler;
@@ -35,9 +36,10 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(KeyBindings.redo);
 
         BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
-        // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
-        BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
-        ModifierPersistence.load();
+
+        // Register client-side handler for S2C modifier sync packet
+        ClientPlayNetworking.registerGlobalReceiver(SyncModifiersS2CPacket.TYPE, (payload, context) ->
+                context.client().execute(() -> PacketHandler.handleSyncModifiers(payload)));
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
                 RenderHandler.onRenderGui(graphics));

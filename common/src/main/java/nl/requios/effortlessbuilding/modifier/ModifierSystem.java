@@ -49,7 +49,7 @@ public class ModifierSystem implements IBuildSystem {
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
         for (IModifier modifier : modifiers) {
-            if (modifier.isEnabled()) {
+            if (modifier.isEnabled() && modifier.matchesDimension(player)) {
                 modifier.processBlocks(blocks, player, action);
             }
         }

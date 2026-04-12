@@ -19,9 +19,20 @@
 ## Build Modes, Modifiers, Rendering Conventions
 - `BuildModeEnum` stores singleton `IBuildMode` instances; modes are stateful across click sequences.
 - Use `BuildChain.getPlayerLookVec(player)` (not raw look vector) to avoid divide-by-zero in bound math.
-- Modifier transforms run as ordered `IBuildSystem` stages through `ModifierSystem.CLIENT` and are shared by preview + execution.
-- Modifier persistence is client-side JSON at `<gameDir>/config/effortlessbuilding_modifiers.json` (`ModifierPersistence`).
+- Modifier transforms run as ordered `IBuildSystem` stages through `ModifierSystem.CLIENT` (client preview) and per-player `ModifierSystem` instances on the server (authoritative execution).
 - Keep loader render hooks thin; preview visuals and action-bar UX live in `BlockPreviewRenderer`.
+
+## Modifier Persistence & Sync (server-authoritative)
+- **The server is the authority on modifier settings.** The client's `ModifierSystem.CLIENT` is a mirror populated by the server.
+- Storage: per-player JSON files at `<worldDir>/effortlessbuilding/modifiers/<uuid>.json`, managed by `ModifierServerStorage`.
+- Serialization logic is shared via `ModifierSerializer` (used by storage, packets, and the legacy `ModifierPersistence`).
+- Data flow:
+  1. **Player joins** → server calls `ModifierServerStorage.loadPlayer(...)` → sends `SyncModifiersS2CPacket` → client handler (`PacketHandler.handleSyncModifiers`) replaces `ModifierSystem.CLIENT` contents.
+  2. **Player edits modifiers** (closes `ModifiersScreen`) → client sends `UpdateModifiersC2SPacket` → server handler (`PacketHandler.handleUpdateModifiers`) saves to disk via `ModifierServerStorage` and echoes `SyncModifiersS2CPacket` back.
+  3. **Server places/breaks blocks** → `PacketHandler.handlePlaceBuildMode`/`handleBreakBuildMode` applies `ModifierServerStorage.getModifiers(uuid)` to the block set after `BuildChain.SERVER.computeServerBlocks(...)`. This works on both singleplayer and dedicated servers.
+  4. **Player disconnects** → server saves + removes cached data. **Server stops** → `ModifierServerStorage.clearAll()` prevents leaks across singleplayer world changes.
+- `ModifierSystem.CLIENT` is registered only in `BuildChainClient.CLIENT` (for preview). It is **not** registered in `BuildChain.SERVER`.
+- `ModifierPersistence` (client-side file) is deprecated but kept for potential migration of old configs.
 
 ## Gradle + Dev Workflows (verified)
 - Compile common:
