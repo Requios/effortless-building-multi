@@ -16,6 +16,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
@@ -51,7 +52,14 @@ public class PacketHandler {
         }
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
+        ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
         boolean creative = player.isCreative();
+
+        // Replace mode is creative-only; force ONLY_AIR for survival
+        BuildSettings.ReplaceMode replaceMode = creative
+                ? packet.replaceMode()
+                : BuildSettings.ReplaceMode.ONLY_AIR;
+        boolean protectTiles = packet.protectTileEntities();
 
         int placed = 0;
         if (held.getItem() instanceof BlockItem blockItem) {
@@ -65,7 +73,7 @@ public class PacketHandler {
             for (BlockPos pos : blockSet.keySet()) {
                 if (!creative && placed >= available) break;
 
-                if (level.getBlockState(pos).canBeReplaced()) {
+                if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                     Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
                     BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
                     BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
@@ -92,7 +100,7 @@ public class PacketHandler {
                 int maxPlace = creative ? Integer.MAX_VALUE : 1;
                 for (BlockPos pos : blockSet.keySet()) {
                     if (placed >= maxPlace) break;
-                    if (level.getBlockState(pos).canBeReplaced()) {
+                    if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                         level.setBlock(pos, fluidState, 3);
                         placed++;
                     }

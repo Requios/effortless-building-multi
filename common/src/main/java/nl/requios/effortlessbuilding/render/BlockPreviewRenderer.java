@@ -86,7 +86,7 @@ public class BlockPreviewRenderer {
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
             
-            float blockScale = 1f;
+            float blockScale = 0.5f;
             int blockAlpha = 200;
             
             var held = mc.player.getMainHandItem();
@@ -134,10 +134,10 @@ public class BlockPreviewRenderer {
         // Pass 2: bounding box faces with checkerboard texture.
         // Disable depth writes so the translucent faces don't occlude the
         // outline edges drawn in Pass 3.
-//        RenderSystem.depthMask(false);
-//        renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
-//        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
-//        RenderSystem.depthMask(true);
+        RenderSystem.depthMask(false);
+        renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
+        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
+        RenderSystem.depthMask(true);
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units

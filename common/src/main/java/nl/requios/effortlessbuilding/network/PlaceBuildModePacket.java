@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
+import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +40,9 @@ public record PlaceBuildModePacket(
         ModeOptions.ActionEnum fill,
         ModeOptions.ActionEnum cubeFill,
         ModeOptions.ActionEnum raisedEdge,
-        ModeOptions.ActionEnum circleStart
+        ModeOptions.ActionEnum circleStart,
+        BuildSettings.ReplaceMode replaceMode,
+        boolean protectTileEntities
 ) implements CustomPacketPayload {
 
     public static final Type<PlaceBuildModePacket> TYPE =
@@ -64,6 +67,8 @@ public record PlaceBuildModePacket(
         buf.writeVarInt(p.cubeFill.ordinal());
         buf.writeVarInt(p.raisedEdge.ordinal());
         buf.writeVarInt(p.circleStart.ordinal());
+        buf.writeVarInt(p.replaceMode.ordinal());
+        buf.writeBoolean(p.protectTileEntities);
     }
 
     private static PlaceBuildModePacket decode(FriendlyByteBuf buf) {
@@ -77,8 +82,11 @@ public record PlaceBuildModePacket(
         ModeOptions.ActionEnum cubeFill = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum raisedEdge = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum circleStart = ModeOptions.ActionEnum.values()[buf.readVarInt()];
+        BuildSettings.ReplaceMode replaceMode = BuildSettings.ReplaceMode.values()[buf.readVarInt()];
+        boolean protectTileEntities = buf.readBoolean();
         return new PlaceBuildModePacket(buildMode, firstPos, secondPos, thirdPos,
-                hitFace, hitLocation, fill, cubeFill, raisedEdge, circleStart);
+                hitFace, hitLocation, fill, cubeFill, raisedEdge, circleStart,
+                replaceMode, protectTileEntities);
     }
 
     @Override

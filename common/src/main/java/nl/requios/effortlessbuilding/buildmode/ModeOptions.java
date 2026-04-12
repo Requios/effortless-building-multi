@@ -73,12 +73,9 @@ public class ModeOptions {
 //			case OPEN_PLAYER_SETTINGS -> ClientEvents.openPlayerSettings();
 //			case PREVIOUS_BUILD_MODE -> EffortlessBuildingClient.BUILD_MODES.activatePreviousBuildMode();
 //			case DISABLE_BUILD_MODE_TOGGLE -> EffortlessBuildingClient.BUILD_MODES.activateDisableBuildModeToggle();
-//
-//			case REPLACE_ONLY_AIR -> EffortlessBuildingClient.BUILD_SETTINGS.setReplaceMode(BuildSettings.ReplaceMode.ONLY_AIR);
-//			case REPLACE_BLOCKS_AND_AIR -> EffortlessBuildingClient.BUILD_SETTINGS.setReplaceMode(BuildSettings.ReplaceMode.BLOCKS_AND_AIR);
-//			case REPLACE_ONLY_BLOCKS -> EffortlessBuildingClient.BUILD_SETTINGS.setReplaceMode(BuildSettings.ReplaceMode.ONLY_BLOCKS);
-//			case REPLACE_FILTERED_BY_OFFHAND -> EffortlessBuildingClient.BUILD_SETTINGS.setReplaceMode(BuildSettings.ReplaceMode.FILTERED_BY_OFFHAND);
-//			case TOGGLE_PROTECT_TILE_ENTITIES -> EffortlessBuildingClient.BUILD_SETTINGS.toggleProtectTileEntities();
+
+			case CYCLE_REPLACE_MODE -> BuildSettings.CLIENT.cycleReplaceMode();
+			case TOGGLE_PROTECT_TILE_ENTITIES -> BuildSettings.CLIENT.toggleProtectTileEntities();
 
 			case NORMAL_SPEED -> buildSpeed = ActionEnum.NORMAL_SPEED;
 			case FAST_SPEED -> buildSpeed = ActionEnum.FAST_SPEED;
@@ -119,6 +116,7 @@ public class ModeOptions {
 		PREVIOUS_BUILD_MODE("previous_build_mode", AllIcons.I_SINGLE),
 		DISABLE_BUILD_MODE_TOGGLE("disable_build_mode_toggle", AllIcons.I_DISABLE),
 
+		CYCLE_REPLACE_MODE("cycle_replace_mode", AllIcons.I_REPLACE),
 		REPLACE_ONLY_AIR("replace_only_air", AllIcons.I_REPLACE_AIR),
 		REPLACE_BLOCKS_AND_AIR("replace_blocks_and_air", AllIcons.I_REPLACE_BLOCKS_AND_AIR),
 		REPLACE_ONLY_BLOCKS("replace_only_blocks", AllIcons.I_REPLACE_BLOCKS),

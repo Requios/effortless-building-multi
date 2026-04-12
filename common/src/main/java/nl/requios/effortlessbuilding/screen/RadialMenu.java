@@ -18,8 +18,10 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import nl.requios.effortlessbuilding.AllIcons;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
 import org.joml.Vector4f;
@@ -141,9 +143,26 @@ public class RadialMenu extends Screen {
 		}
 
 		//Add actions
+		boolean canReplace = minecraft.player != null && minecraft.player.getAbilities().instabuild;
+
 		buttons.add(new MenuButton(ActionEnum.OPEN_MODIFIER_SETTINGS, -buttonDistance - 52, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.UNDO, -buttonDistance - 26, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
+
+		if (canReplace) {
+			buttons.add(new MenuButton(ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES, -buttonDistance - 26, 13, Direction.DOWN));
+			MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
+			// Show the current replace mode's icon, but use a generic title
+			ActionEnum currentReplaceAction = BuildSettings.CLIENT.getReplaceModeActionEnum();
+			replaceBtn.iconOverride = currentReplaceAction.icon;
+			replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
+			// Description: current mode name + its description
+			String currentName = I18n.get(currentReplaceAction.getNameKey());
+			String currentDesc = I18n.exists(currentReplaceAction.getDescriptionKey())
+					? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
+			replaceBtn.description = currentDesc.isEmpty() ? currentName : currentName + "\n" + currentDesc;
+			buttons.add(replaceBtn);
+		}
 
 		//Add buildmode dependent options
 		OptionEnum[] options = currentBuildMode.options;
@@ -256,7 +275,9 @@ public class RadialMenu extends Screen {
 					btn.action == ModeOptions.getCubeFill() ||
 					btn.action == ModeOptions.getRaisedEdge() ||
 					btn.action == ModeOptions.getLineThickness() ||
-					btn.action == ModeOptions.getCircleStart();
+					btn.action == ModeOptions.getCircleStart() ||
+					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.isQuickReplacing()) ||
+					(btn.action == ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES && BuildSettings.CLIENT.shouldProtectTileEntities());
 
 
 
@@ -299,7 +320,7 @@ public class RadialMenu extends Screen {
 			final double x = (button.x1 + button.x2) / 2 * scale;
 			final double y = (button.y1 + button.y2) / 2 * scale;
 
-			button.action.icon.render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
+			button.getIcon().render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
 		}
 
 		graphics.pose().popPose();
@@ -353,10 +374,19 @@ public class RadialMenu extends Screen {
 				tooltip.add(Component.literal(button.name).withStyle(ChatFormatting.AQUA));
 
 				if (!button.description.isEmpty()) {
-					if (hasShiftDown()) {
-						tooltip.add(Component.literal(button.description).withStyle(ChatFormatting.GRAY));
-					} else {
-						tooltip.add(Component.literal("Hold Shift for details").withStyle(ChatFormatting.DARK_GRAY));
+					// Split on explicit line breaks, then word-wrap each paragraph
+					String[] paragraphs = button.description.split("\n");
+					for (int pi = 0; pi < paragraphs.length; pi++) {
+						String paragraph = paragraphs[pi];
+						if (paragraph.isEmpty()) {
+							tooltip.add(Component.empty());
+						} else {
+							// First paragraph uses white, the rest uses gray
+							ChatFormatting fmt = (pi == 0) ? ChatFormatting.WHITE : ChatFormatting.GRAY;
+							for (var line : font.getSplitter().splitLines(paragraph, 200, net.minecraft.network.chat.Style.EMPTY)) {
+								tooltip.add(Component.literal(line.getString()).withStyle(fmt));
+							}
+						}
 					}
 				}
 
@@ -445,6 +475,7 @@ public class RadialMenu extends Screen {
 	private static class MenuButton {
 
 		public final ActionEnum action;
+		public AllIcons iconOverride;
 		public double x1, x2;
 		public double y1, y2;
 		public boolean highlighted;
@@ -466,6 +497,10 @@ public class RadialMenu extends Screen {
 			y1 = y - 10;
 			y2 = y + 10;
 			this.textSide = textSide;
+		}
+
+		public AllIcons getIcon() {
+			return iconOverride != null ? iconOverride : action.icon;
 		}
 
 	}

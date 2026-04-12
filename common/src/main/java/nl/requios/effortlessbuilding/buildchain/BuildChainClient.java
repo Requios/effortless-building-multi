@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
@@ -126,7 +127,9 @@ public class BuildChainClient {
                             mode, blocks.firstPos, secondPos, thirdPos,
                             hitFace, hitLocation,
                             ModeOptions.getFill(), ModeOptions.getCubeFill(),
-                            ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart()));
+                            ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart(),
+                            BuildSettings.CLIENT.getReplaceMode(),
+                            BuildSettings.CLIENT.shouldProtectTileEntities()));
                 } else {
                     PacketHandler.sendToServer(new BreakBuildModePacket(
                             mode, blocks.firstPos, secondPos, thirdPos,
@@ -225,6 +228,8 @@ public class BuildChainClient {
     private static BlockPos resolveFirstClickPos(BlockHitResult hit, BuildChain.BuildState action, Level level) {
         BlockPos hitPos = hit.getBlockPos();
         if (action == BuildChain.BuildState.BREAKING) return hitPos;
+        // When replacing blocks, click on the block itself instead of adjacent
+        if (BuildSettings.CLIENT.shouldOffsetStartPosition()) return hitPos;
         if (level.getBlockState(hitPos).canBeReplaced()) return hitPos;
         return hitPos.relative(hit.getDirection());
     }
