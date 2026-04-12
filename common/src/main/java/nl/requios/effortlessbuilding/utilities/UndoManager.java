@@ -4,7 +4,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import nl.requios.effortlessbuilding.Constants;
@@ -14,6 +17,8 @@ import java.util.*;
 /**
  * Server-side per-player undo/redo stacks.
  * Each entry records the block positions with their old and new states.
+ * In survival, undo/redo also handles inventory: undoing a placement gives
+ * items back; undoing a break consumes items (or skips if unavailable).
  */
 public class UndoManager {
 
@@ -43,7 +48,6 @@ public class UndoManager {
         Deque<UndoEntry> undoStack = undoStacks.computeIfAbsent(id, k -> new ArrayDeque<>());
         undoStack.push(new UndoEntry(dimension, changes));
         if (undoStack.size() > MAX_STACK_SIZE) {
-            // Remove the oldest entry (bottom of the stack)
             ((ArrayDeque<UndoEntry>) undoStack).removeLast();
         }
 
@@ -57,6 +61,8 @@ public class UndoManager {
 
     /**
      * Undo the most recent operation. Returns the number of blocks restored, or -1 if nothing to undo.
+     * In survival, undoing a placement (block→air) gives items back; undoing a break (air→block)
+     * consumes items from inventory (positions without enough items are skipped).
      */
     public static int undo(ServerPlayer player) {
         UUID id = player.getUUID();
@@ -70,10 +76,44 @@ public class UndoManager {
             return -1;
         }
 
+        boolean creative = player.isCreative();
         int restored = 0;
+
         for (var e : entry.changes().entrySet()) {
             BlockPos pos = e.getKey();
-            BlockState oldState = e.getValue().oldState();
+            BlockChange change = e.getValue();
+            BlockState oldState = change.oldState();
+            BlockState newState = change.newState();
+            BlockState currentState = level.getBlockState(pos);
+
+            if (!creative) {
+                // Undoing a placement: newState is the placed block, oldState was air/replaceable
+                // → remove the block and give items back (only if the block is still there)
+                if (!newState.isAir() && oldState.canBeReplaced()) {
+                    if (!currentState.equals(newState)) continue; // someone changed it, skip
+                    level.setBlock(pos, oldState, 3);
+                    giveBlockItem(player, newState);
+                    restored++;
+                    continue;
+                }
+
+                // Undoing a break: oldState was a block, newState is air
+                // → need to consume the item to restore the block
+                // Only restore if the position is still air (nobody built there since)
+                if (!oldState.isAir() && newState.isAir()) {
+                    if (!currentState.isAir()) continue; // someone placed something here, skip
+                    Item requiredItem = oldState.getBlock().asItem();
+                    if (requiredItem != net.minecraft.world.item.Items.AIR
+                            && InventoryHelper.findTotalItemsInInventory(player, requiredItem) > 0) {
+                        InventoryHelper.consumeItems(player, requiredItem, 1);
+                        level.setBlock(pos, oldState, 3);
+                        restored++;
+                    }
+                    continue;
+                }
+            }
+
+            // Creative or replace-mode changes: just restore
             level.setBlock(pos, oldState, 3);
             restored++;
         }
@@ -90,6 +130,7 @@ public class UndoManager {
 
     /**
      * Redo the most recently undone operation. Returns the number of blocks re-applied, or -1 if nothing to redo.
+     * In survival, redoing a placement consumes items; redoing a break gives items back.
      */
     public static int redo(ServerPlayer player) {
         UUID id = player.getUUID();
@@ -103,10 +144,43 @@ public class UndoManager {
             return -1;
         }
 
+        boolean creative = player.isCreative();
         int reapplied = 0;
+
         for (var e : entry.changes().entrySet()) {
             BlockPos pos = e.getKey();
-            BlockState newState = e.getValue().newState();
+            BlockChange change = e.getValue();
+            BlockState oldState = change.oldState();
+            BlockState newState = change.newState();
+            BlockState currentState = level.getBlockState(pos);
+
+            if (!creative) {
+                // Redoing a placement: need to consume the item to place the block
+                // Only place if the position is still what we expect (air/replaceable)
+                if (!newState.isAir() && oldState.canBeReplaced()) {
+                    if (!currentState.equals(oldState)) continue; // someone changed it, skip
+                    Item requiredItem = newState.getBlock().asItem();
+                    if (requiredItem != net.minecraft.world.item.Items.AIR
+                            && InventoryHelper.findTotalItemsInInventory(player, requiredItem) > 0) {
+                        InventoryHelper.consumeItems(player, requiredItem, 1);
+                        level.setBlock(pos, newState, 3);
+                        reapplied++;
+                    }
+                    continue;
+                }
+
+                // Redoing a break: remove the block and give items back
+                // Only break if the block is still what we originally broke
+                if (!oldState.isAir() && newState.isAir()) {
+                    if (!currentState.equals(oldState)) continue; // someone changed it, skip
+                    level.setBlock(pos, newState, 3);
+                    giveBlockItem(player, oldState);
+                    reapplied++;
+                    continue;
+                }
+            }
+
+            // Creative or replace-mode changes: just reapply
             level.setBlock(pos, newState, 3);
             reapplied++;
         }
@@ -132,5 +206,19 @@ public class UndoManager {
         undoStacks.remove(playerId);
         redoStacks.remove(playerId);
     }
-}
 
+    // -------------------------------------------------------------------------
+    // Internal helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Give the player one block item corresponding to the given block state.
+     * Goes to inventory; overflow drops at feet.
+     */
+    private static void giveBlockItem(ServerPlayer player, BlockState state) {
+        Item item = state.getBlock().asItem();
+        if (item != net.minecraft.world.item.Items.AIR) {
+            InventoryHelper.giveOrDropItems(player, item, 1);
+        }
+    }
+}

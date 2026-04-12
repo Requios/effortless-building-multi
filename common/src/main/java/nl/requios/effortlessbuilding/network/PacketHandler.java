@@ -162,7 +162,7 @@ public class PacketHandler {
         for (BlockPos pos : blockSet.keySet()) {
             BlockState oldState = level.getBlockState(pos);
             if (!oldState.isAir()) {
-                level.destroyBlock(pos, true, player);
+				level.destroyBlock(pos, false, player);
                 undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, airState));
                 broken++;
             }

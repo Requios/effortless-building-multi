@@ -157,11 +157,10 @@ public class RadialMenu extends Screen {
 			ActionEnum currentReplaceAction = BuildSettings.CLIENT.getReplaceModeActionEnum();
 			replaceBtn.iconOverride = currentReplaceAction.icon;
 			replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
-			// Description: current mode name + its description
-			String currentName = I18n.get(currentReplaceAction.getNameKey());
-			String currentDesc = I18n.exists(currentReplaceAction.getDescriptionKey())
+			// Subtitle: current mode name (rendered white), Description: its description
+			replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
+			replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
 					? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
-			replaceBtn.description = currentDesc.isEmpty() ? currentName : currentName + "\n" + currentDesc;
 			buttons.add(replaceBtn);
 		}
 
@@ -374,6 +373,10 @@ public class RadialMenu extends Screen {
 				var tooltip = new ArrayList<Component>();
 				tooltip.add(Component.literal(button.name).withStyle(ChatFormatting.AQUA));
 
+				if (!button.subtitle.isEmpty()) {
+					tooltip.add(Component.literal(button.subtitle).withStyle(ChatFormatting.WHITE));
+				}
+
 				if (!button.description.isEmpty()) {
 					// Split on explicit line breaks, then word-wrap each paragraph
 					String[] paragraphs = button.description.split("\n");
@@ -382,10 +385,8 @@ public class RadialMenu extends Screen {
 						if (paragraph.isEmpty()) {
 							tooltip.add(Component.empty());
 						} else {
-							// First paragraph uses white, the rest uses gray
-							ChatFormatting fmt = (pi == 0) ? ChatFormatting.WHITE : ChatFormatting.GRAY;
 							for (var line : font.getSplitter().splitLines(paragraph, 200, net.minecraft.network.chat.Style.EMPTY)) {
-								tooltip.add(Component.literal(line.getString()).withStyle(fmt));
+								tooltip.add(Component.literal(line.getString()).withStyle(ChatFormatting.GRAY));
 							}
 						}
 					}
@@ -481,6 +482,7 @@ public class RadialMenu extends Screen {
 		public double y1, y2;
 		public boolean highlighted;
 		public String name;
+		public String subtitle = "";
 		public String description = "";
 		public Direction textSide;
 
@@ -490,9 +492,11 @@ public class RadialMenu extends Screen {
 
 			// Append keybinding hint for undo/redo
 			if (action == ActionEnum.UNDO) {
-				this.name += " (Ctrl+" + KeyBindings.undo.getTranslatedKeyMessage().getString() + ")";
+				this.description += "[Ctrl+" + KeyBindings.undo.getTranslatedKeyMessage().getString() + "]";
 			} else if (action == ActionEnum.REDO) {
-				this.name += " (Ctrl+" + KeyBindings.redo.getTranslatedKeyMessage().getString() + ")";
+				this.description += "[Ctrl+" + KeyBindings.redo.getTranslatedKeyMessage().getString() + "]";
+			} else if (action == ActionEnum.OPEN_MODIFIER_SETTINGS) {
+				this.description += "[" + KeyBindings.openModifiersScreen.getTranslatedKeyMessage().getString() + "]";
 			}
 
 			if (I18n.exists(action.getDescriptionKey())) {

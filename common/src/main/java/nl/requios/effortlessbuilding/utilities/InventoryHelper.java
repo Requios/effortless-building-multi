@@ -1,12 +1,13 @@
 package nl.requios.effortlessbuilding.utilities;
 
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Server-safe inventory helpers for counting and consuming items.
+ * Server-safe inventory helpers for counting, consuming, and giving items.
  */
 public class InventoryHelper {
 
@@ -59,5 +60,24 @@ public class InventoryHelper {
 
         return count - remaining;
     }
-}
 
+    /**
+     * Gives {@code count} items to the player. Adds to inventory first;
+     * any overflow is dropped at the player's feet.
+     */
+    public static void giveOrDropItems(Player player, Item item, int count) {
+        if (count <= 0) return;
+        int remaining = count;
+        while (remaining > 0) {
+            int batchSize = Math.min(remaining, item.getDefaultMaxStackSize());
+            ItemStack stack = new ItemStack(item, batchSize);
+            if (!player.getInventory().add(stack)) {
+                // Inventory full — drop remainder at feet
+                ItemEntity drop = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack);
+                drop.setNoPickUpDelay();
+                player.level().addFreshEntity(drop);
+            }
+            remaining -= batchSize;
+        }
+    }
+}
