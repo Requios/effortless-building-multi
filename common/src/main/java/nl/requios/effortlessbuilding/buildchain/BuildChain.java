@@ -5,6 +5,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
@@ -35,9 +38,23 @@ public class BuildChain {
     /**
      * Returns {@code true} if right-clicking with this item should trigger the
      * build-mode sequence: block items and non-empty bucket items (water, lava, etc.).
+     * Multiblock items (doors, beds, tall plants) are excluded — they need vanilla's
+     * setPlacedBy logic which the mod's batch placement cannot replicate correctly.
      */
     public static boolean isBuildTriggerItem(ItemStack stack) {
-        if (stack.getItem() instanceof BlockItem) return true;
+        if (stack.getItem() instanceof BlockItem blockItem) {
+            // Reject multiblocks: anything with DoubleBlockHalf (doors, tall flowers/grass)
+            // or BedPart (beds). These require setPlacedBy to place their other half,
+            // which doesn't work with batch placement.
+            BlockState defaultState = blockItem.getBlock().defaultBlockState();
+            for (var property : defaultState.getProperties()) {
+                if (property.getValueClass() == DoubleBlockHalf.class
+                        || property.getValueClass() == BedPart.class) {
+                    return false;
+                }
+            }
+            return true;
+        }
         if (stack.getItem() instanceof BucketItem) {
             return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
         }
