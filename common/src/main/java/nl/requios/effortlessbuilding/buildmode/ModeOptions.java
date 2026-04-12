@@ -2,6 +2,9 @@ package nl.requios.effortlessbuilding.buildmode;
 
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.AllIcons;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.UndoPacket;
+import nl.requios.effortlessbuilding.network.RedoPacket;
 
 public class ModeOptions {
 
@@ -67,8 +70,8 @@ public class ModeOptions {
 		if (action == null) return;
 
 		switch (action) {
-//			case UNDO -> PacketHandler.INSTANCE.sendToServer(new PerformUndoPacket());
-//			case REDO -> PacketHandler.INSTANCE.sendToServer(new PerformRedoPacket());
+			case UNDO -> PacketHandler.sendToServer(new UndoPacket());
+			case REDO -> PacketHandler.sendToServer(new RedoPacket());
 //			case OPEN_MODIFIER_SETTINGS -> ClientEvents.openModifierSettings();
 //			case OPEN_PLAYER_SETTINGS -> ClientEvents.openPlayerSettings();
 //			case PREVIOUS_BUILD_MODE -> EffortlessBuildingClient.BUILD_MODES.activatePreviousBuildMode();

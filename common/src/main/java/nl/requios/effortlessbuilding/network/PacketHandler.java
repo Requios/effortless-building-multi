@@ -1,6 +1,7 @@
 package nl.requios.effortlessbuilding.network;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -9,6 +10,7 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
@@ -21,6 +23,10 @@ import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.utilities.UndoManager;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class PacketHandler {
 
@@ -32,11 +38,16 @@ public class PacketHandler {
         Services.NETWORK.sendToServer(packet);
     }
 
+    public static void sendToServer(UndoPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToServer(RedoPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
-     * Uses the unified {@link BuildChain#computeServerBlocks} pipeline,
-     * then applies world mutations.  In survival, items are consumed from
-     * inventory and positions beyond the player's supply are skipped.
      */
     public static void handlePlaceBuildMode(PlaceBuildModePacket packet, ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -55,17 +66,17 @@ public class PacketHandler {
         ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
         boolean creative = player.isCreative();
 
-        // Replace mode is creative-only; force ONLY_AIR for survival
         BuildSettings.ReplaceMode replaceMode = creative
                 ? packet.replaceMode()
                 : BuildSettings.ReplaceMode.ONLY_AIR;
         boolean protectTiles = packet.protectTileEntities();
 
+        Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
+
         int placed = 0;
         if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
 
-            // In survival, figure out how many blocks we can afford
             int available = creative ? Integer.MAX_VALUE
                     : InventoryHelper.findTotalItemsInInventory(player, heldItem);
 
@@ -74,6 +85,7 @@ public class PacketHandler {
                 if (!creative && placed >= available) break;
 
                 if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
+                    BlockState oldState = level.getBlockState(pos);
                     Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
                     BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
                     BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
@@ -84,11 +96,11 @@ public class PacketHandler {
                         state = entry.applyTransforms(state);
                     }
                     level.setBlock(pos, state, 3);
+                    undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, state));
                     placed++;
                 }
             }
 
-            // Consume items from inventory in survival
             if (!creative && placed > 0) {
                 InventoryHelper.consumeItems(player, heldItem, placed);
             }
@@ -96,16 +108,16 @@ public class PacketHandler {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
             if (!fluid.isSame(Fluids.EMPTY)) {
                 BlockState fluidState = fluid.defaultFluidState().createLegacyBlock();
-                // In survival, a bucket is single-use
                 int maxPlace = creative ? Integer.MAX_VALUE : 1;
                 for (BlockPos pos : blockSet.keySet()) {
                     if (placed >= maxPlace) break;
                     if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
+                        BlockState oldState = level.getBlockState(pos);
                         level.setBlock(pos, fluidState, 3);
+                        undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, fluidState));
                         placed++;
                     }
                 }
-                // Consume the bucket in survival (replace with empty bucket)
                 if (!creative && placed > 0) {
                     player.setItemInHand(InteractionHand.MAIN_HAND,
                             new ItemStack(net.minecraft.world.item.Items.BUCKET));
@@ -115,15 +127,17 @@ public class PacketHandler {
             return;
         }
 
+        if (!undoChanges.isEmpty()) {
+            UndoManager.recordOperation(player, level.dimension(), undoChanges);
+        }
+
         Constants.LOG.debug("[EffortlessBuilding] Placed {} blocks for {} (mode {})", placed, player.getName().getString(), packet.buildMode());
     }
 
     /**
      * Called on the server when a {@link BreakBuildModePacket} is received.
-     * Only allowed in creative mode — survival players cannot mass-break.
      */
     public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
-        // Mod-assisted breaking is creative-only
         if (!player.isCreative()) {
             Constants.LOG.warn("[EffortlessBuilding] Survival player {} tried to use build-mode breaking, ignoring", player.getName().getString());
             return;
@@ -141,15 +155,52 @@ public class PacketHandler {
             return;
         }
 
+        Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
+        BlockState airState = Blocks.AIR.defaultBlockState();
+
         int broken = 0;
         for (BlockPos pos : blockSet.keySet()) {
-            if (!level.getBlockState(pos).isAir()) {
+            BlockState oldState = level.getBlockState(pos);
+            if (!oldState.isAir()) {
                 level.destroyBlock(pos, true, player);
+                undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, airState));
                 broken++;
             }
         }
 
+        if (!undoChanges.isEmpty()) {
+            UndoManager.recordOperation(player, level.dimension(), undoChanges);
+        }
+
         Constants.LOG.debug("[EffortlessBuilding] Broke {} blocks for {} (mode {})", broken, player.getName().getString(), packet.buildMode());
+    }
+
+    /**
+     * Called on the server when an {@link UndoPacket} is received.
+     */
+    public static void handleUndo(ServerPlayer player) {
+        int count = UndoManager.undo(player);
+        if (count >= 0) {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.undo", count), true);
+        } else {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.nothing_to_undo"), true);
+        }
+    }
+
+    /**
+     * Called on the server when a {@link RedoPacket} is received.
+     */
+    public static void handleRedo(ServerPlayer player) {
+        int count = UndoManager.redo(player);
+        if (count >= 0) {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.redo", count), true);
+        } else {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.nothing_to_redo"), true);
+        }
     }
 
     /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */

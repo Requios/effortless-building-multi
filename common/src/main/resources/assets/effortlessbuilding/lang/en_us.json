@@ -53,7 +53,7 @@
   "effortlessbuilding.mode.dome": "Dome",
 
   "effortlessbuilding.modedescription.normal": "Disable mod and use vanilla placement rules",
-  "effortlessbuilding.modedescription.normal_plus": "Like vanilla, but with increased reach and placement preview",
+  "effortlessbuilding.modedescription.normal_plus": "Like vanilla, but with increased reach",
   "effortlessbuilding.modedescription.line": "",
   "effortlessbuilding.modedescription.wall": "",
   "effortlessbuilding.modedescription.floor": "",
@@ -121,5 +121,13 @@
   "effortlessbuilding.tooltip.keybind": "[%1$s]",
 
   "effortlessbuilding.commands.powerlevel": "[Effortless Building] %s's Building Power Level is: %s",
-  "effortlessbuilding.commands.powerlevel.success": "[Effortless Building] Set %s's Building Power Level to: %s"
+  "effortlessbuilding.commands.powerlevel.success": "[Effortless Building] Set %s's Building Power Level to: %s",
+
+  "key.categories.effortlessbuilding": "Effortless Building",
+  "key.effortlessbuilding.open_modifiers_screen": "Open Modifier Settings",
+
+  "effortlessbuilding.message.undo": "Undo: restored %s blocks",
+  "effortlessbuilding.message.redo": "Redo: re-applied %s blocks",
+  "effortlessbuilding.message.nothing_to_undo": "Nothing to undo",
+  "effortlessbuilding.message.nothing_to_redo": "Nothing to redo"
 }

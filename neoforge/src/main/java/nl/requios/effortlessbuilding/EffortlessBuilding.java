@@ -8,7 +8,9 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import nl.requios.effortlessbuilding.block.ModBlocks;
@@ -16,6 +18,9 @@ import nl.requios.effortlessbuilding.item.ModItems;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
+import nl.requios.effortlessbuilding.network.UndoPacket;
+import nl.requios.effortlessbuilding.network.RedoPacket;
+import nl.requios.effortlessbuilding.utilities.UndoManager;
 
 @Mod(Constants.MOD_ID)
 public class EffortlessBuilding {
@@ -52,6 +57,21 @@ public class EffortlessBuilding {
                     BreakBuildModePacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleBreakBuildMode(payload, (ServerPlayer) context.player())));
+            registrar.playToServer(
+                    UndoPacket.TYPE,
+                    UndoPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleUndo((ServerPlayer) context.player())));
+            registrar.playToServer(
+                    RedoPacket.TYPE,
+                    RedoPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleRedo((ServerPlayer) context.player())));
+        });
+
+        // Clean up undo stacks on player disconnect
+        NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) -> {
+            UndoManager.clearPlayer(event.getEntity().getUUID());
         });
 
         CommonClass.init();

@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -15,25 +14,25 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.UndoPacket;
+import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.render.RenderHandler;
+import nl.requios.effortlessbuilding.screen.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import org.lwjgl.glfw.GLFW;
 
 public class EffortlessBuildingClient implements ClientModInitializer {
 
-    public static KeyMapping openModifiersScreen;
     private static boolean prevRightDown = false;
     private static boolean prevLeftDown = false;
 
     @Override
     public void onInitializeClient() {
-        openModifiersScreen = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-            "key.effortlessbuilding.open_modifiers_screen",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_KP_ADD,
-            "key.categories.effortlessbuilding"
-        ));
+        KeyBindingHelper.registerKeyBinding(KeyBindings.openModifiersScreen);
+        KeyBindingHelper.registerKeyBinding(KeyBindings.undo);
+        KeyBindingHelper.registerKeyBinding(KeyBindings.redo);
 
         BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
         // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
@@ -53,8 +52,21 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (openModifiersScreen.consumeClick()) {
+            if (KeyBindings.openModifiersScreen.consumeClick()) {
                 Minecraft.getInstance().setScreen(new ModifiersScreen());
+            }
+            // Undo/redo keybindings — require Ctrl held
+            while (KeyBindings.undo.consumeClick()) {
+                if (InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                    PacketHandler.sendToServer(new UndoPacket());
+                }
+            }
+            while (KeyBindings.redo.consumeClick()) {
+                if (InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                    PacketHandler.sendToServer(new RedoPacket());
+                }
             }
 
             if (client.screen == null) {
@@ -78,7 +90,6 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                                 || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
                             BuildChainClient.handleRightClick(Minecraft.getInstance());
                         }
-                        // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
                         if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {

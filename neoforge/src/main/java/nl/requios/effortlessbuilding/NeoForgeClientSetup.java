@@ -1,7 +1,6 @@
 package nl.requios.effortlessbuilding;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -16,27 +15,25 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.ModifierPersistence;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.UndoPacket;
+import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.render.RenderHandler;
+import nl.requios.effortlessbuilding.screen.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import org.lwjgl.glfw.GLFW;
 
 public class NeoForgeClientSetup {
 
-    static KeyMapping openModifiersScreen;
-
     // Mod-bus events (RegisterKeyMappingsEvent).
     @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
     public static class ModEvents {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-            openModifiersScreen = new KeyMapping(
-                    "key.effortlessbuilding.open_modifiers_screen",
-                    InputConstants.Type.KEYSYM,
-                    GLFW.GLFW_KEY_KP_ADD,
-                    "key.categories.effortlessbuilding"
-            );
-            event.register(openModifiersScreen);
+            event.register(KeyBindings.openModifiersScreen);
+            event.register(KeyBindings.undo);
+            event.register(KeyBindings.redo);
             BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
             // SERVER shares the same JVM in singleplayer, so it will see the same modifier list.
             BuildChain.SERVER.addSystem(ModifierSystem.CLIENT);
@@ -52,11 +49,24 @@ public class NeoForgeClientSetup {
 
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
-            if (openModifiersScreen != null && openModifiersScreen.consumeClick()) {
+            if (KeyBindings.openModifiersScreen.consumeClick()) {
                 Minecraft.getInstance().setScreen(new ModifiersScreen());
             }
-
+            // Undo/redo keybindings — require Ctrl held
             Minecraft mc = Minecraft.getInstance();
+            while (KeyBindings.undo.consumeClick()) {
+                if (InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                    PacketHandler.sendToServer(new UndoPacket());
+                }
+            }
+            while (KeyBindings.redo.consumeClick()) {
+                if (InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                    PacketHandler.sendToServer(new RedoPacket());
+                }
+            }
+
             if (mc.screen == null) {
                 long window = mc.getWindow().getWindow();
                 boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
@@ -78,7 +88,6 @@ public class NeoForgeClientSetup {
                                 || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
                             BuildChainClient.handleRightClick(mc);
                         }
-                        // else: non-placeable item, no sequence → vanilla handles it
                     }
                     if (leftJustPressed) {
                         if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {

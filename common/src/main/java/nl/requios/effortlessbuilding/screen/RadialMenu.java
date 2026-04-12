@@ -24,6 +24,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
+import nl.requios.effortlessbuilding.screen.KeyBindings;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
@@ -486,6 +487,13 @@ public class RadialMenu extends Screen {
 		public MenuButton(final ActionEnum action, final double x, final double y,
 						  final Direction textSide) {
 			this.name = I18n.get(action.getNameKey());
+
+			// Append keybinding hint for undo/redo
+			if (action == ActionEnum.UNDO) {
+				this.name += " (Ctrl+" + KeyBindings.undo.getTranslatedKeyMessage().getString() + ")";
+			} else if (action == ActionEnum.REDO) {
+				this.name += " (Ctrl+" + KeyBindings.redo.getTranslatedKeyMessage().getString() + ")";
+			}
 
 			if (I18n.exists(action.getDescriptionKey())) {
 				this.description = I18n.get(action.getDescriptionKey());
