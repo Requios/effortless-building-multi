@@ -37,23 +37,6 @@ public class EffortlessBuilding {
     public EffortlessBuilding(IEventBus modEventBus) {
         Constants.LOG.info("Hello Forge world!");
 
-        modEventBus.addListener((RegisterEvent event) -> {
-            event.register(Registries.BLOCK, helper ->
-                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_block"), ModBlocks.TEST_BLOCK));
-            event.register(Registries.ITEM, helper -> {
-                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_block"), new BlockItem(ModBlocks.TEST_BLOCK, new Item.Properties()));
-                helper.register(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_item"), ModItems.TEST_ITEM);
-            });
-        });
-
-        modEventBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
-            if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-                event.accept(ModBlocks.TEST_BLOCK);
-            } else if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-                event.accept(ModItems.TEST_ITEM);
-            }
-        });
-
         ForgeChannel.init();
 
         if (FMLEnvironment.dist.isClient()) {
