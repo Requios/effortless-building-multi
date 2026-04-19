@@ -36,7 +36,7 @@ public class MixinGameRenderer {
         if (minecraft.hitResult != null && minecraft.hitResult.getType() == HitResult.Type.BLOCK) return;
 
         net.minecraft.world.phys.Vec3 start = minecraft.player.getEyePosition(partialTicks);
-        net.minecraft.world.phys.Vec3 end = start.add(minecraft.player.getViewVector(partialTicks).scale(BuildModes.BUILD_MODE_REACH));
+        net.minecraft.world.phys.Vec3 end = start.add(minecraft.player.getViewVector(partialTicks).scale(BuildModes.getBuildModeReach()));
         net.minecraft.world.level.ClipContext ctx = new net.minecraft.world.level.ClipContext(
                 start, end, net.minecraft.world.level.ClipContext.Block.OUTLINE,
                 net.minecraft.world.level.ClipContext.Fluid.NONE, minecraft.player);

@@ -148,6 +148,11 @@ public class RadialMenu extends Screen {
 		buttons.add(new MenuButton(ActionEnum.UNDO, -buttonDistance - 26, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
 
+		// Server config button — only visible to operators
+		if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
+			buttons.add(new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 78, -13, Direction.UP));
+		}
+
 		buttons.add(new MenuButton(ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES, -buttonDistance - 26, 13, Direction.DOWN));
 		MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
 		// Show the current replace mode's icon, but use a generic title
@@ -454,6 +459,12 @@ public class RadialMenu extends Screen {
 				// setScreen doesn't re-enter performAction a second time.
 				performedActionUsingMouse = true;
 				minecraft.setScreen(new ModifiersScreen());
+				return;
+			}
+
+			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
+				performedActionUsingMouse = true;
+				minecraft.setScreen(new ServerConfigScreen());
 				return;
 			}
 

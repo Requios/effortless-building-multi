@@ -6,6 +6,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
 public class BuildModes {
@@ -15,8 +16,8 @@ public class BuildModes {
     public static final BuildModes CLIENT = new BuildModes();
 
     // Placeholder constants until a power/permission system is wired up.
-    public static final int BUILD_MODE_REACH = 32;
-    public static final int MAX_BLOCKS_PER_AXIS = 20;
+    public static int getBuildModeReach() { return ServerConfig.INSTANCE.getBuildModeReach(); }
+    public static int getMaxBlocksPerAxis() { return ServerConfig.INSTANCE.getMaxBlocksPerAxis(); }
 
     private BuildModeEnum buildMode = BuildModeEnum.DISABLED;
     private BuildModeEnum previousBuildMode = BuildModeEnum.DISABLED;

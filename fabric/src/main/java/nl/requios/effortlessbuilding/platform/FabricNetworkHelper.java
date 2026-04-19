@@ -9,6 +9,8 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.platform.services.INetworkHelper;
 
 public class FabricNetworkHelper implements INetworkHelper {
@@ -40,6 +42,16 @@ public class FabricNetworkHelper implements INetworkHelper {
 
     @Override
     public void sendToClient(ServerPlayer player, SyncModifiersS2CPacket packet) {
+        ServerPlayNetworking.send(player, packet);
+    }
+
+    @Override
+    public void sendToServer(UpdateServerConfigC2SPacket packet) {
+        ClientPlayNetworking.send(packet);
+    }
+
+    @Override
+    public void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet) {
         ServerPlayNetworking.send(player, packet);
     }
 }

@@ -14,6 +14,10 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.config.ServerConfig;
+import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
@@ -29,9 +33,11 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(UndoPacket.TYPE, UndoPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
 
         // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->
@@ -44,13 +50,18 @@ public class EffortlessBuilding implements ModInitializer {
                 context.server().execute(() -> PacketHandler.handleRedo(context.player())));
         ServerPlayNetworking.registerGlobalReceiver(UpdateModifiersC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handleUpdateModifiers(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(UpdateServerConfigC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleUpdateServerConfig(payload, context.player())));
 
-        // Load + send modifiers on player join
+        // Load + send modifiers and config on player join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.getPlayer();
             ModifierServerStorage.loadPlayer(server, player.getUUID());
             PacketHandler.sendToClient(player, new SyncModifiersS2CPacket(
                     ModifierServerStorage.serializePlayer(player.getUUID())));
+            PacketHandler.sendToClient(player, new SyncServerConfigS2CPacket(
+                    ServerConfig.INSTANCE.getBuildModeReach(),
+                    ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
         });
 
         // Save + clean up on player disconnect
@@ -65,6 +76,12 @@ public class EffortlessBuilding implements ModInitializer {
         // Clear all cached data when the server stops
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ModifierServerStorage.clearAll();
+            ServerConfigStorage.clear();
+        });
+
+        // Load server config on server start
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            ServerConfigStorage.load(server);
         });
 
         CommonClass.init();

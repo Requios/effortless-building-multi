@@ -42,7 +42,7 @@ public abstract class TwoClicksBuildMode extends BaseBuildMode {
 		var secondPos = findSecondPos(player, firstBlockEntry.blockPos, true);
 		if (secondPos == null) return;
 
-		int axisLimit = BuildModes.MAX_BLOCKS_PER_AXIS;
+		int axisLimit = BuildModes.getMaxBlocksPerAxis();
 
 		int x1 = firstPos.getX(), x2 = secondPos.getX();
 		int y1 = firstPos.getY(), y2 = secondPos.getY();
@@ -66,7 +66,7 @@ public abstract class TwoClicksBuildMode extends BaseBuildMode {
 
 	@Override
 	public List<BlockPos> getServerBlocks(Player player, BlockPos firstPos, BlockPos secondPos, @Nullable BlockPos thirdPos) {
-		int axisLimit = BuildModes.MAX_BLOCKS_PER_AXIS;
+		int axisLimit = BuildModes.getMaxBlocksPerAxis();
 
 		int x1 = firstPos.getX(), x2 = secondPos.getX();
 		int y1 = firstPos.getY(), y2 = secondPos.getY();

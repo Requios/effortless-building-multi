@@ -7,6 +7,8 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 
 public interface INetworkHelper {
 
@@ -21,4 +23,8 @@ public interface INetworkHelper {
     void sendToServer(UpdateModifiersC2SPacket packet);
 
     void sendToClient(ServerPlayer player, SyncModifiersS2CPacket packet);
+
+    void sendToServer(UpdateServerConfigC2SPacket packet);
+
+    void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet);
 }

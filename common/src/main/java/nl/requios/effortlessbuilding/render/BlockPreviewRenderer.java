@@ -329,7 +329,7 @@ public class BlockPreviewRenderer {
         if (hit == null) {
             // Pre-click: raytrace to show what would be placed at the current target.
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
+            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.getBuildModeReach()));
             ClipContext clipCtx = new ClipContext(start, end, ClipContext.Block.OUTLINE,
                     ClipContext.Fluid.NONE, player);
             hit = mc.level.clip(clipCtx);

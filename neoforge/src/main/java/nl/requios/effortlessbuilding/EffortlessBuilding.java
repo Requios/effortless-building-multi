@@ -5,6 +5,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -15,6 +16,10 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.config.ServerConfig;
+import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
@@ -56,14 +61,27 @@ public class EffortlessBuilding {
                     SyncModifiersS2CPacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleSyncModifiers(payload)));
+            registrar.playToServer(
+                    UpdateServerConfigC2SPacket.TYPE,
+                    UpdateServerConfigC2SPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleUpdateServerConfig(payload, (ServerPlayer) context.player())));
+            registrar.playToClient(
+                    SyncServerConfigS2CPacket.TYPE,
+                    SyncServerConfigS2CPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleSyncServerConfig(payload)));
         });
 
-        // Load + send modifiers on player join
+        // Load + send modifiers and config on player join
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedInEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer serverPlayer) {
                 ModifierServerStorage.loadPlayer(serverPlayer.server, serverPlayer.getUUID());
                 PacketHandler.sendToClient(serverPlayer, new SyncModifiersS2CPacket(
                         ModifierServerStorage.serializePlayer(serverPlayer.getUUID())));
+                PacketHandler.sendToClient(serverPlayer, new SyncServerConfigS2CPacket(
+                        ServerConfig.INSTANCE.getBuildModeReach(),
+                        ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
             }
         });
 
@@ -80,6 +98,12 @@ public class EffortlessBuilding {
         // Clear all cached data when the server stops (singleplayer world changes)
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
             ModifierServerStorage.clearAll();
+            ServerConfigStorage.clear();
+        });
+
+        // Load server config on server start
+        NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
+            ServerConfigStorage.load(event.getServer());
         });
 
         CommonClass.init();

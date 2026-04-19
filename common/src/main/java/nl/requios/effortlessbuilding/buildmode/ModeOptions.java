@@ -103,6 +103,7 @@ public class ModeOptions {
 
 		if (player.level().isClientSide &&
 			action != ActionEnum.OPEN_MODIFIER_SETTINGS &&
+			action != ActionEnum.OPEN_SERVER_CONFIG &&
 			action != ActionEnum.OPEN_PLAYER_SETTINGS &&
 			action != ActionEnum.PREVIOUS_BUILD_MODE &&
 			action != ActionEnum.DISABLE_BUILD_MODE_TOGGLE) {
@@ -144,7 +145,8 @@ public class ModeOptions {
 		THICKNESS_5("thickness_5", AllIcons.I_THICKNESS_5),
 
 		CIRCLE_START_CORNER("start_corner", AllIcons.I_CIRCLE_START_CORNER),
-		CIRCLE_START_CENTER("start_center", AllIcons.I_CIRCLE_START_CENTER);
+		CIRCLE_START_CENTER("start_center", AllIcons.I_CIRCLE_START_CENTER),
+		OPEN_SERVER_CONFIG("open_server_config", AllIcons.I_SETTINGS);
 
 		public String name;
 		public AllIcons icon;

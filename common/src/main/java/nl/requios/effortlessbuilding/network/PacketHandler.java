@@ -20,6 +20,8 @@ import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
+import nl.requios.effortlessbuilding.config.ServerConfig;
+import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -59,6 +61,14 @@ public class PacketHandler {
     }
 
     public static void sendToClient(ServerPlayer player, SyncModifiersS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
+    public static void sendToServer(UpdateServerConfigC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
     }
 
@@ -278,6 +288,36 @@ public class PacketHandler {
         for (IModifier m : modifiers) {
             ModifierSystem.CLIENT.addModifier(m);
         }
+    }
+
+    /**
+     * Called on the server when an {@link UpdateServerConfigC2SPacket} is received.
+     * Only operators (permission level 2+) may update the config.
+     */
+    public static void handleUpdateServerConfig(UpdateServerConfigC2SPacket packet, ServerPlayer player) {
+        if (!player.hasPermissions(2)) {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.not_operator"), false);
+            return;
+        }
+        ServerConfig.INSTANCE.setBuildModeReach(packet.buildModeReach());
+        ServerConfig.INSTANCE.setMaxBlocksPerAxis(packet.maxBlocksPerAxis());
+        ServerConfigStorage.save(player.server);
+
+        // Broadcast updated config to all connected players
+        for (ServerPlayer p : player.server.getPlayerList().getPlayers()) {
+            sendToClient(p, new SyncServerConfigS2CPacket(
+                    ServerConfig.INSTANCE.getBuildModeReach(),
+                    ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
+        }
+    }
+
+    /**
+     * Called on the client when a {@link SyncServerConfigS2CPacket} is received.
+     */
+    public static void handleSyncServerConfig(SyncServerConfigS2CPacket packet) {
+        ServerConfig.INSTANCE.setBuildModeReach(packet.buildModeReach());
+        ServerConfig.INSTANCE.setMaxBlocksPerAxis(packet.maxBlocksPerAxis());
     }
 
     /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */

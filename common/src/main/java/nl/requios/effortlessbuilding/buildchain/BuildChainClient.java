@@ -81,7 +81,7 @@ public class BuildChainClient {
         BlockPos clickedPos;
         if (mode.instance.isFirstClick()) {
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
+            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.getBuildModeReach()));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
             if (hit.getType() != HitResult.Type.BLOCK) return;
@@ -200,7 +200,7 @@ public class BuildChainClient {
             result = previewBlocks;
         } else {
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.BUILD_MODE_REACH));
+            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.getBuildModeReach()));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
             if (hit.getType() != HitResult.Type.BLOCK) return null;

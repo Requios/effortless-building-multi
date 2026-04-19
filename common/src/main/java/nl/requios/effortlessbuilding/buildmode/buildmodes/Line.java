@@ -31,7 +31,7 @@ public class Line extends TwoClicksBuildMode {
 		criteriaList.add(new Criteria(zBound, firstPos, start));
 
 		//Remove invalid criteria
-		int reach = BuildModes.BUILD_MODE_REACH;
+		int reach = BuildModes.getBuildModeReach();
 		criteriaList.removeIf(criteria -> !criteria.isValid(start, look, reach, player, skipRaytrace));
 
 		//If none are valid, return empty list of blocks
