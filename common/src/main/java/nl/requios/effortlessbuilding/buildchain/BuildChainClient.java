@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -25,6 +26,7 @@ import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
+import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.BucketItem;
@@ -75,10 +77,6 @@ public class BuildChainClient {
         Player player = mc.player;
         if (player == null || mc.level == null) return;
 
-        // Survival players cannot use mod-assisted breaking
-        if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild) {
-            return;
-        }
 
         BlockPos clickedPos;
         if (mode.instance.isFirstClick()) {
@@ -130,7 +128,23 @@ public class BuildChainClient {
                             ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart(),
                             BuildSettings.CLIENT.getReplaceMode(),
                             BuildSettings.CLIENT.shouldProtectTileEntities()));
+                    // Client-side placement tracking
+                    PlacedBlockTracker.clientTrackAll(mc.level.dimension(), blocks.keySet());
                 } else {
+                    // Check for unbreakable blocks and warn
+                    if (!player.getAbilities().instabuild) {
+                        boolean hasUnbreakable = false;
+                        for (BlockPos pos : blocks.keySet()) {
+                            if (!PlacedBlockTracker.clientIsTracked(mc.level.dimension(), pos)) {
+                                hasUnbreakable = true;
+                                break;
+                            }
+                        }
+                        if (hasUnbreakable) {
+                            player.displayClientMessage(
+                                    Component.translatable("effortlessbuilding.message.only_break_placed"), true);
+                        }
+                    }
                     PacketHandler.sendToServer(new BreakBuildModePacket(
                             mode, blocks.firstPos, secondPos, thirdPos,
                             ModeOptions.getFill(), ModeOptions.getCubeFill(),

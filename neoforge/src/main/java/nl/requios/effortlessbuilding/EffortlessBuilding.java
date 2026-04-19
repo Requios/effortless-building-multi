@@ -24,6 +24,7 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
 @Mod(Constants.MOD_ID)
@@ -99,6 +100,7 @@ public class EffortlessBuilding {
                 ModifierServerStorage.removePlayer(serverPlayer.getUUID());
             }
             UndoManager.clearPlayer(event.getEntity().getUUID());
+            PlacedBlockTracker.clearPlayer(event.getEntity().getUUID());
         });
 
         // Clear all cached data when the server stops (singleplayer world changes)

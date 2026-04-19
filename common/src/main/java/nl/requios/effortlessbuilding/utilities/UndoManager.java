@@ -107,6 +107,7 @@ public class UndoManager {
                             && InventoryHelper.findTotalItemsInInventory(player, requiredItem) > 0) {
                         InventoryHelper.consumeItems(player, requiredItem, 1);
                         level.setBlock(pos, oldState, 3);
+                        PlacedBlockTracker.trackAll(player.getUUID(), entry.dimension(), List.of(pos));
                         restored++;
                     }
                     continue;
@@ -156,23 +157,22 @@ public class UndoManager {
 
             if (!creative) {
                 // Redoing a placement: need to consume the item to place the block
-                // Only place if the position is still what we expect (air/replaceable)
                 if (!newState.isAir() && oldState.canBeReplaced()) {
-                    if (!currentState.equals(oldState)) continue; // someone changed it, skip
+                    if (!currentState.equals(oldState)) continue;
                     Item requiredItem = newState.getBlock().asItem();
                     if (requiredItem != net.minecraft.world.item.Items.AIR
                             && InventoryHelper.findTotalItemsInInventory(player, requiredItem) > 0) {
                         InventoryHelper.consumeItems(player, requiredItem, 1);
                         level.setBlock(pos, newState, 3);
+                        PlacedBlockTracker.trackAll(player.getUUID(), entry.dimension(), List.of(pos));
                         reapplied++;
                     }
                     continue;
                 }
 
                 // Redoing a break: remove the block and give items back
-                // Only break if the block is still what we originally broke
                 if (!oldState.isAir() && newState.isAir()) {
-                    if (!currentState.equals(oldState)) continue; // someone changed it, skip
+                    if (!currentState.equals(oldState)) continue;
                     level.setBlock(pos, newState, 3);
                     giveBlockItem(player, oldState);
                     reapplied++;

@@ -23,6 +23,7 @@ import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
+import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
 public class EffortlessBuilding implements ModInitializer {
@@ -74,6 +75,7 @@ public class EffortlessBuilding implements ModInitializer {
             ModifierServerStorage.savePlayer(server, player.getUUID());
             ModifierServerStorage.removePlayer(player.getUUID());
             UndoManager.clearPlayer(player.getUUID());
+            PlacedBlockTracker.clearPlayer(player.getUUID());
         });
 
         // Clear all cached data when the server stops

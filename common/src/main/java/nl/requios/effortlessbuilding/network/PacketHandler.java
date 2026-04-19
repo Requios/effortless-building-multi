@@ -10,6 +10,7 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
@@ -27,8 +28,10 @@ import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,6 +149,7 @@ public class PacketHandler {
 
         if (!undoChanges.isEmpty()) {
             UndoManager.recordOperation(player, level.dimension(), undoChanges);
+            PlacedBlockTracker.trackAll(player.getUUID(), level.dimension(), undoChanges.keySet());
         }
 
         Constants.LOG.debug("[EffortlessBuilding] Placed {} blocks for {} (mode {})", placed, player.getName().getString(), packet.buildMode());
@@ -155,10 +159,7 @@ public class PacketHandler {
      * Called on the server when a {@link BreakBuildModePacket} is received.
      */
     public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
-        if (!player.isCreative()) {
-            Constants.LOG.warn("[EffortlessBuilding] Survival player {} tried to use build-mode breaking, ignoring", player.getName().getString());
-            return;
-        }
+        boolean creative = player.isCreative();
 
         ServerLevel level = player.serverLevel();
 
@@ -182,11 +183,25 @@ public class PacketHandler {
         int broken = 0;
         for (BlockPos pos : blockSet.keySet()) {
             BlockState oldState = level.getBlockState(pos);
-            if (!oldState.isAir()) {
-				level.destroyBlock(pos, false, player);
-                undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, airState));
-                broken++;
+            if (oldState.isAir()) continue;
+
+            if (!creative) {
+                // Survival: only allow breaking positions the player placed this session
+                if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
+
+                // Give drops to inventory instead of dropping in world
+                var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
+                        player, player.getMainHandItem());
+                for (ItemStack drop : drops) {
+                    InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                }
+                // Also drop XP? Skip for simplicity.
+                level.setBlock(pos, airState, 3);
+            } else {
+                level.destroyBlock(pos, false, player);
             }
+            undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, airState));
+            broken++;
         }
 
         if (!undoChanges.isEmpty()) {

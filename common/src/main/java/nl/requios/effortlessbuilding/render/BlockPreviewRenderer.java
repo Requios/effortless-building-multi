@@ -33,6 +33,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
+import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -82,6 +83,23 @@ public class BlockPreviewRenderer {
         RenderHandler.updateFeedback(positions, sequenceActive, pendingAction);
 
         boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
+
+        // Determine which positions are unbreakable in survival breaking mode
+        boolean isSurvivalBreaking = isBreaking && mc.player != null && !mc.player.getAbilities().instabuild;
+        List<BlockPos> breakablePositions = new ArrayList<>();
+        List<BlockPos> unbreakablePositions = new ArrayList<>();
+        if (isSurvivalBreaking) {
+            var dimension = mc.level.dimension();
+            for (BlockPos pos : positions) {
+                if (PlacedBlockTracker.clientIsTracked(dimension, pos)) {
+                    breakablePositions.add(pos);
+                } else {
+                    unbreakablePositions.add(pos);
+                }
+            }
+        } else {
+            breakablePositions = positions;
+        }
 
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
@@ -135,7 +153,10 @@ public class BlockPreviewRenderer {
         // Disable depth writes so the translucent faces don't occlude the
         // outline edges drawn in Pass 3.
         RenderSystem.depthMask(false);
-        renderBoundingBoxFaces(poseStack, bufferSource, positions, camX, camY, camZ, isBreaking);
+        renderBoundingBoxFaces(poseStack, bufferSource, breakablePositions, camX, camY, camZ, isBreaking, false);
+        if (!unbreakablePositions.isEmpty()) {
+            renderBoundingBoxFaces(poseStack, bufferSource, unbreakablePositions, camX, camY, camZ, isBreaking, true);
+        }
         bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
         RenderSystem.depthMask(true);
 
@@ -165,17 +186,29 @@ public class BlockPreviewRenderer {
                     camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
             bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
         }
+        if (!unbreakablePositions.isEmpty()) {
+            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
+                    camX, camY, camZ, outlineWidth, 128, 128, 128, 255);
+            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        }
     }
 
     private static void renderBoundingBoxFaces(PoseStack poseStack, MultiBufferSource bufferSource,
                                                 List<BlockPos> positions, double camX, double camY, double camZ,
-                                                boolean isBreaking) {
+                                                boolean isBreaking, boolean isUnbreakable) {
         Set<BlockPos> posSet = new HashSet<>(positions);
 
         var consumer = bufferSource.getBuffer(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
         var pose = poseStack.last();
-        int r = isBreaking ? 255 : 255, g = isBreaking ? 0 : 255, b = isBreaking ? 0 : 255;
-        int a = 150;
+        int r, g, b;
+        if (isUnbreakable) {
+            r = 128; g = 128; b = 128;
+        } else {
+            r = isBreaking ? 255 : 255;
+            g = isBreaking ? 0 : 255;
+            b = isBreaking ? 0 : 255;
+        }
+        int a = isUnbreakable ? 100 : 150;
         final float eps = 0.002f;
 
         for (BlockPos pos : positions) {

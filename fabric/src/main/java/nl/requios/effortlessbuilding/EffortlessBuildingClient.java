@@ -96,7 +96,8 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     if (leftJustPressed) {
                         if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
                             BuildChainClient.cancelCurrentSequence();
-                        } else if (client.player.getAbilities().instabuild) {
+                        } else if (BuildChain.isBuildTriggerItem(client.player.getMainHandItem())
+                                || BuildChainClient.getBuildState() != null) {
                             BuildChainClient.handleLeftClick(Minecraft.getInstance());
                         }
                     }

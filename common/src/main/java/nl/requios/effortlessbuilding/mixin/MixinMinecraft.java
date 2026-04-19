@@ -27,28 +27,32 @@ public class MixinMinecraft {
         if (BuildChain.isBuildTriggerItem(mc.player.getMainHandItem()) || sequenceActive) ci.cancel();
     }
 
-    // Cancel vanilla block breaking (left-click on block) when a build mode is active.
-    // Only cancels for blocks; entity attacks are left alone.
+    // Cancel vanilla block breaking (left-click on block) when a build mode is active
+    // and the player is holding a build trigger item or mid-sequence.
+    // Tools and other non-build items are left alone so vanilla mining works.
     @Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
     private void onStartAttack(CallbackInfoReturnable<Boolean> cir) {
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
+        boolean sequenceActive = BuildChainClient.getBuildState() != null;
+        if (!sequenceActive && !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem())) return;
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
             cir.setReturnValue(false);
             cir.cancel();
         }
     }
 
-    // Cancel vanilla hold-to-mine (continueAttack) when a build mode is active.
-    // Without this, holding left-click still progresses block breaking even though
-    // startAttack was cancelled.
+    // Cancel vanilla hold-to-mine (continueAttack) when a build mode is active
+    // and the player is holding a build trigger item or mid-sequence.
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void onContinueAttack(boolean leftClick, CallbackInfo ci) {
         if (!leftClick) return;
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
+        boolean sequenceActive = BuildChainClient.getBuildState() != null;
+        if (!sequenceActive && !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem())) return;
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
             ci.cancel();
         }
