@@ -130,5 +130,6 @@
   "effortlessbuilding.message.redo": "Redo: re-applied %s blocks",
   "effortlessbuilding.message.nothing_to_undo": "Nothing to undo",
   "effortlessbuilding.message.nothing_to_redo": "Nothing to redo",
-  "effortlessbuilding.message.only_break_placed": "You can only break blocks that you placed this session"
+  "effortlessbuilding.message.only_break_placed": "You can only break blocks that you placed this session",
+  "effortlessbuilding.message.only_replace_placed": "You can only replace blocks that you placed this session"
 }

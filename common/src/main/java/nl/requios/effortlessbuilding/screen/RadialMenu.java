@@ -144,25 +144,21 @@ public class RadialMenu extends Screen {
 		}
 
 		//Add actions
-		boolean canReplace = minecraft.player != null && minecraft.player.getAbilities().instabuild;
-
 		buttons.add(new MenuButton(ActionEnum.OPEN_MODIFIER_SETTINGS, -buttonDistance - 52, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.UNDO, -buttonDistance - 26, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
 
-		if (canReplace) {
-			buttons.add(new MenuButton(ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES, -buttonDistance - 26, 13, Direction.DOWN));
-			MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
-			// Show the current replace mode's icon, but use a generic title
-			ActionEnum currentReplaceAction = BuildSettings.CLIENT.getReplaceModeActionEnum();
-			replaceBtn.iconOverride = currentReplaceAction.icon;
-			replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
-			// Subtitle: current mode name (rendered white), Description: its description
-			replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
-			replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
-					? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
-			buttons.add(replaceBtn);
-		}
+		buttons.add(new MenuButton(ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES, -buttonDistance - 26, 13, Direction.DOWN));
+		MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
+		// Show the current replace mode's icon, but use a generic title
+		ActionEnum currentReplaceAction = BuildSettings.CLIENT.getReplaceModeActionEnum();
+		replaceBtn.iconOverride = currentReplaceAction.icon;
+		replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
+		// Subtitle: current mode name (rendered white), Description: its description
+		replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
+		replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
+				? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
+		buttons.add(replaceBtn);
 
 		//Add buildmode dependent options
 		OptionEnum[] options = currentBuildMode.options;

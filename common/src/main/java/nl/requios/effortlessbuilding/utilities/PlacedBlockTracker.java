@@ -20,8 +20,10 @@ public class PlacedBlockTracker {
 
     /**
      * Fixed UUID used for client-side tracking (the client only ever tracks its own placements).
+     * Uses a specific non-zero UUID to avoid collisions with real player UUIDs (including
+     * dev environments that may use all-zeros).
      */
-    public static final UUID CLIENT_ID = new UUID(0, 0);
+    public static final UUID CLIENT_ID = new UUID(0xEFF0B1E55L, 0xC11EA7L);
 
     // UUID -> (dimension -> insertion-ordered set of positions)
     private static final Map<UUID, Map<ResourceKey<Level>, LinkedHashSet<BlockPos>>> data = new HashMap<>();

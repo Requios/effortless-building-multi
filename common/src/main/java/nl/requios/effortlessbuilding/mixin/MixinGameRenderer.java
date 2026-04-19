@@ -27,6 +27,11 @@ public class MixinGameRenderer {
         if (minecraft.player == null || minecraft.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
 
+        // Only extend reach for build trigger items (blocks/buckets) or mid-sequence.
+        // Tools should use vanilla reach for normal mining.
+        if (!nl.requios.effortlessbuilding.buildchain.BuildChain.isBuildTriggerItem(minecraft.player.getMainHandItem())
+                && nl.requios.effortlessbuilding.buildchain.BuildChainClient.getBuildState() == null) return;
+
         // Only extend if the vanilla pick didn't find a block.
         if (minecraft.hitResult != null && minecraft.hitResult.getType() == HitResult.Type.BLOCK) return;
 
@@ -42,4 +47,3 @@ public class MixinGameRenderer {
         }
     }
 }
-

@@ -30,6 +30,7 @@ import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
@@ -84,8 +85,11 @@ public class BlockPreviewRenderer {
 
         boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
 
-        // Determine which positions are unbreakable in survival breaking mode
-        boolean isSurvivalBreaking = isBreaking && mc.player != null && !mc.player.getAbilities().instabuild;
+        // Determine which positions are unactionable in survival mode
+        boolean isSurvival = mc.player != null && !mc.player.getAbilities().instabuild;
+        boolean isSurvivalBreaking = isBreaking && isSurvival;
+        boolean isSurvivalReplacing = !isBreaking && isSurvival
+                && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR;
         List<BlockPos> breakablePositions = new ArrayList<>();
         List<BlockPos> unbreakablePositions = new ArrayList<>();
         if (isSurvivalBreaking) {
@@ -97,9 +101,22 @@ public class BlockPreviewRenderer {
                     unbreakablePositions.add(pos);
                 }
             }
+        } else if (isSurvivalReplacing) {
+            var dimension = mc.level.dimension();
+            for (BlockPos pos : positions) {
+                BlockState existing = mc.level.getBlockState(pos);
+                if (existing.canBeReplaced() || PlacedBlockTracker.clientIsTracked(dimension, pos)) {
+                    breakablePositions.add(pos);
+                } else {
+                    unbreakablePositions.add(pos);
+                }
+            }
         } else {
             breakablePositions = positions;
         }
+
+        // Narrow the working list so block previews and wireframes only cover actionable positions
+        positions = breakablePositions;
 
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {

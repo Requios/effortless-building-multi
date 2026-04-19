@@ -86,9 +86,7 @@ public class PacketHandler {
         ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
         boolean creative = player.isCreative();
 
-        BuildSettings.ReplaceMode replaceMode = creative
-                ? packet.replaceMode()
-                : BuildSettings.ReplaceMode.ONLY_AIR;
+        BuildSettings.ReplaceMode replaceMode = packet.replaceMode();
         boolean protectTiles = packet.protectTileEntities();
 
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
@@ -106,6 +104,18 @@ public class PacketHandler {
 
                 if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                     BlockState oldState = level.getBlockState(pos);
+
+                    // Survival: only allow replacing solid blocks placed by this player this session
+                    if (!creative && !oldState.canBeReplaced()) {
+                        if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
+                        // Return the displaced block's drops to the player's inventory
+                        var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
+                                player, player.getMainHandItem());
+                        for (ItemStack drop : drops) {
+                            InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                        }
+                    }
+
                     Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
                     BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
                     BlockPlaceContext ctx = new OpenBlockPlaceContext(level, player, InteractionHand.MAIN_HAND, held, serverHit);
@@ -133,6 +143,17 @@ public class PacketHandler {
                     if (placed >= maxPlace) break;
                     if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                         BlockState oldState = level.getBlockState(pos);
+
+                        // Survival: only allow replacing solid blocks placed by this player this session
+                        if (!creative && !oldState.canBeReplaced()) {
+                            if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
+                            var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
+                                    player, player.getMainHandItem());
+                            for (ItemStack drop : drops) {
+                                InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                            }
+                        }
+
                         level.setBlock(pos, fluidState, 3);
                         undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, fluidState));
                         placed++;
@@ -151,8 +172,6 @@ public class PacketHandler {
             UndoManager.recordOperation(player, level.dimension(), undoChanges);
             PlacedBlockTracker.trackAll(player.getUUID(), level.dimension(), undoChanges.keySet());
         }
-
-        Constants.LOG.debug("[EffortlessBuilding] Placed {} blocks for {} (mode {})", placed, player.getName().getString(), packet.buildMode());
     }
 
     /**
@@ -207,8 +226,6 @@ public class PacketHandler {
         if (!undoChanges.isEmpty()) {
             UndoManager.recordOperation(player, level.dimension(), undoChanges);
         }
-
-        Constants.LOG.debug("[EffortlessBuilding] Broke {} blocks for {} (mode {})", broken, player.getName().getString(), packet.buildMode());
     }
 
     /**

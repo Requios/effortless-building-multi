@@ -119,6 +119,23 @@ public class BuildChainClient {
                 BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
 
                 if (action == BuildChain.BuildState.PLACING) {
+                    // Check for unreplaceable blocks and warn
+                    if (!player.getAbilities().instabuild
+                            && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR) {
+                        boolean hasUnreplaceable = false;
+                        var dimension = mc.level.dimension();
+                        for (BlockPos pos : blocks.keySet()) {
+                            if (!mc.level.getBlockState(pos).canBeReplaced()
+                                    && !PlacedBlockTracker.clientIsTracked(dimension, pos)) {
+                                hasUnreplaceable = true;
+                                break;
+                            }
+                        }
+                        if (hasUnreplaceable) {
+                            player.displayClientMessage(
+                                    Component.translatable("effortlessbuilding.message.only_replace_placed"), true);
+                        }
+                    }
                     Direction hitFace = firstClickHit != null ? firstClickHit.getDirection() : Direction.UP;
                     Vec3 hitLocation = firstClickHit != null ? firstClickHit.getLocation() : Vec3.atCenterOf(blocks.firstPos);
                     PacketHandler.sendToServer(new PlaceBuildModePacket(

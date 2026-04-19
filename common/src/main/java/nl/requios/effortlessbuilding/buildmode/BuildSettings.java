@@ -8,7 +8,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Client-side build settings for replace mode and tile-entity protection.
- * Replace mode is only available in creative mode.
+ * Replace mode is available to all players; survival players may only replace
+ * blocks they placed this session (enforced server-side via PlacedBlockTracker).
  */
 public class BuildSettings {
 
@@ -41,8 +42,7 @@ public class BuildSettings {
     }
 
     /**
-     * Returns the effective replace mode. Falls back to ONLY_AIR if the player
-     * is not in creative mode (replace is a creative-only feature).
+     * Returns the effective replace mode. Falls back to ONLY_AIR if there is no local player.
      */
     public ReplaceMode getReplaceMode() {
         if (!canReplace()) return ReplaceMode.ONLY_AIR;
@@ -151,7 +151,7 @@ public class BuildSettings {
 
     private boolean canReplace() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && mc.player.getAbilities().instabuild;
+        return mc.player != null;
     }
 }
 
