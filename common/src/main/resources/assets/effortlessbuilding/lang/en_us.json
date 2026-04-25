@@ -139,5 +139,12 @@
   "effortlessbuilding.screen.server_config": "Server Config",
   "effortlessbuilding.config.build_mode_reach": "Build Mode Reach",
   "effortlessbuilding.config.max_blocks_per_axis": "Max Blocks Per Axis",
-  "effortlessbuilding.button.save": "Save"
+  "effortlessbuilding.button.save": "Save",
+  "effortlessbuilding.screen.client_config": "Client Config",
+  "effortlessbuilding.config.preview_block_size": "Preview Block Size",
+  "effortlessbuilding.config.preview_block_transparency": "Preview Transparency",
+  "effortlessbuilding.config.protect_tile_entities": "Protect Tile Entities",
+  "effortlessbuilding.config.max_block_previews": "Max Block Previews",
+  "effortlessbuilding.action.open_client_config": "Client Config",
+  "effortlessbuilding.action.open_client_config.description": "Open the client configuration screen."
 }

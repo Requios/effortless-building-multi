@@ -78,7 +78,6 @@ public class ModeOptions {
 //			case DISABLE_BUILD_MODE_TOGGLE -> EffortlessBuildingClient.BUILD_MODES.activateDisableBuildModeToggle();
 
 			case CYCLE_REPLACE_MODE -> BuildSettings.CLIENT.cycleReplaceMode();
-			case TOGGLE_PROTECT_TILE_ENTITIES -> BuildSettings.CLIENT.toggleProtectTileEntities();
 
 			case NORMAL_SPEED -> buildSpeed = ActionEnum.NORMAL_SPEED;
 			case FAST_SPEED -> buildSpeed = ActionEnum.FAST_SPEED;
@@ -104,6 +103,7 @@ public class ModeOptions {
 		if (player.level().isClientSide &&
 			action != ActionEnum.OPEN_MODIFIER_SETTINGS &&
 			action != ActionEnum.OPEN_SERVER_CONFIG &&
+			action != ActionEnum.OPEN_CLIENT_CONFIG &&
 			action != ActionEnum.OPEN_PLAYER_SETTINGS &&
 			action != ActionEnum.PREVIOUS_BUILD_MODE &&
 			action != ActionEnum.DISABLE_BUILD_MODE_TOGGLE) {
@@ -125,7 +125,6 @@ public class ModeOptions {
 		REPLACE_BLOCKS_AND_AIR("replace_blocks_and_air", AllIcons.I_REPLACE_BLOCKS_AND_AIR),
 		REPLACE_ONLY_BLOCKS("replace_only_blocks", AllIcons.I_REPLACE_BLOCKS),
 		REPLACE_FILTERED_BY_OFFHAND("replace_filtered_by_offhand", AllIcons.I_REPLACE_OFFHAND_FILTERED),
-		TOGGLE_PROTECT_TILE_ENTITIES("toggle_protect_tile_entities", AllIcons.I_PROTECT_TILE_ENTITIES),
 
 		NORMAL_SPEED("normal_speed", AllIcons.I_NORMAL_SPEED),
 		FAST_SPEED("fast_speed", AllIcons.I_FAST_SPEED),
@@ -146,7 +145,8 @@ public class ModeOptions {
 
 		CIRCLE_START_CORNER("start_corner", AllIcons.I_CIRCLE_START_CORNER),
 		CIRCLE_START_CENTER("start_center", AllIcons.I_CIRCLE_START_CENTER),
-		OPEN_SERVER_CONFIG("open_server_config", AllIcons.I_SETTINGS);
+		OPEN_SERVER_CONFIG("open_server_config", AllIcons.I_SETTINGS),
+		OPEN_CLIENT_CONFIG("open_client_config", AllIcons.I_SETTINGS);
 
 		public String name;
 		public AllIcons icon;

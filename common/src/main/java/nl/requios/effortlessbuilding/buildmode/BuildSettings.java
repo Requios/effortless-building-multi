@@ -23,7 +23,6 @@ public class BuildSettings {
     }
 
     private ReplaceMode replaceMode = ReplaceMode.ONLY_AIR;
-    private boolean protectTileEntities = true;
 
     // -------------------------------------------------------------------------
     // Replace mode
@@ -64,36 +63,6 @@ public class BuildSettings {
             case ONLY_BLOCKS -> ModeOptions.ActionEnum.REPLACE_ONLY_BLOCKS;
             case FILTERED_BY_OFFHAND -> ModeOptions.ActionEnum.REPLACE_FILTERED_BY_OFFHAND;
         };
-    }
-
-    // -------------------------------------------------------------------------
-    // Protect tile entities
-    // -------------------------------------------------------------------------
-
-    public void toggleProtectTileEntities() {
-        protectTileEntities = !protectTileEntities;
-    }
-
-    public boolean shouldProtectTileEntities() {
-        return protectTileEntities;
-    }
-
-    // -------------------------------------------------------------------------
-    // Query helpers
-    // -------------------------------------------------------------------------
-
-    public boolean shouldReplaceAir() {
-        ReplaceMode mode = getReplaceMode();
-        return mode == ReplaceMode.ONLY_AIR || mode == ReplaceMode.BLOCKS_AND_AIR;
-    }
-
-    public boolean shouldReplaceBlocks() {
-        ReplaceMode mode = getReplaceMode();
-        return mode == ReplaceMode.ONLY_BLOCKS || mode == ReplaceMode.BLOCKS_AND_AIR;
-    }
-
-    public boolean shouldReplaceFiltered() {
-        return getReplaceMode() == ReplaceMode.FILTERED_BY_OFFHAND;
     }
 
     /**

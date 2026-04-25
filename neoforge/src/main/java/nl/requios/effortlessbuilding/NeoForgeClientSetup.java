@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
@@ -30,6 +31,8 @@ public class NeoForgeClientSetup {
     public static class ModEvents {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+            ClientConfig.INSTANCE.load();
+
             event.register(KeyBindings.openModifiersScreen);
             event.register(KeyBindings.undo);
             event.register(KeyBindings.redo);

@@ -18,6 +18,7 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.Constants;
+import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -121,8 +122,8 @@ public class BlockPreviewRenderer {
         // Pass 1: block/fluid preview (placing only).
         if (!isBreaking) {
             
-            float blockScale = 0.5f;
-            int blockAlpha = 200;
+            float blockScale = ClientConfig.INSTANCE.getPreviewBlockSize();
+            int blockAlpha = (int) (ClientConfig.INSTANCE.getPreviewBlockTransparency() * 255);
             
             var held = mc.player.getMainHandItem();
             BlockState baseState = null;

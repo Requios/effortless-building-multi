@@ -150,10 +150,10 @@ public class RadialMenu extends Screen {
 
 		// Server config button — only visible to operators
 		if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
-			buttons.add(new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 78, -13, Direction.UP));
+			buttons.add(new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 52, 13, Direction.DOWN));
 		}
 
-		buttons.add(new MenuButton(ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES, -buttonDistance - 26, 13, Direction.DOWN));
+		buttons.add(new MenuButton(ActionEnum.OPEN_CLIENT_CONFIG, -buttonDistance - 26, 13, Direction.DOWN));
 		MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
 		// Show the current replace mode's icon, but use a generic title
 		ActionEnum currentReplaceAction = BuildSettings.CLIENT.getReplaceModeActionEnum();
@@ -277,8 +277,7 @@ public class RadialMenu extends Screen {
 					btn.action == ModeOptions.getRaisedEdge() ||
 					btn.action == ModeOptions.getLineThickness() ||
 					btn.action == ModeOptions.getCircleStart() ||
-					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.isQuickReplacing()) ||
-					(btn.action == ActionEnum.TOGGLE_PROTECT_TILE_ENTITIES && BuildSettings.CLIENT.shouldProtectTileEntities());
+					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.isQuickReplacing());
 
 
 
@@ -465,6 +464,12 @@ public class RadialMenu extends Screen {
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
 				performedActionUsingMouse = true;
 				minecraft.setScreen(new ServerConfigScreen());
+				return;
+			}
+
+			if (action == ActionEnum.OPEN_CLIENT_CONFIG) {
+				performedActionUsingMouse = true;
+				minecraft.setScreen(new ClientConfigScreen());
 				return;
 			}
 

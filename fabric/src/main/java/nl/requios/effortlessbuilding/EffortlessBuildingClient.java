@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
+import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
@@ -32,6 +33,8 @@ public class EffortlessBuildingClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientConfig.INSTANCE.load();
+
         KeyBindingHelper.registerKeyBinding(KeyBindings.openModifiersScreen);
         KeyBindingHelper.registerKeyBinding(KeyBindings.undo);
         KeyBindingHelper.registerKeyBinding(KeyBindings.redo);

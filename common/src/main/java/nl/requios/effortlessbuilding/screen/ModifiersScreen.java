@@ -374,20 +374,14 @@ public class ModifiersScreen extends Screen {
     // =========================================================================
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderTransparentBackground(graphics);
-    }
-
-    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         int px = panelX(), py = panelY();
         List<IModifier> modifiers = filteredModifiers;
 
-        // Panel backdrop + border
-        graphics.fill(px, py, px + PANEL_W, py + PANEL_H, 0xD0101010);
-        graphics.renderOutline(px, py, PANEL_W, PANEL_H, 0xFFAAAAAA);
+        // Full-width darker panel (like vanilla OptionsList)
+        renderMenuBackground(graphics, 0, py, this.width, PANEL_H);
 
         // Divider
         int divX = px + DIV_OX;
@@ -420,8 +414,6 @@ public class ModifiersScreen extends Screen {
 
         // Settings labels + hint
         renderSettingsLabels(graphics, px, py, modifiers);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderSettingsLabels(GuiGraphics graphics, int px, int py, List<IModifier> modifiers) {

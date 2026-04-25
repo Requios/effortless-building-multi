@@ -20,6 +20,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
+import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
@@ -144,7 +145,7 @@ public class BuildChainClient {
                             ModeOptions.getFill(), ModeOptions.getCubeFill(),
                             ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart(),
                             BuildSettings.CLIENT.getReplaceMode(),
-                            BuildSettings.CLIENT.shouldProtectTileEntities()));
+                            ClientConfig.INSTANCE.shouldProtectTileEntities()));
                     // Client-side placement tracking
                     PlacedBlockTracker.clientTrackAll(mc.level.dimension(), blocks.keySet());
                 } else {

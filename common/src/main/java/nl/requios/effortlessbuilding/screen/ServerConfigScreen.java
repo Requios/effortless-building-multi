@@ -66,19 +66,14 @@ public class ServerConfigScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderTransparentBackground(graphics);
-    }
-
-    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         int left = (width - PANEL_W) / 2;
         int top = (height - PANEL_H) / 2;
 
-        // Panel background
-        //graphics.fill(left, top, left + PANEL_W, top + PANEL_H, 0xCC222222);
+        // Full-width darker panel (like vanilla OptionsList)
+        renderMenuBackground(graphics, 0, top, this.width, PANEL_H);
 
         // Title
         graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFF);
@@ -89,8 +84,6 @@ public class ServerConfigScreen extends Screen {
         graphics.drawString(font, Component.translatable("effortlessbuilding.config.build_mode_reach"), labelX, rowY, 0xFFFFFF);
         rowY += 28;
         graphics.drawString(font, Component.translatable("effortlessbuilding.config.max_blocks_per_axis"), labelX, rowY, 0xFFFFFF);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
