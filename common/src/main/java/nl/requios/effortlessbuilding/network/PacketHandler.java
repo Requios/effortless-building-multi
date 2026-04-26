@@ -19,9 +19,11 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildSkills;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -69,6 +71,10 @@ public class PacketHandler {
     }
 
     public static void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncBuildSkillsS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
     }
 
@@ -318,6 +324,15 @@ public class PacketHandler {
     public static void handleSyncServerConfig(SyncServerConfigS2CPacket packet) {
         ServerConfig.INSTANCE.setBuildModeReach(packet.buildModeReach());
         ServerConfig.INSTANCE.setMaxBlocksPerAxis(packet.maxBlocksPerAxis());
+    }
+
+    /**
+     * Called on the client when a {@link SyncBuildSkillsS2CPacket} is received.
+     * Updates the client-side effective reach and axis used for preview calculations.
+     */
+    public static void handleSyncBuildSkills(SyncBuildSkillsS2CPacket packet) {
+        BuildSkills.setClientEffectiveReach(packet.effectiveReach());
+        BuildSkills.setClientEffectiveAxis(packet.effectiveAxis());
     }
 
     /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */

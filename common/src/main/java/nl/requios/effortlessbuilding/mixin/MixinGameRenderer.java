@@ -3,6 +3,7 @@ package nl.requios.effortlessbuilding.mixin;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
+import nl.requios.effortlessbuilding.buildchain.BuildSkills;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import org.spongepowered.asm.mixin.Final;
@@ -13,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Extends the crosshair raytrace ({@code hitResult}) to {@link BuildModes#BUILD_MODE_REACH}
+ * Extends the crosshair raytrace ({@code hitResult}) to the effective build reach
  * when a build mode is active, so that pick-block (middle-click) and the block highlight
  * work at extended range.
  */
@@ -36,7 +37,7 @@ public class MixinGameRenderer {
         if (minecraft.hitResult != null && minecraft.hitResult.getType() == HitResult.Type.BLOCK) return;
 
         net.minecraft.world.phys.Vec3 start = minecraft.player.getEyePosition(partialTicks);
-        net.minecraft.world.phys.Vec3 end = start.add(minecraft.player.getViewVector(partialTicks).scale(BuildModes.getBuildModeReach()));
+        net.minecraft.world.phys.Vec3 end = start.add(minecraft.player.getViewVector(partialTicks).scale(BuildSkills.getClientEffectiveReach()));
         net.minecraft.world.level.ClipContext ctx = new net.minecraft.world.level.ClipContext(
                 start, end, net.minecraft.world.level.ClipContext.Block.OUTLINE,
                 net.minecraft.world.level.ClipContext.Fluid.NONE, minecraft.player);

@@ -5,8 +5,6 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import nl.requios.effortlessbuilding.Constants;
-import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
 public class BuildModes {
@@ -14,10 +12,6 @@ public class BuildModes {
 	// Client-side singleton — build modes are purely client-side during preview.
     // When placement is confirmed the client sends a packet to the server.
     public static final BuildModes CLIENT = new BuildModes();
-
-    // Placeholder constants until a power/permission system is wired up.
-    public static int getBuildModeReach() { return ServerConfig.INSTANCE.getBuildModeReach(); }
-    public static int getMaxBlocksPerAxis() { return ServerConfig.INSTANCE.getMaxBlocksPerAxis(); }
 
     private BuildModeEnum buildMode = BuildModeEnum.DISABLED;
     private BuildModeEnum previousBuildMode = BuildModeEnum.DISABLED;

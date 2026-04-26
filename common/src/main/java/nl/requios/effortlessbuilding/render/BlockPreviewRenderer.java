@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
 import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
+import nl.requios.effortlessbuilding.buildchain.BuildSkills;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
@@ -330,7 +331,7 @@ public class BlockPreviewRenderer {
         if (hit == null) {
             // Pre-click: raytrace to show what would be placed at the current target.
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildModes.getBuildModeReach()));
+            Vec3 end = start.add(player.getLookAngle().scale(BuildSkills.getClientEffectiveReach()));
             ClipContext clipCtx = new ClipContext(start, end, ClipContext.Block.OUTLINE,
                     ClipContext.Fluid.NONE, player);
             hit = mc.level.clip(clipCtx);

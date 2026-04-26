@@ -34,7 +34,7 @@ public class ServerConfig {
     }
 
     public void setBuildModeReach(int value) {
-        this.buildModeReach = clamp(value, MIN_BUILD_MODE_REACH, MAX_BUILD_MODE_REACH);
+        this.buildModeReach = Math.clamp(value, MIN_BUILD_MODE_REACH, MAX_BUILD_MODE_REACH);
     }
 
     public int getMaxBlocksPerAxis() {
@@ -42,7 +42,7 @@ public class ServerConfig {
     }
 
     public void setMaxBlocksPerAxis(int value) {
-        this.maxBlocksPerAxis = clamp(value, MIN_MAX_BLOCKS_PER_AXIS, MAX_MAX_BLOCKS_PER_AXIS);
+        this.maxBlocksPerAxis = Math.clamp(value, MIN_MAX_BLOCKS_PER_AXIS, MAX_MAX_BLOCKS_PER_AXIS);
     }
 
     public void copyFrom(ServerConfig other) {
@@ -74,10 +74,6 @@ public class ServerConfig {
             // Return defaults on parse failure
         }
         return config;
-    }
-
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
     }
 }
 

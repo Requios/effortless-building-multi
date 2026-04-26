@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildchain.BuildSkills;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.TwoClicksBuildMode;
 
@@ -31,7 +32,7 @@ public class Line extends TwoClicksBuildMode {
 		criteriaList.add(new Criteria(zBound, firstPos, start));
 
 		//Remove invalid criteria
-		int reach = BuildModes.getBuildModeReach();
+		int reach = BuildSkills.getClientEffectiveReach();
 		criteriaList.removeIf(criteria -> !criteria.isValid(start, look, reach, player, skipRaytrace));
 
 		//If none are valid, return empty list of blocks

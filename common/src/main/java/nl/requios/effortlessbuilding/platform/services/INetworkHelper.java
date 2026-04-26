@@ -9,6 +9,7 @@ import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.network.SyncBuildSkillsS2CPacket;
 
 public interface INetworkHelper {
 
@@ -27,4 +28,6 @@ public interface INetworkHelper {
     void sendToServer(UpdateServerConfigC2SPacket packet);
 
     void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet);
+
+    void sendToClient(ServerPlayer player, SyncBuildSkillsS2CPacket packet);
 }
