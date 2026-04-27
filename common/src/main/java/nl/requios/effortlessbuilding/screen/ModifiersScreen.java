@@ -374,14 +374,16 @@ public class ModifiersScreen extends Screen {
     // =========================================================================
 
     @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        guiGraphics.fill(0, 0, this.width, this.height, 150 << 24);
+    }
+
+    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int px = panelX(), py = panelY();
         List<IModifier> modifiers = filteredModifiers;
-
-        // Full-width darker panel (like vanilla OptionsList)
-        renderMenuBackground(graphics, 0, py, this.width, PANEL_H);
 
         // Divider
         int divX = px + DIV_OX;

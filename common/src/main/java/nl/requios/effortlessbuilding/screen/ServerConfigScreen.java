@@ -66,14 +66,16 @@ public class ServerConfigScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        guiGraphics.fill(0, 0, this.width, this.height, 150 << 24);
+    }
+
+    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int left = (width - PANEL_W) / 2;
         int top = (height - PANEL_H) / 2;
-
-        // Full-width darker panel (like vanilla OptionsList)
-        renderMenuBackground(graphics, 0, top, this.width, PANEL_H);
 
         // Title
         graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFF);

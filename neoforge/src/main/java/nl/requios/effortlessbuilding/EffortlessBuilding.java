@@ -52,8 +52,7 @@ public class EffortlessBuilding {
     private static final Supplier<Item> AXIS_UPGRADE = ITEMS.register("axis_upgrade", AxisUpgradeItem::new);
 
     public EffortlessBuilding(IEventBus eventBus, ModContainer modContainer) {
-        Constants.LOG.info("Hello NeoForge world!");
-
+        
         // Register items
         ITEMS.register(eventBus);
         eventBus.addListener((BuildCreativeModeTabContentsEvent event) -> {

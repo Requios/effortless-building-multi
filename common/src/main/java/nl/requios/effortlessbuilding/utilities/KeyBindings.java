@@ -1,4 +1,4 @@
-package nl.requios.effortlessbuilding.screen;
+package nl.requios.effortlessbuilding.utilities;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
