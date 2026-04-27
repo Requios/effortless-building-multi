@@ -148,5 +148,18 @@
   "effortlessbuilding.config.protect_tile_entities": "Protect Tile Entities",
   "effortlessbuilding.config.max_block_previews": "Max Block Previews",
   "effortlessbuilding.action.open_client_config": "Client Config",
-  "effortlessbuilding.action.open_client_config.description": "Open the client configuration screen."
+  "effortlessbuilding.action.open_client_config.description": "Open the client configuration screen.",
+
+  "effortlessbuilding.config.breaking_placed_blocks": "Breaking Placed Blocks",
+  "effortlessbuilding.config.breaking_any_blocks": "Breaking Any Blocks",
+  "effortlessbuilding.config.breaking_with_undo": "Breaking with Undo",
+  "effortlessbuilding.config.breaking_placed_blocks.allow": "Allow Breaking Placed Blocks",
+  "effortlessbuilding.config.breaking_any_blocks.allow": "Allow Breaking Any Blocks",
+  "effortlessbuilding.config.breaking_with_undo.allow": "Allow Breaking with Undo",
+  "effortlessbuilding.button.configure": "Configure...",
+  "effortlessbuilding.config.allow_breaking": "Allow Breaking",
+  "effortlessbuilding.config.max_hardness": "Max Hardness (-1 = no limit)",
+  "effortlessbuilding.config.require_tools_to_break": "Require Tools to Break",
+  "effortlessbuilding.config.require_tools_for_drops": "Require Tools for Drops",
+  "effortlessbuilding.config.saturation_per_block": "Saturation per Block"
 }

@@ -110,8 +110,7 @@ public class EffortlessBuilding implements ModInitializer {
             PacketHandler.sendToClient(player, new SyncModifiersS2CPacket(
                     ModifierServerStorage.serializePlayer(player.getUUID())));
             PacketHandler.sendToClient(player, new SyncServerConfigS2CPacket(
-                    ServerConfig.INSTANCE.getBuildModeReach(),
-                    ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
+                    ServerConfig.INSTANCE.toJson()));
             PacketHandler.sendToClient(player, new SyncBuildSkillsS2CPacket(
                     BuildSkills.getEffectiveReach(player),
                     BuildSkills.getEffectiveAxis(player)));

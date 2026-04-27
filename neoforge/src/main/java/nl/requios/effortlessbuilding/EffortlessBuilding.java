@@ -122,8 +122,7 @@ public class EffortlessBuilding {
                 PacketHandler.sendToClient(serverPlayer, new SyncModifiersS2CPacket(
                         ModifierServerStorage.serializePlayer(serverPlayer.getUUID())));
                 PacketHandler.sendToClient(serverPlayer, new SyncServerConfigS2CPacket(
-                        ServerConfig.INSTANCE.getBuildModeReach(),
-                        ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
+                        ServerConfig.INSTANCE.toJson()));
                 PacketHandler.sendToClient(serverPlayer, new SyncBuildSkillsS2CPacket(
                         BuildSkills.getEffectiveReach(serverPlayer),
                         BuildSkills.getEffectiveAxis(serverPlayer)));

@@ -306,15 +306,14 @@ public class PacketHandler {
                     Component.translatable("effortlessbuilding.message.not_operator"), false);
             return;
         }
-        ServerConfig.INSTANCE.setBuildModeReach(packet.buildModeReach());
-        ServerConfig.INSTANCE.setMaxBlocksPerAxis(packet.maxBlocksPerAxis());
+        ServerConfig incoming = ServerConfig.fromJson(packet.json());
+        ServerConfig.INSTANCE.copyFrom(incoming);
         ServerConfigStorage.save(player.server);
 
         // Broadcast updated config to all connected players
+        String json = ServerConfig.INSTANCE.toJson();
         for (ServerPlayer p : player.server.getPlayerList().getPlayers()) {
-            sendToClient(p, new SyncServerConfigS2CPacket(
-                    ServerConfig.INSTANCE.getBuildModeReach(),
-                    ServerConfig.INSTANCE.getMaxBlocksPerAxis()));
+            sendToClient(p, new SyncServerConfigS2CPacket(json));
         }
     }
 
@@ -322,8 +321,8 @@ public class PacketHandler {
      * Called on the client when a {@link SyncServerConfigS2CPacket} is received.
      */
     public static void handleSyncServerConfig(SyncServerConfigS2CPacket packet) {
-        ServerConfig.INSTANCE.setBuildModeReach(packet.buildModeReach());
-        ServerConfig.INSTANCE.setMaxBlocksPerAxis(packet.maxBlocksPerAxis());
+        ServerConfig incoming = ServerConfig.fromJson(packet.json());
+        ServerConfig.INSTANCE.copyFrom(incoming);
     }
 
     /**

@@ -8,8 +8,9 @@ import nl.requios.effortlessbuilding.Constants;
 
 /**
  * Sent from server to client to synchronise the server config.
+ * Carries the full config as a JSON string.
  */
-public record SyncServerConfigS2CPacket(int buildModeReach, int maxBlocksPerAxis) implements CustomPacketPayload {
+public record SyncServerConfigS2CPacket(String json) implements CustomPacketPayload {
 
     public static final Type<SyncServerConfigS2CPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "sync_server_config"));
@@ -20,12 +21,11 @@ public record SyncServerConfigS2CPacket(int buildModeReach, int maxBlocksPerAxis
     );
 
     private static void encode(FriendlyByteBuf buf, SyncServerConfigS2CPacket p) {
-        buf.writeVarInt(p.buildModeReach);
-        buf.writeVarInt(p.maxBlocksPerAxis);
+        buf.writeUtf(p.json, 32767);
     }
 
     private static SyncServerConfigS2CPacket decode(FriendlyByteBuf buf) {
-        return new SyncServerConfigS2CPacket(buf.readVarInt(), buf.readVarInt());
+        return new SyncServerConfigS2CPacket(buf.readUtf(32767));
     }
 
     @Override
@@ -33,4 +33,3 @@ public record SyncServerConfigS2CPacket(int buildModeReach, int maxBlocksPerAxis
         return TYPE;
     }
 }
-

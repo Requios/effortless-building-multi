@@ -8,8 +8,9 @@ import nl.requios.effortlessbuilding.Constants;
 
 /**
  * Sent from client to server when an operator updates the server config.
+ * Carries the full config as a JSON string.
  */
-public record UpdateServerConfigC2SPacket(int buildModeReach, int maxBlocksPerAxis) implements CustomPacketPayload {
+public record UpdateServerConfigC2SPacket(String json) implements CustomPacketPayload {
 
     public static final Type<UpdateServerConfigC2SPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "update_server_config"));
@@ -20,12 +21,11 @@ public record UpdateServerConfigC2SPacket(int buildModeReach, int maxBlocksPerAx
     );
 
     private static void encode(FriendlyByteBuf buf, UpdateServerConfigC2SPacket p) {
-        buf.writeVarInt(p.buildModeReach);
-        buf.writeVarInt(p.maxBlocksPerAxis);
+        buf.writeUtf(p.json, 32767);
     }
 
     private static UpdateServerConfigC2SPacket decode(FriendlyByteBuf buf) {
-        return new UpdateServerConfigC2SPacket(buf.readVarInt(), buf.readVarInt());
+        return new UpdateServerConfigC2SPacket(buf.readUtf(32767));
     }
 
     @Override
@@ -33,4 +33,3 @@ public record UpdateServerConfigC2SPacket(int buildModeReach, int maxBlocksPerAx
         return TYPE;
     }
 }
-
