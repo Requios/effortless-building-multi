@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
@@ -17,14 +18,15 @@ import java.util.List;
  * places the plane on a block edge instead of through the block centre).
  *
  * <p>Each enabled axis doubles the block count; all three enabled gives 8× symmetry.
- * Blocks (both original and mirrored) that fall outside {@code radius} from the
+ * Blocks (both original and mirrored) that fall outside {@code size/2} from the
  * origin are removed.
  */
 public class MirrorModifier extends AbstractModifier {
 
     public double originX, originY = 64, originZ;
     public boolean mirrorX = true, mirrorY = false, mirrorZ = false;
-    public int radius = 20;
+    /** Diameter of the working area (blocks). Half of this is the effective radius. */
+    public int size = 40;
 
     @Override
     public Component getDisplayName() {
@@ -34,12 +36,14 @@ public class MirrorModifier extends AbstractModifier {
 
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
-        if (mirrorX) applyAxisMirror(blocks, 0);
-        if (mirrorY) applyAxisMirror(blocks, 1);
-        if (mirrorZ) applyAxisMirror(blocks, 2);
+        int effectiveSize = Math.min(size, ServerConfig.INSTANCE.getMaxMirrorSize(player));
+        if (mirrorX) applyAxisMirror(blocks, 0, effectiveSize);
+        if (mirrorY) applyAxisMirror(blocks, 1, effectiveSize);
+        if (mirrorZ) applyAxisMirror(blocks, 2, effectiveSize);
     }
 
-    private void applyAxisMirror(BlockSet blocks, int axis) {
+    private void applyAxisMirror(BlockSet blocks, int axis, int effectiveSize) {
+        double halfSize = effectiveSize / 2.0;
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());
         for (BlockPos pos : snapshot) {
             double mx = pos.getX(), my = pos.getY(), mz = pos.getZ();
@@ -51,12 +55,12 @@ public class MirrorModifier extends AbstractModifier {
             BlockPos mirrored = BlockPos.containing(mx, my, mz);
             if (mirrored.equals(pos)) continue;
 
-            // Skip mirrored copy if it falls outside the radius (Manhattan / Chebyshev).
-            // radius=10 → a 20×20×20 working cube centred on the origin.
+            // Skip mirrored copy if it falls outside the effective area (Chebyshev distance).
+            // size=40 → halfSize=20 → a 40×40×40 working cube centred on the origin.
             double dx = Math.abs(mirrored.getX() + 0.5 - originX);
             double dy = Math.abs(mirrored.getY() + 0.5 - originY);
             double dz = Math.abs(mirrored.getZ() + 0.5 - originZ);
-            if (dx > radius || dy > radius || dz > radius) continue;
+            if (dx > halfSize || dy > halfSize || dz > halfSize) continue;
 
             BlockEntry entry = new BlockEntry(mirrored);
             BlockEntry original = blocks.get(pos);

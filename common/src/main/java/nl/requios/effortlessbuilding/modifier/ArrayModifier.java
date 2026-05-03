@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
@@ -30,9 +31,15 @@ public class ArrayModifier extends AbstractModifier {
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
         if (count <= 0) return;
+        int maxCount = ServerConfig.INSTANCE.getMaxArrayCount(player);
+        int maxOffset = ServerConfig.INSTANCE.getMaxArrayOffset(player);
+        int effectiveCount = Math.min(count, maxCount);
+        int effOffsetX = Math.clamp(offsetX, -maxOffset, maxOffset);
+        int effOffsetY = Math.clamp(offsetY, -maxOffset, maxOffset);
+        int effOffsetZ = Math.clamp(offsetZ, -maxOffset, maxOffset);
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());
-        for (int i = 1; i <= count; i++) {
-            int dx = offsetX * i, dy = offsetY * i, dz = offsetZ * i;
+        for (int i = 1; i <= effectiveCount; i++) {
+            int dx = effOffsetX * i, dy = effOffsetY * i, dz = effOffsetZ * i;
             for (BlockPos pos : snapshot) {
                 BlockPos copy = pos.offset(dx, dy, dz);
                 BlockEntry entry = new BlockEntry(copy);

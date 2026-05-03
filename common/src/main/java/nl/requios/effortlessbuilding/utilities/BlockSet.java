@@ -52,6 +52,18 @@ public class BlockSet extends HashMap<BlockPos, BlockEntry> implements Iterable<
         }
     }
 
+    /** Removes entries beyond the given limit, keeping insertion order (first N entries). */
+    public void truncate(int maxSize) {
+        if (size() <= maxSize) return;
+        var iter = keySet().iterator();
+        int count = 0;
+        while (iter.hasNext()) {
+            iter.next();
+            count++;
+            if (count > maxSize) iter.remove();
+        }
+    }
+
     @NotNull
     @Override
     public Iterator<BlockEntry> iterator() {

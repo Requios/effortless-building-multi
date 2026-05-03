@@ -18,7 +18,6 @@ import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
-import nl.requios.effortlessbuilding.network.SyncBuildSkillsS2CPacket;
 import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
 import nl.requios.effortlessbuilding.render.RenderHandler;
@@ -50,9 +49,6 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(SyncServerConfigS2CPacket.TYPE, (payload, context) ->
                 context.client().execute(() -> PacketHandler.handleSyncServerConfig(payload)));
 
-        // Register client-side handler for S2C reach sync packet
-        ClientPlayNetworking.registerGlobalReceiver(SyncBuildSkillsS2CPacket.TYPE, (payload, context) ->
-                context.client().execute(() -> PacketHandler.handleSyncBuildSkills(payload)));
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
                 RenderHandler.onRenderGui(graphics));

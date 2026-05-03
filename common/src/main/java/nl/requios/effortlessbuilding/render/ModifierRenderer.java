@@ -55,7 +55,7 @@ public class ModifierRenderer {
                                             MirrorModifier mirror, double camX, double camY, double camZ) {
         var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(BLANK_TEXTURE));
         var pose = poseStack.last();
-        int radius = mirror.radius;
+        int radius = mirror.size / 2;
 
         float ox = (float)(mirror.originX - camX);
         float oy = (float)(mirror.originY - camY);
@@ -111,7 +111,7 @@ public class ModifierRenderer {
         float ox = (float)(radial.originX - camX);
         float oy = (float)(radial.originY - camY);
         float oz = (float)(radial.originZ - camZ);
-        float r = radial.radius;
+        float r = radial.size / 2.0f;
         float halfWidth = 0.04f;
 
         // Radial slice lines from center out to radius.

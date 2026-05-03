@@ -3,6 +3,7 @@ package nl.requios.effortlessbuilding.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Server-authoritative configuration.
@@ -15,72 +16,115 @@ public class ServerConfig {
     /** Shared instance — on the server it's loaded from disk, on the client it's synced via packet. */
     public static final ServerConfig INSTANCE = new ServerConfig();
 
-    // --- General settings ---
-    public static final int DEFAULT_BUILD_MODE_REACH = 32;
-    public static final int DEFAULT_MAX_BLOCKS_PER_AXIS = 20;
+    // --- Survival settings ---
+    public int survivalReach = 32;
+    public int survivalMaxBlocksPlaced = 2000;
+    public int survivalMaxBlocksPerAxis = 64;
+    public int survivalMaxMirrorSize = 256;
+    public int survivalMaxArrayCount = 64;
+    public int survivalMaxArrayOffset = 64;
+    public boolean survivalAllowBreaking = true;
+    public boolean survivalOnlyPlacedBlocks = true;
+    public float survivalMaxHardness = -1f; // -1 = no limit
+    public boolean survivalRequireTools = false;
 
-    public static final int MIN_BUILD_MODE_REACH = 1;
-    public static final int MAX_BUILD_MODE_REACH = 256;
-    public static final int MIN_MAX_BLOCKS_PER_AXIS = 1;
-    public static final int MAX_MAX_BLOCKS_PER_AXIS = 128;
+    // --- Creative settings ---
+    public int creativeReach = 200;
+    public int creativeMaxBlocksPlaced = 10000;
+    public int creativeMaxBlocksPerAxis = 1000;
+    public int creativeMaxMirrorSize = 256;
+    public int creativeMaxArrayCount = 256;
+    public int creativeMaxArrayOffset = 256;
 
-    private int buildModeReach = DEFAULT_BUILD_MODE_REACH;
-    private int maxBlocksPerAxis = DEFAULT_MAX_BLOCKS_PER_AXIS;
+    // --- Player-aware convenience accessors ---
 
-    // --- Breaking sub-configs ---
-    private final BreakingConfig breakingPlacedBlocks = new BreakingConfig(true, -1f, false, false, 0f);
-    private final BreakingConfig breakingAnyBlocks    = new BreakingConfig(false, -1f, false, false, 0f);
-    private final BreakingConfig breakingWithUndo     = new BreakingConfig(true, -1f, false, false, 0f);
-
-    // --- General getters / setters ---
-
-    public int getBuildModeReach() {
-        return buildModeReach;
+    public int getReach(Player player) {
+        return player.isCreative() ? creativeReach : survivalReach;
     }
 
-    public void setBuildModeReach(int value) {
-        this.buildModeReach = Math.clamp(value, MIN_BUILD_MODE_REACH, MAX_BUILD_MODE_REACH);
+    public int getMaxBlocksPlaced(Player player) {
+        return player.isCreative() ? creativeMaxBlocksPlaced : survivalMaxBlocksPlaced;
     }
 
-    public int getMaxBlocksPerAxis() {
-        return maxBlocksPerAxis;
+    public int getMaxBlocksPerAxis(Player player) {
+        return player.isCreative() ? creativeMaxBlocksPerAxis : survivalMaxBlocksPerAxis;
     }
 
-    public void setMaxBlocksPerAxis(int value) {
-        this.maxBlocksPerAxis = Math.clamp(value, MIN_MAX_BLOCKS_PER_AXIS, MAX_MAX_BLOCKS_PER_AXIS);
+    public int getMaxMirrorSize(Player player) {
+        return player.isCreative() ? creativeMaxMirrorSize : survivalMaxMirrorSize;
     }
 
-    // --- Breaking config accessors ---
+    public int getMaxArrayCount(Player player) {
+        return player.isCreative() ? creativeMaxArrayCount : survivalMaxArrayCount;
+    }
 
-    public BreakingConfig getBreakingPlacedBlocks() { return breakingPlacedBlocks; }
-    public BreakingConfig getBreakingAnyBlocks()    { return breakingAnyBlocks; }
-    public BreakingConfig getBreakingWithUndo()     { return breakingWithUndo; }
+    public int getMaxArrayOffset(Player player) {
+        return player.isCreative() ? creativeMaxArrayOffset : survivalMaxArrayOffset;
+    }
+
+    // --- Mutators (with clamping) ---
+
+    public void clampAll() {
+        survivalReach = Math.clamp(survivalReach, 1, 1000);
+        survivalMaxBlocksPlaced = Math.clamp(survivalMaxBlocksPlaced, 1, 100000);
+        survivalMaxBlocksPerAxis = Math.clamp(survivalMaxBlocksPerAxis, 1, 1000);
+        survivalMaxMirrorSize = Math.clamp(survivalMaxMirrorSize, 1, 1000);
+        survivalMaxArrayCount = Math.clamp(survivalMaxArrayCount, 1, 1000);
+        survivalMaxArrayOffset = Math.clamp(survivalMaxArrayOffset, 1, 1000);
+
+        creativeReach = Math.clamp(creativeReach, 1, 1000);
+        creativeMaxBlocksPlaced = Math.clamp(creativeMaxBlocksPlaced, 1, 100000);
+        creativeMaxBlocksPerAxis = Math.clamp(creativeMaxBlocksPerAxis, 1, 1000);
+        creativeMaxMirrorSize = Math.clamp(creativeMaxMirrorSize, 1, 1000);
+        creativeMaxArrayCount = Math.clamp(creativeMaxArrayCount, 1, 1000);
+        creativeMaxArrayOffset = Math.clamp(creativeMaxArrayOffset, 1, 1000);
+    }
 
     public void copyFrom(ServerConfig other) {
-        this.buildModeReach = other.buildModeReach;
-        this.maxBlocksPerAxis = other.maxBlocksPerAxis;
-        this.breakingPlacedBlocks.copyFrom(other.breakingPlacedBlocks);
-        this.breakingAnyBlocks.copyFrom(other.breakingAnyBlocks);
-        this.breakingWithUndo.copyFrom(other.breakingWithUndo);
+        this.survivalReach = other.survivalReach;
+        this.survivalMaxBlocksPlaced = other.survivalMaxBlocksPlaced;
+        this.survivalMaxBlocksPerAxis = other.survivalMaxBlocksPerAxis;
+        this.survivalMaxMirrorSize = other.survivalMaxMirrorSize;
+        this.survivalMaxArrayCount = other.survivalMaxArrayCount;
+        this.survivalMaxArrayOffset = other.survivalMaxArrayOffset;
+        this.survivalAllowBreaking = other.survivalAllowBreaking;
+        this.survivalOnlyPlacedBlocks = other.survivalOnlyPlacedBlocks;
+        this.survivalMaxHardness = other.survivalMaxHardness;
+        this.survivalRequireTools = other.survivalRequireTools;
+
+        this.creativeReach = other.creativeReach;
+        this.creativeMaxBlocksPlaced = other.creativeMaxBlocksPlaced;
+        this.creativeMaxBlocksPerAxis = other.creativeMaxBlocksPerAxis;
+        this.creativeMaxMirrorSize = other.creativeMaxMirrorSize;
+        this.creativeMaxArrayCount = other.creativeMaxArrayCount;
+        this.creativeMaxArrayOffset = other.creativeMaxArrayOffset;
     }
 
     public void reset() {
-        this.buildModeReach = DEFAULT_BUILD_MODE_REACH;
-        this.maxBlocksPerAxis = DEFAULT_MAX_BLOCKS_PER_AXIS;
-        this.breakingPlacedBlocks.reset(true);
-        this.breakingAnyBlocks.reset(false);
-        this.breakingWithUndo.reset(true);
+        copyFrom(new ServerConfig());
     }
 
     // --- Serialization ---
 
     public String toJson() {
         JsonObject obj = new JsonObject();
-        obj.addProperty("buildModeReach", buildModeReach);
-        obj.addProperty("maxBlocksPerAxis", maxBlocksPerAxis);
-        obj.add("breakingPlacedBlocks", breakingPlacedBlocks.toJson());
-        obj.add("breakingAnyBlocks", breakingAnyBlocks.toJson());
-        obj.add("breakingWithUndo", breakingWithUndo.toJson());
+        obj.addProperty("survivalReach", survivalReach);
+        obj.addProperty("survivalMaxBlocksPlaced", survivalMaxBlocksPlaced);
+        obj.addProperty("survivalMaxBlocksPerAxis", survivalMaxBlocksPerAxis);
+        obj.addProperty("survivalMaxMirrorSize", survivalMaxMirrorSize);
+        obj.addProperty("survivalMaxArrayCount", survivalMaxArrayCount);
+        obj.addProperty("survivalMaxArrayOffset", survivalMaxArrayOffset);
+        obj.addProperty("survivalAllowBreaking", survivalAllowBreaking);
+        obj.addProperty("survivalOnlyPlacedBlocks", survivalOnlyPlacedBlocks);
+        obj.addProperty("survivalMaxHardness", survivalMaxHardness);
+        obj.addProperty("survivalRequireTools", survivalRequireTools);
+
+        obj.addProperty("creativeReach", creativeReach);
+        obj.addProperty("creativeMaxBlocksPlaced", creativeMaxBlocksPlaced);
+        obj.addProperty("creativeMaxBlocksPerAxis", creativeMaxBlocksPerAxis);
+        obj.addProperty("creativeMaxMirrorSize", creativeMaxMirrorSize);
+        obj.addProperty("creativeMaxArrayCount", creativeMaxArrayCount);
+        obj.addProperty("creativeMaxArrayOffset", creativeMaxArrayOffset);
         return GSON.toJson(obj);
     }
 
@@ -88,93 +132,25 @@ public class ServerConfig {
         ServerConfig config = new ServerConfig();
         try {
             JsonObject obj = GSON.fromJson(json, JsonObject.class);
-            if (obj.has("buildModeReach")) config.setBuildModeReach(obj.get("buildModeReach").getAsInt());
-            if (obj.has("maxBlocksPerAxis")) config.setMaxBlocksPerAxis(obj.get("maxBlocksPerAxis").getAsInt());
-            if (obj.has("breakingPlacedBlocks")) config.breakingPlacedBlocks.fromJson(obj.getAsJsonObject("breakingPlacedBlocks"));
-            if (obj.has("breakingAnyBlocks")) config.breakingAnyBlocks.fromJson(obj.getAsJsonObject("breakingAnyBlocks"));
-            if (obj.has("breakingWithUndo")) config.breakingWithUndo.fromJson(obj.getAsJsonObject("breakingWithUndo"));
-        } catch (Exception ignored) {
-            // Return defaults on parse failure
-        }
+            if (obj.has("survivalReach")) config.survivalReach = obj.get("survivalReach").getAsInt();
+            if (obj.has("survivalMaxBlocksPlaced")) config.survivalMaxBlocksPlaced = obj.get("survivalMaxBlocksPlaced").getAsInt();
+            if (obj.has("survivalMaxBlocksPerAxis")) config.survivalMaxBlocksPerAxis = obj.get("survivalMaxBlocksPerAxis").getAsInt();
+            if (obj.has("survivalMaxMirrorSize")) config.survivalMaxMirrorSize = obj.get("survivalMaxMirrorSize").getAsInt();
+            if (obj.has("survivalMaxArrayCount")) config.survivalMaxArrayCount = obj.get("survivalMaxArrayCount").getAsInt();
+            if (obj.has("survivalMaxArrayOffset")) config.survivalMaxArrayOffset = obj.get("survivalMaxArrayOffset").getAsInt();
+            if (obj.has("survivalAllowBreaking")) config.survivalAllowBreaking = obj.get("survivalAllowBreaking").getAsBoolean();
+            if (obj.has("survivalOnlyPlacedBlocks")) config.survivalOnlyPlacedBlocks = obj.get("survivalOnlyPlacedBlocks").getAsBoolean();
+            if (obj.has("survivalMaxHardness")) config.survivalMaxHardness = obj.get("survivalMaxHardness").getAsFloat();
+            if (obj.has("survivalRequireTools")) config.survivalRequireTools = obj.get("survivalRequireTools").getAsBoolean();
+
+            if (obj.has("creativeReach")) config.creativeReach = obj.get("creativeReach").getAsInt();
+            if (obj.has("creativeMaxBlocksPlaced")) config.creativeMaxBlocksPlaced = obj.get("creativeMaxBlocksPlaced").getAsInt();
+            if (obj.has("creativeMaxBlocksPerAxis")) config.creativeMaxBlocksPerAxis = obj.get("creativeMaxBlocksPerAxis").getAsInt();
+            if (obj.has("creativeMaxMirrorSize")) config.creativeMaxMirrorSize = obj.get("creativeMaxMirrorSize").getAsInt();
+            if (obj.has("creativeMaxArrayCount")) config.creativeMaxArrayCount = obj.get("creativeMaxArrayCount").getAsInt();
+            if (obj.has("creativeMaxArrayOffset")) config.creativeMaxArrayOffset = obj.get("creativeMaxArrayOffset").getAsInt();
+        } catch (Exception ignored) {}
+        config.clampAll();
         return config;
-    }
-
-    // =========================================================================
-    // Breaking sub-config
-    // =========================================================================
-
-    /**
-     * Settings for a specific breaking category (placed blocks, any blocks, or undo).
-     * Accessed via {@link ServerConfig#getBreakingPlacedBlocks()},
-     * {@link ServerConfig#getBreakingAnyBlocks()}, or {@link ServerConfig#getBreakingWithUndo()}.
-     */
-    public static class BreakingConfig {
-
-        public static final float DEFAULT_MAX_HARDNESS = -1f; // -1 = unlimited
-        public static final float DEFAULT_SATURATION   = 0f;
-
-        private boolean allowBreaking;
-        private float maxHardness;          // -1 = no limit
-        private boolean requireToolsToBreak;
-        private boolean requireToolsForDrops;
-        private float saturationPerBlock;
-
-        public BreakingConfig(boolean allowBreaking, float maxHardness,
-                              boolean requireToolsToBreak, boolean requireToolsForDrops,
-                              float saturationPerBlock) {
-            this.allowBreaking = allowBreaking;
-            this.maxHardness = maxHardness;
-            this.requireToolsToBreak = requireToolsToBreak;
-            this.requireToolsForDrops = requireToolsForDrops;
-            this.saturationPerBlock = saturationPerBlock;
-        }
-
-        // --- Getters ---
-        public boolean isAllowBreaking()        { return allowBreaking; }
-        public float getMaxHardness()            { return maxHardness; }
-        public boolean isRequireToolsToBreak()   { return requireToolsToBreak; }
-        public boolean isRequireToolsForDrops()  { return requireToolsForDrops; }
-        public float getSaturationPerBlock()     { return saturationPerBlock; }
-
-        // --- Setters ---
-        public void setAllowBreaking(boolean v)        { this.allowBreaking = v; }
-        public void setMaxHardness(float v)             { this.maxHardness = v; }
-        public void setRequireToolsToBreak(boolean v)   { this.requireToolsToBreak = v; }
-        public void setRequireToolsForDrops(boolean v)  { this.requireToolsForDrops = v; }
-        public void setSaturationPerBlock(float v)      { this.saturationPerBlock = Math.max(0f, v); }
-
-        public void copyFrom(BreakingConfig other) {
-            this.allowBreaking = other.allowBreaking;
-            this.maxHardness = other.maxHardness;
-            this.requireToolsToBreak = other.requireToolsToBreak;
-            this.requireToolsForDrops = other.requireToolsForDrops;
-            this.saturationPerBlock = other.saturationPerBlock;
-        }
-
-        public void reset(boolean defaultAllowBreaking) {
-            this.allowBreaking = defaultAllowBreaking;
-            this.maxHardness = DEFAULT_MAX_HARDNESS;
-            this.requireToolsToBreak = false;
-            this.requireToolsForDrops = false;
-            this.saturationPerBlock = DEFAULT_SATURATION;
-        }
-
-        public JsonObject toJson() {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("allowBreaking", allowBreaking);
-            obj.addProperty("maxHardness", maxHardness);
-            obj.addProperty("requireToolsToBreak", requireToolsToBreak);
-            obj.addProperty("requireToolsForDrops", requireToolsForDrops);
-            obj.addProperty("saturationPerBlock", saturationPerBlock);
-            return obj;
-        }
-
-        public void fromJson(JsonObject obj) {
-            if (obj.has("allowBreaking")) allowBreaking = obj.get("allowBreaking").getAsBoolean();
-            if (obj.has("maxHardness")) maxHardness = obj.get("maxHardness").getAsFloat();
-            if (obj.has("requireToolsToBreak")) requireToolsToBreak = obj.get("requireToolsToBreak").getAsBoolean();
-            if (obj.has("requireToolsForDrops")) requireToolsForDrops = obj.get("requireToolsForDrops").getAsBoolean();
-            if (obj.has("saturationPerBlock")) saturationPerBlock = obj.get("saturationPerBlock").getAsFloat();
-        }
     }
 }

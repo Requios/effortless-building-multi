@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.buildmode.buildmodes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.buildchain.BuildSkills;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ThreeClicksBuildMode;
 
@@ -16,7 +16,7 @@ public class SlopeFloor extends ThreeClicksBuildMode {
 	public static List<BlockPos> getSlopeFloorBlocks(Player player, int x1, int y1, int z1, int x2, int y2, int z2, int x3, int y3, int z3) {
 		List<BlockPos> list = new ArrayList<>();
 
-		int axisLimit = BuildSkills.getClientEffectiveAxis();
+		int axisLimit = ServerConfig.INSTANCE.getMaxBlocksPerAxis(player);
 
 		//Determine whether to use x or z axis to slope up
 		boolean onXAxis = true;

@@ -21,6 +21,7 @@ import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.config.ClientConfig;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
@@ -82,7 +83,7 @@ public class BuildChainClient {
         BlockPos clickedPos;
         if (mode.instance.isFirstClick()) {
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildSkills.getClientEffectiveReach()));
+            Vec3 end = start.add(player.getLookAngle().scale(ServerConfig.INSTANCE.getReach(player)));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
             if (hit.getType() != HitResult.Type.BLOCK) return;
@@ -198,10 +199,11 @@ public class BuildChainClient {
             BuildChain.BuildState action = buildState != null ? buildState : BuildChain.BuildState.PLACING;
             CLIENT.processBlocks(previewBlocks, player, action);
             if (previewBlocks.isEmpty()) return null;
+            previewBlocks.truncate(ServerConfig.INSTANCE.getMaxBlocksPlaced(player));
             result = previewBlocks;
         } else {
             Vec3 start = player.getEyePosition();
-            Vec3 end = start.add(player.getLookAngle().scale(BuildSkills.getClientEffectiveReach()));
+            Vec3 end = start.add(player.getLookAngle().scale(ServerConfig.INSTANCE.getReach(player)));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
             if (hit.getType() != HitResult.Type.BLOCK) return null;

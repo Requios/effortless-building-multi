@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildSkills;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +54,7 @@ public abstract class ThreeClicksBuildMode extends BaseBuildMode {
 	public void findCoordinates(BlockSet blocks, Player player) {
 		if (clicks == 0) return;
 
-		int axisLimit = BuildSkills.getClientEffectiveAxis();
+		int axisLimit = ServerConfig.INSTANCE.getMaxBlocksPerAxis(player);
 
 		if (clicks == 1) {
 			var firstPos = firstBlockEntry.blockPos;
@@ -123,7 +123,7 @@ public abstract class ThreeClicksBuildMode extends BaseBuildMode {
 	public List<BlockPos> getServerBlocks(Player player, BlockPos firstPos, BlockPos secondPos, @Nullable BlockPos thirdPos) {
 		if (thirdPos == null) return List.of();
 
-		int axisLimit = BuildSkills.getClientEffectiveAxis();
+		int axisLimit = ServerConfig.INSTANCE.getMaxBlocksPerAxis(player);
 
 		int x1 = firstPos.getX(), x2 = secondPos.getX(), x3 = thirdPos.getX();
 		int y1 = firstPos.getY(), y2 = secondPos.getY(), y3 = thirdPos.getY();
@@ -158,7 +158,7 @@ public abstract class ThreeClicksBuildMode extends BaseBuildMode {
 		Vec3 zBound = BuildModes.findZBound(secondPos.getZ(), start, look);
 		criteriaList.add(new HeightCriteria(zBound, secondPos, start));
 
-		int reach = BuildSkills.getClientEffectiveReach();
+		int reach = ServerConfig.INSTANCE.getReach(player);
 		criteriaList.removeIf(criteria -> !criteria.isValid(start, look, reach, player, skipRaytrace));
 
 		if (criteriaList.isEmpty()) return null;

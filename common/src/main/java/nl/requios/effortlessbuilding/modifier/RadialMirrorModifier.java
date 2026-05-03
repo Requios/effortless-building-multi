@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Rotation;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
@@ -17,7 +18,7 @@ import java.util.List;
  * <p>Origins are doubles to support half-block offsets (e.g. 0.5 places the
  * axis on a block edge).
  *
- * <p>Blocks (both original and rotated copies) that fall outside {@code radius}
+ * <p>Blocks (both original and rotated copies) that fall outside {@code size/2}
  * from the origin (XZ distance) are removed.
  */
 public class RadialMirrorModifier extends AbstractModifier {
@@ -25,7 +26,8 @@ public class RadialMirrorModifier extends AbstractModifier {
     public double originX, originY = 64, originZ;
     public int slices = 4;
     public boolean mirrorSlices = false;
-    public int radius = 20;
+    /** Diameter of the working area (blocks). Half of this is the effective radius. */
+    public int size = 40;
 
     @Override
     public Component getDisplayName() {
@@ -36,23 +38,25 @@ public class RadialMirrorModifier extends AbstractModifier {
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
         if (slices <= 1) return;
+        int effectiveSize = Math.min(size, ServerConfig.INSTANCE.getMaxMirrorSize(player));
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());
 
         for (int i = 1; i < slices; i++) {
             double angle = (2 * Math.PI * i) / slices;
-            addRotated(blocks, snapshot, angle, false);
+            addRotated(blocks, snapshot, angle, false, effectiveSize);
         }
 
         if (mirrorSlices) {
             for (int i = 0; i < slices; i++) {
                 double angle = (2 * Math.PI * i) / slices;
-                addRotated(blocks, snapshot, angle, true);
+                addRotated(blocks, snapshot, angle, true, effectiveSize);
             }
         }
     }
 
-    private void addRotated(BlockSet blocks, List<BlockPos> snapshot, double angle, boolean doMirrorZ) {
-        double rSq = (double) radius * radius;
+    private void addRotated(BlockSet blocks, List<BlockPos> snapshot, double angle, boolean doMirrorZ, int effectiveSize) {
+        double halfSize = effectiveSize / 2.0;
+        double rSq = halfSize * halfSize;
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
         Rotation sliceRotation = angleToRotation(angle);

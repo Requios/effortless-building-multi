@@ -19,7 +19,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildSkills;
+
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
@@ -74,10 +74,6 @@ public class PacketHandler {
         Services.NETWORK.sendToClient(player, packet);
     }
 
-    public static void sendToClient(ServerPlayer player, SyncBuildSkillsS2CPacket packet) {
-        Services.NETWORK.sendToClient(player, packet);
-    }
-
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      */
@@ -97,6 +93,10 @@ public class PacketHandler {
         // Apply the player's server-side modifiers (mirror, array, radial, etc.)
         ModifierServerStorage.getModifiers(player.getUUID())
                 .processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
+
+        // Enforce max blocks placed limit
+        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
+        blockSet.truncate(maxBlocks);
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
@@ -212,6 +212,10 @@ public class PacketHandler {
         ModifierServerStorage.getModifiers(player.getUUID())
                 .processBlocks(blockSet, player, BuildChain.BuildState.BREAKING);
 
+        // Enforce max blocks placed limit
+        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
+        blockSet.truncate(maxBlocks);
+
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
         BlockState airState = Blocks.AIR.defaultBlockState();
 
@@ -325,14 +329,6 @@ public class PacketHandler {
         ServerConfig.INSTANCE.copyFrom(incoming);
     }
 
-    /**
-     * Called on the client when a {@link SyncBuildSkillsS2CPacket} is received.
-     * Updates the client-side effective reach and axis used for preview calculations.
-     */
-    public static void handleSyncBuildSkills(SyncBuildSkillsS2CPacket packet) {
-        BuildSkills.setClientEffectiveReach(packet.effectiveReach());
-        BuildSkills.setClientEffectiveAxis(packet.effectiveAxis());
-    }
 
     /** Exposes the protected {@link BlockPlaceContext} constructor for server-side use. */
     private static final class OpenBlockPlaceContext extends BlockPlaceContext {

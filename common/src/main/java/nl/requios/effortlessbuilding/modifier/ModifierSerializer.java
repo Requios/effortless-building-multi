@@ -39,7 +39,7 @@ public class ModifierSerializer {
             obj.addProperty("originX", mirror.originX);
             obj.addProperty("originY", mirror.originY);
             obj.addProperty("originZ", mirror.originZ);
-            obj.addProperty("radius", mirror.radius);
+            obj.addProperty("size", mirror.size);
         } else if (modifier instanceof ArrayModifier array) {
             obj.addProperty("type", "array");
             obj.addProperty("count", array.count);
@@ -53,7 +53,7 @@ public class ModifierSerializer {
             obj.addProperty("originX", radial.originX);
             obj.addProperty("originY", radial.originY);
             obj.addProperty("originZ", radial.originZ);
-            obj.addProperty("radius", radial.radius);
+            obj.addProperty("size", radial.size);
         }
     }
 
@@ -90,7 +90,9 @@ public class ModifierSerializer {
                 mirror.originX  = getDouble(obj, "originX", mirror.originX);
                 mirror.originY  = getDouble(obj, "originY", mirror.originY);
                 mirror.originZ  = getDouble(obj, "originZ", mirror.originZ);
-                mirror.radius   = getInt(obj, "radius",  mirror.radius);
+                mirror.size     = getInt(obj, "size", mirror.size);
+                // Legacy migration: old saves used "radius" which was half the current "size"
+                if (!obj.has("size") && obj.has("radius")) mirror.size = getInt(obj, "radius", mirror.size) * 2;
                 yield mirror;
             }
             case "array" -> {
@@ -108,7 +110,9 @@ public class ModifierSerializer {
                 radial.originX      = getDouble(obj, "originX", radial.originX);
                 radial.originY      = getDouble(obj, "originY", radial.originY);
                 radial.originZ      = getDouble(obj, "originZ", radial.originZ);
-                radial.radius       = getInt(obj, "radius",  radial.radius);
+                radial.size         = getInt(obj, "size", radial.size);
+                // Legacy migration
+                if (!obj.has("size") && obj.has("radius")) radial.size = getInt(obj, "radius", radial.size) * 2;
                 yield radial;
             }
             default -> null;

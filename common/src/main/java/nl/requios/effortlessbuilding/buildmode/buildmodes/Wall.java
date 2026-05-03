@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildSkills;
+import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.TwoClicksBuildMode;
@@ -29,7 +29,7 @@ public class Wall extends TwoClicksBuildMode {
 		criteriaList.add(new Criteria(zBound, firstPos, start, look));
 
 		//Remove invalid criteria
-		int reach = BuildSkills.getClientEffectiveReach();
+		int reach = ServerConfig.INSTANCE.getReach(player);
 		criteriaList.removeIf(criteria -> !criteria.isValid(start, look, reach, player, skipRaytrace));
 
 		//If none are valid, return empty list of blocks
