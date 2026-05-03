@@ -1,4 +1,4 @@
-package nl.requios.effortlessbuilding.buildchain;
+package nl.requios.effortlessbuilding.buildpipeline;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -21,19 +21,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Central coordinator for build-mode placement and breaking.
+ * Unified build pipeline: an ordered list of {@link IBuildSystem} stages.
  *
- * <p>The chain consists of ordered {@link IBuildSystem} stages that transform the
- * block set after the build mode computes the initial positions.
+ * <p>Both client (preview) and server (execution) use the same pipeline structure.
+ * The server pipeline has these stages registered (in order):
+ * <ol>
+ *   <li>{@link BuildModeSystem} — generates initial positions from the build mode</li>
+ *   <li>{@link ModifierSystemServer} — multiplies positions (mirror/array/radial, per-player)</li>
+ *   <li>{@link ConstraintSystem} — marks invalid positions with rejection reasons</li>
+ * </ol>
+ *
+ * <p>The client pipeline has:
+ * <ol>
+ *   <li>{@link nl.requios.effortlessbuilding.modifier.ModifierSystem#CLIENT} — multiplies positions</li>
+ *   <li>{@link ConstraintSystem} — marks invalid positions</li>
+ * </ol>
+ * (The client doesn't use BuildModeSystem because it handles multi-click state directly.)
  */
-public class BuildChain {
+public class BuildPipeline {
 
-    /** Server-side singleton — registered systems run on the server when a packet is received. */
-    public static final BuildChain SERVER = new BuildChain();
+    /**
+     * Server-side singleton with all stages pre-registered.
+     * Pipeline order: BuildModeSystem → ModifierSystemServer → ConstraintSystem
+     */
+    public static final BuildPipeline SERVER = createServerPipeline();
 
     public enum BuildState { PLACING, BREAKING }
 
     private final List<IBuildSystem> systems = new ArrayList<>();
+
+    private static BuildPipeline createServerPipeline() {
+        BuildPipeline pipeline = new BuildPipeline();
+        pipeline.addSystem(BuildModeSystem.INSTANCE);
+        pipeline.addSystem(ModifierSystemServer.INSTANCE);
+        pipeline.addSystem(ConstraintSystem.INSTANCE);
+        return pipeline;
+    }
 
     /**
      * Returns {@code true} if right-clicking with this item should trigger the
@@ -43,9 +66,6 @@ public class BuildChain {
      */
     public static boolean isBuildTriggerItem(ItemStack stack) {
         if (stack.getItem() instanceof BlockItem blockItem) {
-            // Reject multiblocks: anything with DoubleBlockHalf (doors, tall flowers/grass)
-            // or BedPart (beds). These require setPlacedBy to place their other half,
-            // which doesn't work with batch placement.
             BlockState defaultState = blockItem.getBlock().defaultBlockState();
             for (var property : defaultState.getProperties()) {
                 if (property.getValueClass() == DoubleBlockHalf.class
@@ -94,29 +114,31 @@ public class BuildChain {
     }
 
     // -------------------------------------------------------------------------
-    // Shared server-side pipeline
+    // Pipeline execution
     // -------------------------------------------------------------------------
 
     /**
-     * Computes and processes the full block set for a server-side build action.
-     * This is the single authoritative pipeline that both place and break handlers use.
+     * Runs the full server pipeline: sets context for {@link BuildModeSystem}, then
+     * executes all stages. Returns the resulting block set, or null if empty.
      *
-     * @return the processed {@link BlockSet}, or {@code null} if the mode produced no blocks.
+     * <p>This is the ONLY method PacketHandler needs to call.
      */
-    public @Nullable BlockSet computeServerBlocks(BuildModeEnum mode,
-                                                   BlockPos firstPos, BlockPos secondPos,
-                                                   @Nullable BlockPos thirdPos,
-                                                   Player player, BuildState action,
-                                                   ModeOptions.ActionEnum fill, ModeOptions.ActionEnum cubeFill,
-                                                   ModeOptions.ActionEnum raisedEdge, ModeOptions.ActionEnum circleStart) {
-        ModeOptions.applyForCalculation(fill, cubeFill, raisedEdge, circleStart);
-
-        List<BlockPos> rawPositions = mode.instance.getServerBlocks(player, firstPos, secondPos, thirdPos);
-        if (rawPositions.isEmpty()) return null;
-
-        BlockSet blockSet = toBlockSet(rawPositions);
-        processBlocks(blockSet, player, action);
-        return blockSet;
+    public @Nullable BlockSet runServerPipeline(BuildModeEnum mode,
+                                                BlockPos firstPos, BlockPos secondPos,
+                                                @Nullable BlockPos thirdPos,
+                                                Player player, BuildState action,
+                                                ModeOptions.ActionEnum fill, ModeOptions.ActionEnum cubeFill,
+                                                ModeOptions.ActionEnum raisedEdge, ModeOptions.ActionEnum circleStart) {
+        BuildModeSystem.setContext(new BuildModeSystem.Context(
+                mode, firstPos, secondPos, thirdPos, fill, cubeFill, raisedEdge, circleStart));
+        try {
+            BlockSet blockSet = new BlockSet();
+            processBlocks(blockSet, player, action);
+            if (blockSet.isEmpty()) return null;
+            return blockSet;
+        } finally {
+            BuildModeSystem.clearContext();
+        }
     }
 
     /** Wraps a flat list of positions into a {@link BlockSet} for chain processing. */

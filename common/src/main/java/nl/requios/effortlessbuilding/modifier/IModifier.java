@@ -2,7 +2,7 @@ package nl.requios.effortlessbuilding.modifier;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import nl.requios.effortlessbuilding.buildchain.IBuildSystem;
+import nl.requios.effortlessbuilding.buildpipeline.IBuildSystem;
 
 /**
  * A single transform stage that can be toggled on/off independently.

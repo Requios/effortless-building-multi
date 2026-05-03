@@ -18,12 +18,11 @@ import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
-import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -35,7 +34,6 @@ import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,9 +78,10 @@ public class PacketHandler {
     public static void handlePlaceBuildMode(PlaceBuildModePacket packet, ServerPlayer player) {
         ServerLevel level = player.serverLevel();
 
-        BlockSet blockSet = BuildChain.SERVER.computeServerBlocks(
+        // Run the full server pipeline: BuildMode → Modifiers → Constraints
+        BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
                 packet.buildMode(), packet.firstPos(), packet.secondPos(), packet.thirdPos(),
-                player, BuildChain.BuildState.PLACING,
+                player, BuildPipeline.BuildState.PLACING,
                 packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
 
         if (blockSet == null) {
@@ -90,13 +89,8 @@ public class PacketHandler {
             return;
         }
 
-        // Apply the player's server-side modifiers (mirror, array, radial, etc.)
-        ModifierServerStorage.getModifiers(player.getUUID())
-                .processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
-
-        // Enforce max blocks placed limit
-        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
-        blockSet.truncate(maxBlocks);
+        // Sort by distance to player so closest blocks are placed first when inventory is limited
+        blockSet.sortByDistance();
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack offHand = player.getItemInHand(InteractionHand.OFF_HAND);
@@ -115,20 +109,22 @@ public class PacketHandler {
                     : InventoryHelper.findTotalItemsInInventory(player, heldItem);
 
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
-            for (BlockPos pos : blockSet.keySet()) {
+            for (var mapEntry : blockSet.validEntries()) {
+                BlockPos pos = mapEntry.getKey();
                 if (!creative && placed >= available) break;
 
                 if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                     BlockState oldState = level.getBlockState(pos);
 
-                    // Survival: only allow replacing solid blocks placed by this player this session
+                    // Survival: give drops and damage tools for displaced non-replaceable blocks
                     if (!creative && !oldState.canBeReplaced()) {
-                        if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
-                        // Return the displaced block's drops to the player's inventory
                         var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
                                 player, player.getMainHandItem());
                         for (ItemStack drop : drops) {
                             InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                        }
+                        if (ServerConfig.INSTANCE.survivalUseDurability) {
+                            InventoryHelper.damageCorrectTool(player, oldState);
                         }
                     }
 
@@ -155,18 +151,21 @@ public class PacketHandler {
             if (!fluid.isSame(Fluids.EMPTY)) {
                 BlockState fluidState = fluid.defaultFluidState().createLegacyBlock();
                 int maxPlace = creative ? Integer.MAX_VALUE : 1;
-                for (BlockPos pos : blockSet.keySet()) {
+                for (var mapEntry : blockSet.validEntries()) {
+                    BlockPos pos = mapEntry.getKey();
                     if (placed >= maxPlace) break;
                     if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
                         BlockState oldState = level.getBlockState(pos);
 
-                        // Survival: only allow replacing solid blocks placed by this player this session
+                        // Survival: give drops and damage tools for displaced non-replaceable blocks
                         if (!creative && !oldState.canBeReplaced()) {
-                            if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
                             var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
                                     player, player.getMainHandItem());
                             for (ItemStack drop : drops) {
                                 InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                            }
+                            if (ServerConfig.INSTANCE.survivalUseDurability) {
+                                InventoryHelper.damageCorrectTool(player, oldState);
                             }
                         }
 
@@ -196,7 +195,7 @@ public class PacketHandler {
     public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
         boolean creative = player.isCreative();
 
-        // Enforce survivalAllowBreaking
+        // Enforce survivalAllowBreaking (early exit before running pipeline)
         if (!creative && !ServerConfig.INSTANCE.survivalAllowBreaking) {
             player.displayClientMessage(
                     Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
@@ -205,9 +204,10 @@ public class PacketHandler {
 
         ServerLevel level = player.serverLevel();
 
-        BlockSet blockSet = BuildChain.SERVER.computeServerBlocks(
+        // Run the full server pipeline: BuildMode → Modifiers → Constraints
+        BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
                 packet.buildMode(), packet.firstPos(), packet.secondPos(), packet.thirdPos(),
-                player, BuildChain.BuildState.BREAKING,
+                player, BuildPipeline.BuildState.BREAKING,
                 packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
 
         if (blockSet == null) {
@@ -215,35 +215,16 @@ public class PacketHandler {
             return;
         }
 
-        // Apply the player's server-side modifiers (mirror, array, radial, etc.)
-        ModifierServerStorage.getModifiers(player.getUUID())
-                .processBlocks(blockSet, player, BuildChain.BuildState.BREAKING);
-
-        // Enforce max blocks placed limit
-        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
-        blockSet.truncate(maxBlocks);
-
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
         BlockState airState = Blocks.AIR.defaultBlockState();
 
         int broken = 0;
-        for (BlockPos pos : blockSet.keySet()) {
+        for (var mapEntry : blockSet.validEntries()) {
+            BlockPos pos = mapEntry.getKey();
             BlockState oldState = level.getBlockState(pos);
             if (oldState.isAir()) continue;
 
             if (!creative) {
-                // Enforce survivalOnlyPlacedBlocks: skip positions the player didn't place
-                if (ServerConfig.INSTANCE.survivalOnlyPlacedBlocks
-                        && !PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
-
-                // Enforce survivalMaxHardness: skip blocks that are too hard
-                float hardness = oldState.getDestroySpeed(level, pos);
-                if (ServerConfig.INSTANCE.survivalMaxHardness >= 0 && hardness > ServerConfig.INSTANCE.survivalMaxHardness) continue;
-
-                // Enforce survivalRequireTools: skip blocks the player can't harvest
-                if (ServerConfig.INSTANCE.survivalRequireTools && oldState.requiresCorrectToolForDrops()) {
-                    if (!InventoryHelper.hasCorrectToolForBlock(player, oldState)) continue;
-                }
 
                 // Give drops to inventory instead of dropping in world
                 var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),

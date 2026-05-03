@@ -4,12 +4,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -17,26 +15,21 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.material.Fluids;
-import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
-import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
-import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,11 +54,11 @@ public class BlockPreviewRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        boolean emptyHand = !BuildChain.isBuildTriggerItem(mc.player.getMainHandItem());
-        boolean sequenceActive = BuildChainClient.getBuildState() != null;
+        boolean emptyHand = !BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem());
+        boolean sequenceActive = BuildPipelineClient.getBuildState() != null;
         boolean modeActive = BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED;
 
-        BlockSet blockSet = BuildChainClient.getPreviewBlocks(mc);
+        BlockSet blockSet = BuildPipelineClient.getPreviewBlocks(mc);
         if (blockSet == null || blockSet.isEmpty()) {
             RenderHandler.resetPreviewSize();
             return;
@@ -80,41 +73,23 @@ public class BlockPreviewRenderer {
 
         List<BlockPos> positions = new ArrayList<>(blockSet.keySet());
 
-        BuildChain.BuildState pendingAction = BuildChainClient.getBuildState();
+        BuildPipeline.BuildState pendingAction = BuildPipelineClient.getBuildState();
 
         // Delegate sound + action-bar to RenderHandler.
         RenderHandler.updateFeedback(positions, sequenceActive, pendingAction);
 
-        boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
+        boolean isBreaking = pendingAction == BuildPipeline.BuildState.BREAKING;
 
-        // Determine which positions are unactionable in survival mode
-        boolean isSurvival = mc.player != null && !mc.player.getAbilities().instabuild;
-        boolean isSurvivalBreaking = isBreaking && isSurvival;
-        boolean isSurvivalReplacing = !isBreaking && isSurvival
-                && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR;
+        // Separate valid and rejected positions using BlockEntry status from the constraint pipeline
         List<BlockPos> breakablePositions = new ArrayList<>();
         List<BlockPos> unbreakablePositions = new ArrayList<>();
-        if (isSurvivalBreaking) {
-            var dimension = mc.level.dimension();
-            for (BlockPos pos : positions) {
-                if (PlacedBlockTracker.clientIsTracked(dimension, pos)) {
-                    breakablePositions.add(pos);
-                } else {
-                    unbreakablePositions.add(pos);
-                }
+        for (BlockPos pos : positions) {
+            BlockEntry entry = blockSet.get(pos);
+            if (entry != null && !entry.isValid()) {
+                unbreakablePositions.add(pos);
+            } else {
+                breakablePositions.add(pos);
             }
-        } else if (isSurvivalReplacing) {
-            var dimension = mc.level.dimension();
-            for (BlockPos pos : positions) {
-                BlockState existing = mc.level.getBlockState(pos);
-                if (existing.canBeReplaced() || PlacedBlockTracker.clientIsTracked(dimension, pos)) {
-                    breakablePositions.add(pos);
-                } else {
-                    unbreakablePositions.add(pos);
-                }
-            }
-        } else {
-            breakablePositions = positions;
         }
 
         // Narrow the working list so block previews and wireframes only cover actionable positions
@@ -140,7 +115,7 @@ public class BlockPreviewRenderer {
                 try {
                     var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                     var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
-                    Set<BlockPos> missingPositions = BuildChainClient.ITEM_USAGE.missingPositions;
+                    Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
                     for (BlockPos pos : positions) {
                         // Apply per-block mirror/rotation transforms from the modifier pipeline.
                         BlockState state = baseState;
@@ -184,7 +159,7 @@ public class BlockPreviewRenderer {
         int oR = 255, oG = isBreaking ? 0 : 255, oB = isBreaking ? 0 : 255;
 
         // Separate valid positions from missing positions for different edge colors
-        Set<BlockPos> missingSet = BuildChainClient.ITEM_USAGE.missingPositions;
+        Set<BlockPos> missingSet = BuildPipelineClient.ITEM_USAGE.missingPositions;
         List<BlockPos> validPositions = new ArrayList<>();
         List<BlockPos> missingPositions = new ArrayList<>();
         for (BlockPos pos : positions) {
@@ -207,7 +182,7 @@ public class BlockPreviewRenderer {
         }
         if (!unbreakablePositions.isEmpty()) {
             renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
-                    camX, camY, camZ, outlineWidth, 128, 128, 128, 255);
+                    camX, camY, camZ, outlineWidth, 255, 80, 80, 255);
             bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
         }
     }
@@ -221,7 +196,7 @@ public class BlockPreviewRenderer {
         var pose = poseStack.last();
         int r, g, b;
         if (isUnbreakable) {
-            r = 128; g = 128; b = 128;
+            r = 255; g = 80; b = 80;
         } else {
             r = isBreaking ? 255 : 255;
             g = isBreaking ? 0 : 255;
@@ -326,7 +301,7 @@ public class BlockPreviewRenderer {
         // Mid-sequence: use the first click's hit result so that face-dependent properties
         // (log axis, upside-down stairs/slabs) match the actual placement.
         // The player object is always current, so getHorizontalDirection() (stair facing) stays live.
-        BlockHitResult hit = BuildChainClient.getFirstClickHit();
+        BlockHitResult hit = BuildPipelineClient.getFirstClickHit();
 
         if (hit == null) {
             // Pre-click: raytrace to show what would be placed at the current target.

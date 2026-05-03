@@ -9,12 +9,10 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import nl.requios.effortlessbuilding.config.ClientConfig;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
-import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
-import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.modifier.ModifierSystem;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
@@ -36,7 +34,6 @@ public class NeoForgeClientSetup {
             event.register(KeyBindings.openModifiersScreen);
             event.register(KeyBindings.undo);
             event.register(KeyBindings.redo);
-            BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
         }
     }
 
@@ -74,26 +71,27 @@ public class NeoForgeClientSetup {
                     mc.setScreen(RadialMenu.instance);
                 }
 
-                if (mc.player != null && mc.level != null && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                if (mc.player != null && mc.level != null && BuildPipelineClient.shouldIntercept()) {
                     boolean rightDown = mc.options.keyUse.isDown();
                     boolean leftDown = mc.options.keyAttack.isDown();
                     boolean rightJustPressed = rightDown && !prevRightDown;
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.BREAKING) {
-                            BuildChainClient.cancelCurrentSequence();
-                        } else if (BuildChain.isBuildTriggerItem(mc.player.getMainHandItem())
-                                || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChainClient.handleRightClick(mc);
+                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
+                            BuildPipelineClient.cancelCurrentSequence();
+                        } else if (BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())
+                                || BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
+                            BuildPipelineClient.handleRightClick(mc);
                         }
                     }
                     if (leftJustPressed) {
-                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChainClient.cancelCurrentSequence();
-                        } else if (BuildChain.isBuildTriggerItem(mc.player.getMainHandItem())
-                                || BuildChainClient.getBuildState() != null) {
-                            BuildChainClient.handleLeftClick(mc);
+                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
+                            BuildPipelineClient.cancelCurrentSequence();
+                        } else if (mc.player.getMainHandItem().isEmpty()
+                                || BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())
+                                || BuildPipelineClient.getBuildState() != null) {
+                            BuildPipelineClient.handleLeftClick(mc);
                         }
                     }
                     prevRightDown = rightDown;
@@ -117,6 +115,18 @@ public class NeoForgeClientSetup {
             var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
             RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,
                     camPos.x, camPos.y, camPos.z);
+        }
+
+        @SubscribeEvent
+        public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+            if (!event.getEntity().level().isClientSide()) return;
+            if (!BuildPipelineClient.shouldIntercept()) return;
+            var player = event.getEntity();
+            if (player.getMainHandItem().isEmpty()
+                    || BuildPipeline.isBuildTriggerItem(player.getMainHandItem())
+                    || BuildPipelineClient.getBuildState() != null) {
+                event.setCanceled(true);
+            }
         }
     }
 }

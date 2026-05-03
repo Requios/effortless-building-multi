@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.modifier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
@@ -29,7 +29,7 @@ public class ArrayModifier extends AbstractModifier {
 
 
     @Override
-    public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
+    public void processBlocks(BlockSet blocks, Player player, BuildPipeline.BuildState action) {
         if (count <= 0) return;
         int maxCount = ServerConfig.INSTANCE.getMaxArrayCount(player);
         int maxOffset = ServerConfig.INSTANCE.getMaxArrayOffset(player);

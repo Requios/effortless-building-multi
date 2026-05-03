@@ -22,7 +22,7 @@ public class ScreenWidgets {
 
     // ---- layout constants ----
     public static final int LABEL_W = 62;
-    public static final int EDIT_W = 60;
+    public static final int EDIT_W = 40;
     public static final int VEC_EDIT_W = 38;
     public static final int FIELD_H = 16;
     public static final int ROW_GAP = 22;
@@ -62,7 +62,7 @@ public class ScreenWidgets {
     // =========================================================================
 
     public void addIntField(int x, int y, String value, IntConsumer setter) {
-        EditBox field = new EditBox(font, x + LABEL_W + 14, y, EDIT_W, FIELD_H, Component.empty());
+        EditBox field = new EditBox(font, x + LABEL_W + 12, y, EDIT_W, FIELD_H, Component.empty());
         field.setValue(value);
         field.setFilter(s -> s.matches("-?\\d*"));
         field.setResponder(s -> {
@@ -77,7 +77,7 @@ public class ScreenWidgets {
         widgetAdder.accept(field);
         widgetAdder.accept(Button.builder(Component.literal("+"),
                         btn -> stepInt(field, setter, +1))
-                .bounds(x + LABEL_W + 14 + EDIT_W, y, 12, FIELD_H).build());
+                .bounds(x + LABEL_W + 12 + EDIT_W, y, 12, FIELD_H).build());
 
         intFields.add(new IntFieldEntry(field, setter));
     }

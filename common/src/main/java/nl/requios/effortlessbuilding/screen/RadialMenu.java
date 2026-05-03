@@ -277,7 +277,7 @@ public class RadialMenu extends Screen {
 					btn.action == ModeOptions.getRaisedEdge() ||
 					btn.action == ModeOptions.getLineThickness() ||
 					btn.action == ModeOptions.getCircleStart() ||
-					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.isQuickReplacing());
+					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR);
 
 
 

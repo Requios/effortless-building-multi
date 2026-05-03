@@ -14,6 +14,7 @@ public class BlockEntry {
     public Rotation rotation = Rotation.NONE;
     public BlockState blockState;
     public Item item;
+    private BlockStatus status = BlockStatus.VALID;
 
     public BlockEntry(BlockPos blockPos) {
         this.blockPos = blockPos;
@@ -46,5 +47,27 @@ public class BlockEntry {
         if (mirrorY) state = BlockUtilities.applyVerticalMirror(state);
         if (rotation != Rotation.NONE) state = state.rotate(rotation);
         return state;
+    }
+
+    /**
+     * Marks this entry as rejected with the given reason.
+     * Only the first rejection sticks (constraint stages run in order; first failure is the cause).
+     */
+    public void markRejected(BlockStatus reason) {
+        if (status == BlockStatus.VALID) {
+            this.status = reason;
+        }
+    }
+
+    public BlockStatus getStatus() {
+        return status;
+    }
+
+    public boolean isValid() {
+        return status.isValid();
+    }
+
+    public void resetStatus() {
+        this.status = BlockStatus.VALID;
     }
 }

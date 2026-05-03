@@ -123,7 +123,7 @@ public class ModifiersScreen extends Screen {
                     .bounds(lx + LIST_W - 30, ry + 4, 12, 14).build());
             if (filteredIdx == count - 1) downBtn.active = false;
 
-            addRenderableWidget(Button.builder(Component.literal("X"),
+            addRenderableWidget(Button.builder(Component.literal("×"),
                             btn -> {
                                 ModifierSystem.CLIENT.removeModifier(realIdx);
                                 if (selectedIndex >= filteredModifiers.size() - 1) selectedIndex = filteredModifiers.size() - 2;

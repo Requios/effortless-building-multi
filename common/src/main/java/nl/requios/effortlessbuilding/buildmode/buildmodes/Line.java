@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.buildmode.buildmodes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.TwoClicksBuildMode;
@@ -14,7 +14,7 @@ import java.util.List;
 public class Line extends TwoClicksBuildMode {
 
 	public static BlockPos findLine(Player player, BlockPos firstPos, boolean skipRaytrace) {
-		Vec3 look = BuildChain.getPlayerLookVec(player);
+		Vec3 look = BuildPipeline.getPlayerLookVec(player);
 		Vec3 start = new Vec3(player.getX(), player.getY() + player.getEyeHeight(), player.getZ());
 
 		List<Criteria> criteriaList = new ArrayList<>(3);

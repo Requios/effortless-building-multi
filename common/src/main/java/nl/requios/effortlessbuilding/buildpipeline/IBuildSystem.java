@@ -1,10 +1,10 @@
-package nl.requios.effortlessbuilding.buildchain;
+package nl.requios.effortlessbuilding.buildpipeline;
 
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 
 /**
- * One stage in the {@link BuildChain} that can observe or transform the set of
+ * One stage in the {@link BuildPipeline} that can observe or transform the set of
  * block positions produced by earlier stages.
  *
  * <p>Implementations may add, remove, or reposition entries — for example:
@@ -22,8 +22,8 @@ public interface IBuildSystem {
      *
      * @param blocks the block set populated so far (may already contain entries from prior stages)
      * @param player the acting player
-     * @param action whether this is a {@link BuildChain.BuildState#PLACING} or
-     *               {@link BuildChain.BuildState#BREAKING} operation
+     * @param action whether this is a {@link BuildPipeline.BuildState#PLACING} or
+     *               {@link BuildPipeline.BuildState#BREAKING} operation
      */
-    void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action);
+    void processBlocks(BlockSet blocks, Player player, BuildPipeline.BuildState action);
 }

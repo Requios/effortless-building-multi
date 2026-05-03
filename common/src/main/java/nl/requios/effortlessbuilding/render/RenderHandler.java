@@ -14,10 +14,8 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
-import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
-import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 
 import java.util.List;
@@ -76,11 +74,11 @@ public class RenderHandler {
      * current preview positions so that sound + action-bar stay in sync.
      */
     static void updateFeedback(List<BlockPos> positions, boolean sequenceActive,
-                                BuildChain.BuildState pendingAction) {
+                                BuildPipeline.BuildState pendingAction) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        boolean isBreaking = pendingAction == BuildChain.BuildState.BREAKING;
+        boolean isBreaking = pendingAction == BuildPipeline.BuildState.BREAKING;
 
         // Sound tick on preview size change.
         if (sequenceActive && positions.size() != lastPreviewSize) {
@@ -115,17 +113,11 @@ public class RenderHandler {
             } else {
                 StringBuilder sb = new StringBuilder().append(positions.size()).append(" (");
                 for (int i = 0; i < dims.length; i++) {
-                    if (i > 0) sb.append('\u00d7');
+                    if (i > 0) sb.append('×');
                     sb.append(dims[i]);
                 }
                 sb.append(')');
                 msg = sb.toString();
-            }
-
-            // Append missing block count for survival players
-            ItemUsageTracker tracker = BuildChainClient.ITEM_USAGE;
-            if (tracker.hasMissing()) {
-                msg += " (" + tracker.getTotalMissing() + " missing)";
             }
 
             mc.player.displayClientMessage(Component.literal(msg), true);
@@ -141,18 +133,31 @@ public class RenderHandler {
     // =========================================================================
 
     /**
-     * Draws item stacks at the crosshair showing what will be used and what is missing.
-     * Shown when a sequence is active (or modifiers produce multiple blocks) and the player
-     * is in survival, or when multiple item types are involved.
+     * Draws item stacks at the crosshair showing what will be used/obtained and what is missing/rejected.
+     * For placing: shows items consumed and missing items in red.
+     * For breaking: shows blocks that will be broken, rejected blocks in red, and missing tool icons.
      */
     private static void drawStacks(GuiGraphics guiGraphics) {
-        var state = BuildChainClient.getBuildState();
-        if (state != BuildChain.BuildState.PLACING) return;
+        var state = BuildPipelineClient.getBuildState();
+        if (state == null) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        ItemUsageTracker tracker = BuildChainClient.ITEM_USAGE;
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+        int x = screenWidth / 2 + 10;
+        int y = screenHeight / 2 - 8;
+
+        if (state == BuildPipeline.BuildState.PLACING) {
+            drawPlacingStacks(guiGraphics, mc, x, y);
+        } else {
+            drawBreakingStacks(guiGraphics, mc, x, y);
+        }
+    }
+
+    private static void drawPlacingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {
+        ItemUsageTracker tracker = BuildPipelineClient.ITEM_USAGE;
         var stacks = tracker.total;
 
         // Show if we are in survival or we are using multiple types of items
@@ -160,13 +165,6 @@ public class RenderHandler {
             return;
         }
 
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-        int x = screenWidth / 2 + 10;
-        int y = screenHeight / 2 - 8;
-
-        // Draw item texture with count
         int i = 0;
         for (Map.Entry<Item, Integer> entry : stacks.entrySet()) {
             int total = entry.getValue();
@@ -179,6 +177,38 @@ public class RenderHandler {
 
             if (missing > 0) {
                 drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing), x + i * 20, y, true);
+                i++;
+            }
+        }
+    }
+
+    private static void drawBreakingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {
+        var tracker = BuildPipelineClient.BREAK_DISPLAY;
+
+        // Nothing to show if no blocks
+        if (tracker.breakable.isEmpty() && tracker.rejected.isEmpty()) return;
+
+        // In creative, only show if there are rejected entries (shouldn't happen, but safety)
+        if (mc.player.getAbilities().instabuild && tracker.rejected.isEmpty()) return;
+
+        int i = 0;
+
+        // Draw breakable blocks (white count)
+        for (Map.Entry<Item, Integer> entry : tracker.breakable.entrySet()) {
+            drawItemStack(guiGraphics, new ItemStack(entry.getKey(), entry.getValue()), x + i * 20, y, false);
+            i++;
+        }
+
+        // Draw rejected/unbreakable blocks (red count)
+        for (Map.Entry<Item, Integer> entry : tracker.rejected.entrySet()) {
+            drawItemStack(guiGraphics, new ItemStack(entry.getKey(), entry.getValue()), x + i * 20, y, true);
+            i++;
+        }
+
+        // Draw missing tool icons
+        if (tracker.hasMissingTools()) {
+            for (Item tool : tracker.missingTools) {
+                drawItemStack(guiGraphics, new ItemStack(tool), x + i * 20, y, true);
                 i++;
             }
         }
@@ -206,11 +236,11 @@ public class RenderHandler {
     // =========================================================================
 
     private static void renderSubtitle(GuiGraphics graphics) {
-        BuildChain.BuildState pendingAction = BuildChainClient.getBuildState();
+        BuildPipeline.BuildState pendingAction = BuildPipelineClient.getBuildState();
         if (pendingAction == null) return;
 
         Minecraft mc = Minecraft.getInstance();
-        Component text = pendingAction == BuildChain.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
+        Component text = pendingAction == BuildPipeline.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();

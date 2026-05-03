@@ -7,8 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
-import nl.requios.effortlessbuilding.buildmode.BuildModes;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,12 +19,11 @@ import java.util.List;
 @Mixin(BlockItem.class)
 public class MixinBlockItem {
 
-    // Safety net: cancel vanilla block placement whenever a build mode is active.
-    // The actual placement is handled by MixinMinecraft.onStartUseItem → BuildModes.handleRightClick.
+    // Safety net: cancel vanilla block placement whenever the build pipeline should intercept.
     @Inject(method = "place(Lnet/minecraft/world/item/context/BlockPlaceContext;)Lnet/minecraft/world/InteractionResult;", at = @At("HEAD"), cancellable = true)
     private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!context.getLevel().isClientSide()) return;
-        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
+        if (!BuildPipelineClient.shouldIntercept()) return;
         cir.setReturnValue(InteractionResult.sidedSuccess(true));
         cir.cancel();
     }

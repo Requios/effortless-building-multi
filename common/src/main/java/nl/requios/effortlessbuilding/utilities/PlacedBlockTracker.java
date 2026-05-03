@@ -72,6 +72,18 @@ public class PlacedBlockTracker {
     }
 
     /**
+     * Side-agnostic check: on the server uses the player's UUID, on the client uses CLIENT_ID.
+     * This allows the ConstraintSystem to run identically on both sides.
+     */
+    public static boolean isTrackedAnySide(net.minecraft.world.entity.player.Player player, Level level, BlockPos pos) {
+        if (level.isClientSide()) {
+            return clientIsTracked(level.dimension(), pos);
+        } else {
+            return isTracked(player.getUUID(), level.dimension(), pos);
+        }
+    }
+
+    /**
      * Clear all tracked data for a player (call on disconnect).
      */
     public static void clearPlayer(UUID playerId) {

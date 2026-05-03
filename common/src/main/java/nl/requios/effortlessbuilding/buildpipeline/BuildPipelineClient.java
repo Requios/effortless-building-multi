@@ -1,4 +1,4 @@
-package nl.requios.effortlessbuilding.buildchain;
+package nl.requios.effortlessbuilding.buildpipeline;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -22,15 +22,15 @@ import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.config.ServerConfig;
+import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
-import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.utilities.BreakDisplayTracker;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
-import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.BucketItem;
@@ -38,45 +38,78 @@ import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
 
 /**
- * Client-only counterpart to {@link BuildChain}.
+ * Client-side controller for the unified build pipeline.
  *
- * <p>This class holds the client-side {@link BuildChain} singleton, multi-click
- * sequence state, and every method that touches {@link Minecraft} or other
- * client-only types.  Keeping it separate prevents Fabric's server-side
- * classloader from pulling in {@code net.minecraft.client.*} when
- * {@link BuildChain} is loaded on the dedicated server.
+ * <p>Manages the multi-click sequence state, preview computation, and packet
+ * dispatch for all build modes. When mode is DISABLED but modifiers are active,
+ * the pipeline still runs (producing mirrored/arrayed copies of the single block).
+ *
+ * <p>Every method here touches {@link Minecraft} or other client-only types, keeping
+ * them out of the server-side {@link BuildPipeline} to prevent Fabric's dedicated-server
+ * classloader from pulling in {@code net.minecraft.client.*}.
  */
-public class BuildChainClient {
+public class BuildPipelineClient {
 
-    /** Client-side singleton — registered systems run during preview and before packet dispatch. */
-    public static final BuildChain CLIENT = new BuildChain();
+    /**
+     * Client-side pipeline with all stages pre-registered.
+     * Pipeline order: ModifierSystem.CLIENT → ConstraintSystem
+     */
+    public static final BuildPipeline CLIENT = createClientPipeline();
 
-    /** Client-side item usage tracker — updated each frame during preview. */
+    private static BuildPipeline createClientPipeline() {
+        BuildPipeline pipeline = new BuildPipeline();
+        pipeline.addSystem(ModifierSystem.CLIENT);
+        pipeline.addSystem(ConstraintSystem.INSTANCE);
+        return pipeline;
+    }
+
+    /** Client-side item usage tracker — updated each frame during preview rendering. */
     public static final ItemUsageTracker ITEM_USAGE = new ItemUsageTracker();
 
+    /** Client-side break display tracker — updated each frame during breaking preview. */
+    public static final BreakDisplayTracker BREAK_DISPLAY = new BreakDisplayTracker();
+
     // -------------------------------------------------------------------------
-    // Sequence state
+    // Multi-click sequence state
     // -------------------------------------------------------------------------
 
-    @Nullable private static BuildChain.BuildState buildState = null;
+    @Nullable private static BuildPipeline.BuildState buildState = null;
     @Nullable private static BlockHitResult firstClickHit = null;
 
-    public static @Nullable BuildChain.BuildState getBuildState() { return buildState; }
+    public static @Nullable BuildPipeline.BuildState getBuildState() { return buildState; }
     public static @Nullable BlockHitResult getFirstClickHit() { return firstClickHit; }
 
     // -------------------------------------------------------------------------
-    // Entry points — called by platform-specific client tick handlers
+    // Interception decision
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns {@code true} if the mod should intercept vanilla click handling.
+     * True when:
+     * <ul>
+     *   <li>A build mode other than DISABLED is active, OR</li>
+     *   <li>Mode is DISABLED but at least one modifier is active (would produce >1 block)</li>
+     * </ul>
+     */
+    public static boolean shouldIntercept() {
+        BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
+        if (mode != BuildModeEnum.DISABLED) return true;
+        return ModifierSystem.CLIENT.hasActiveModifiers();
+    }
+
+    // -------------------------------------------------------------------------
+    // Click handling — called by platform-specific client tick handlers
     // -------------------------------------------------------------------------
 
     public static void handleRightClick(Minecraft mc) {
-        handleClick(mc, BuildChain.BuildState.PLACING);
+        handleClick(mc, BuildPipeline.BuildState.PLACING);
     }
 
     public static void handleLeftClick(Minecraft mc) {
-        handleClick(mc, BuildChain.BuildState.BREAKING);
+        handleClick(mc, BuildPipeline.BuildState.BREAKING);
     }
 
-    private static void handleClick(Minecraft mc, BuildChain.BuildState action) {
+    private static void handleClick(Minecraft mc, BuildPipeline.BuildState action) {
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
         Player player = mc.player;
         if (player == null || mc.level == null) return;
@@ -105,7 +138,7 @@ public class BuildChainClient {
 
             if (blocks.firstPos != null && blocks.lastPos != null) {
                 SoundType soundType;
-                if (action == BuildChain.BuildState.PLACING) {
+                if (action == BuildPipeline.BuildState.PLACING) {
                     var held = player.getMainHandItem();
                     soundType = held.getItem() instanceof BlockItem blockItem
                             ? blockItem.getBlock().defaultBlockState().getSoundType()
@@ -122,7 +155,7 @@ public class BuildChainClient {
                 BlockPos secondPos = intermediate != null ? intermediate : blocks.lastPos;
                 BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
 
-                if (action == BuildChain.BuildState.PLACING) {
+                if (action == BuildPipeline.BuildState.PLACING) {
                     // Check for unreplaceable blocks and warn
                     if (!player.getAbilities().instabuild
                             && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR) {
@@ -152,7 +185,7 @@ public class BuildChainClient {
                     // Client-side placement tracking
                     PlacedBlockTracker.clientTrackAll(mc.level.dimension(), blocks.keySet());
                 } else {
-                    // Check if breaking is allowed in survival
+                    // Breaking disabled warning comes from ConstraintSystem marking entries now
                     if (!player.getAbilities().instabuild && !ServerConfig.INSTANCE.survivalAllowBreaking) {
                         player.displayClientMessage(
                                 Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
@@ -160,35 +193,6 @@ public class BuildChainClient {
                         buildState = null;
                         firstClickHit = null;
                         return;
-                    }
-                    // Check for unbreakable blocks and warn
-                    if (!player.getAbilities().instabuild && ServerConfig.INSTANCE.survivalOnlyPlacedBlocks) {
-                        boolean hasUnbreakable = false;
-                        for (BlockPos pos : blocks.keySet()) {
-                            if (!PlacedBlockTracker.clientIsTracked(mc.level.dimension(), pos)) {
-                                hasUnbreakable = true;
-                                break;
-                            }
-                        }
-                        if (hasUnbreakable) {
-                            player.displayClientMessage(
-                                    Component.translatable("effortlessbuilding.message.only_break_placed"), true);
-                        }
-                    }
-                    // Check for blocks exceeding max hardness and warn
-                    if (!player.getAbilities().instabuild && ServerConfig.INSTANCE.survivalMaxHardness >= 0) {
-                        boolean hasTooHard = false;
-                        for (BlockPos pos : blocks.keySet()) {
-                            float hardness = mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos);
-                            if (hardness > ServerConfig.INSTANCE.survivalMaxHardness) {
-                                hasTooHard = true;
-                                break;
-                            }
-                        }
-                        if (hasTooHard) {
-                            player.displayClientMessage(
-                                    Component.translatable("effortlessbuilding.message.too_hard"), true);
-                        }
                     }
                     PacketHandler.sendToServer(new BreakBuildModePacket(
                             mode, blocks.firstPos, secondPos, thirdPos,
@@ -206,11 +210,11 @@ public class BuildChainClient {
     }
 
     // -------------------------------------------------------------------------
-    // Preview
+    // Preview computation
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the block set that should be highlighted in the preview this frame.
+     * Computes the block set that should be highlighted in the preview this frame.
      */
     public static BlockSet getPreviewBlocks(Minecraft mc) {
         Player player = mc.player;
@@ -219,71 +223,64 @@ public class BuildChainClient {
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
 
         BlockSet result;
-        if (mode != BuildModeEnum.DISABLED && !mode.instance.isFirstClick()) {
+        if (!mode.instance.isFirstClick()) {
+            // Multi-click sequence in progress: show the shape being built
             BlockSet previewBlocks = new BlockSet();
             mode.instance.findCoordinates(previewBlocks, player);
-            BuildChain.BuildState action = buildState != null ? buildState : BuildChain.BuildState.PLACING;
+            BuildPipeline.BuildState action = buildState != null ? buildState : BuildPipeline.BuildState.PLACING;
             CLIENT.processBlocks(previewBlocks, player, action);
             if (previewBlocks.isEmpty()) return null;
+            previewBlocks.sortByDistance();
             previewBlocks.truncate(ServerConfig.INSTANCE.getMaxBlocksPlaced(player));
-
-            // For breaking preview in survival, remove blocks that exceed max hardness
-            if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild
-                    && ServerConfig.INSTANCE.survivalMaxHardness >= 0) {
-                float maxHardness = ServerConfig.INSTANCE.survivalMaxHardness;
-                previewBlocks.keySet().removeIf(pos -> {
-                    float h = mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos);
-                    return h > maxHardness;
-                });
-            }
-
-            // For breaking preview in survival, remove blocks requiring tools the player doesn't have
-            if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild
-                    && ServerConfig.INSTANCE.survivalRequireTools) {
-                previewBlocks.keySet().removeIf(pos -> {
-                    BlockState state = mc.level.getBlockState(pos);
-                    return !InventoryHelper.hasCorrectToolForBlock(player, state);
-                });
-            }
-
             result = previewBlocks;
         } else {
+            // First-click preview: show what would happen at the look target
             Vec3 start = player.getEyePosition();
             Vec3 end = start.add(player.getLookAngle().scale(ServerConfig.INSTANCE.getReach(player)));
             ClipContext ctx = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
             BlockHitResult hit = mc.level.clip(ctx);
             if (hit.getType() != HitResult.Type.BLOCK) return null;
-            BlockPos targetPos = resolveFirstClickPos(hit, BuildChain.BuildState.PLACING, mc.level);
+            BlockPos targetPos = resolveFirstClickPos(hit, BuildPipeline.BuildState.PLACING, mc.level);
             BlockSet blockSet = new BlockSet();
             blockSet.add(new BlockEntry(targetPos));
-            CLIENT.processBlocks(blockSet, player, BuildChain.BuildState.PLACING);
+            blockSet.firstPos = targetPos;
+            blockSet.lastPos = targetPos;
+            CLIENT.processBlocks(blockSet, player, BuildPipeline.BuildState.PLACING);
             result = blockSet;
         }
 
         // Update item usage tracker for the preview
-        updateItemUsage(player, result);
+        updateDisplayTrackers(player, result);
         return result;
     }
 
     /**
-     * Updates the client-side {@link ItemUsageTracker} based on the current preview block set.
+     * Updates the client-side trackers based on the current preview block set.
      */
-    private static void updateItemUsage(Player player, BlockSet blockSet) {
-        var held = player.getMainHandItem();
-        net.minecraft.world.item.Item heldItem = null;
-        if (held.getItem() instanceof BlockItem) {
-            heldItem = held.getItem();
-        } else if (held.getItem() instanceof BucketItem bucketItem) {
-            var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
-            if (!fluid.isSame(Fluids.EMPTY)) {
-                heldItem = held.getItem();
-            }
-        }
+    private static void updateDisplayTrackers(Player player, BlockSet blockSet) {
+        BuildPipeline.BuildState action = buildState != null ? buildState : BuildPipeline.BuildState.PLACING;
 
-        if (heldItem != null) {
-            ITEM_USAGE.compute(player, blockSet.keySet(), heldItem, player.getAbilities().instabuild);
-        } else {
+        if (action == BuildPipeline.BuildState.BREAKING) {
+            BREAK_DISPLAY.compute(player, blockSet);
             ITEM_USAGE.initialize();
+        } else {
+            var held = player.getMainHandItem();
+            net.minecraft.world.item.Item heldItem = null;
+            if (held.getItem() instanceof BlockItem) {
+                heldItem = held.getItem();
+            } else if (held.getItem() instanceof BucketItem bucketItem) {
+                var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
+                if (!fluid.isSame(Fluids.EMPTY)) {
+                    heldItem = held.getItem();
+                }
+            }
+
+            if (heldItem != null) {
+                ITEM_USAGE.compute(player, blockSet.validPositions(), heldItem, player.getAbilities().instabuild);
+            } else {
+                ITEM_USAGE.initialize();
+            }
+            BREAK_DISPLAY.initialize();
         }
     }
 
@@ -305,13 +302,12 @@ public class BuildChainClient {
     // Internal helpers
     // -------------------------------------------------------------------------
 
-    private static BlockPos resolveFirstClickPos(BlockHitResult hit, BuildChain.BuildState action, Level level) {
+    private static BlockPos resolveFirstClickPos(BlockHitResult hit, BuildPipeline.BuildState action, Level level) {
         BlockPos hitPos = hit.getBlockPos();
-        if (action == BuildChain.BuildState.BREAKING) return hitPos;
+        if (action == BuildPipeline.BuildState.BREAKING) return hitPos;
         // When replacing blocks, click on the block itself instead of adjacent
         if (BuildSettings.CLIENT.shouldOffsetStartPosition()) return hitPos;
         if (level.getBlockState(hitPos).canBeReplaced()) return hitPos;
         return hitPos.relative(hit.getDirection());
     }
 }
-

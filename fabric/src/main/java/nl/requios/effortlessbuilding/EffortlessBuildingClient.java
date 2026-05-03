@@ -6,15 +6,14 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.InteractionResult;
 import nl.requios.effortlessbuilding.config.ClientConfig;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
-import nl.requios.effortlessbuilding.buildchain.BuildChainClient;
-import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
-import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import nl.requios.effortlessbuilding.modifier.ModifierSystem;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
@@ -39,8 +38,6 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(KeyBindings.undo);
         KeyBindingHelper.registerKeyBinding(KeyBindings.redo);
 
-        BuildChainClient.CLIENT.addSystem(ModifierSystem.CLIENT);
-
         // Register client-side handler for S2C modifier sync packet
         ClientPlayNetworking.registerGlobalReceiver(SyncModifiersS2CPacket.TYPE, (payload, context) ->
                 context.client().execute(() -> PacketHandler.handleSyncModifiers(payload)));
@@ -60,6 +57,18 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     context.matrixStack(),
                     (MultiBufferSource.BufferSource) context.consumers(),
                     camPos.x, camPos.y, camPos.z);
+        });
+
+        // Cancel vanilla block breaking when the build pipeline should intercept
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (!world.isClientSide()) return InteractionResult.PASS;
+            if (!BuildPipelineClient.shouldIntercept()) return InteractionResult.PASS;
+            if (player.getMainHandItem().isEmpty()
+                    || BuildPipeline.isBuildTriggerItem(player.getMainHandItem())
+                    || BuildPipelineClient.getBuildState() != null) {
+                return InteractionResult.FAIL;
+            }
+            return InteractionResult.PASS;
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -88,26 +97,27 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
 
-                if (client.player != null && client.level != null && BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED) {
+                if (client.player != null && client.level != null && BuildPipelineClient.shouldIntercept()) {
                     boolean rightDown = client.options.keyUse.isDown();
                     boolean leftDown = client.options.keyAttack.isDown();
                     boolean rightJustPressed = rightDown && !prevRightDown;
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.BREAKING) {
-                            BuildChainClient.cancelCurrentSequence();
-                        } else if (BuildChain.isBuildTriggerItem(client.player.getMainHandItem())
-                                || BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChainClient.handleRightClick(Minecraft.getInstance());
+                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
+                            BuildPipelineClient.cancelCurrentSequence();
+                        } else if (BuildPipeline.isBuildTriggerItem(client.player.getMainHandItem())
+                                || BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
+                            BuildPipelineClient.handleRightClick(Minecraft.getInstance());
                         }
                     }
                     if (leftJustPressed) {
-                        if (BuildChainClient.getBuildState() == BuildChain.BuildState.PLACING) {
-                            BuildChainClient.cancelCurrentSequence();
-                        } else if (BuildChain.isBuildTriggerItem(client.player.getMainHandItem())
-                                || BuildChainClient.getBuildState() != null) {
-                            BuildChainClient.handleLeftClick(Minecraft.getInstance());
+                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
+                            BuildPipelineClient.cancelCurrentSequence();
+                        } else if (client.player.getMainHandItem().isEmpty()
+                                || BuildPipeline.isBuildTriggerItem(client.player.getMainHandItem())
+                                || BuildPipelineClient.getBuildState() != null) {
+                            BuildPipelineClient.handleLeftClick(Minecraft.getInstance());
                         }
                     }
                     prevRightDown = rightDown;

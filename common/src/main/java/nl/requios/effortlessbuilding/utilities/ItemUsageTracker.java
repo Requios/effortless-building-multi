@@ -65,9 +65,13 @@ public class ItemUsageTracker {
         if (count > have) {
             missing.put(heldItem, count - have);
 
-            // Mark the last (count - have) positions as missing
-            int missingCount = count - have;
+            // Sort positions by distance to player (closest first) so nearby blocks are placed first
             List<BlockPos> posList = new ArrayList<>(positions);
+            BlockPos playerPos = player.blockPosition();
+            posList.sort(Comparator.comparingDouble(pos -> pos.distSqr(playerPos)));
+
+            // Mark the farthest (count - have) positions as missing
+            int missingCount = count - have;
             for (int i = posList.size() - missingCount; i < posList.size(); i++) {
                 missingPositions.add(posList.get(i));
             }

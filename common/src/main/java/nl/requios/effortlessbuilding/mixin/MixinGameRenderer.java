@@ -3,6 +3,8 @@ package nl.requios.effortlessbuilding.mixin;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
@@ -28,10 +30,10 @@ public class MixinGameRenderer {
         if (minecraft.player == null || minecraft.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
 
-        // Only extend reach for build trigger items (blocks/buckets) or mid-sequence.
-        // Tools should use vanilla reach for normal mining.
-        if (!nl.requios.effortlessbuilding.buildchain.BuildChain.isBuildTriggerItem(minecraft.player.getMainHandItem())
-                && nl.requios.effortlessbuilding.buildchain.BuildChainClient.getBuildState() == null) return;
+        // Extend reach for build trigger items, empty hand (breaking/pick block), or mid-sequence.
+        if (!minecraft.player.getMainHandItem().isEmpty()
+                && !BuildPipeline.isBuildTriggerItem(minecraft.player.getMainHandItem())
+                && BuildPipelineClient.getBuildState() == null) return;
 
         // Only extend if the vanilla pick didn't find a block.
         if (minecraft.hitResult != null && minecraft.hitResult.getType() == HitResult.Type.BLOCK) return;

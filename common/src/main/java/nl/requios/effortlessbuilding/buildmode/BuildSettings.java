@@ -7,7 +7,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Client-side build settings for replace mode and tile-entity protection.
+ * Client-side build settings for replace mode.
  * Replace mode is available to all players; survival players may only replace
  * blocks they placed this session (enforced server-side via PlacedBlockTracker).
  */
@@ -46,14 +46,6 @@ public class BuildSettings {
     public ReplaceMode getReplaceMode() {
         if (!canReplace()) return ReplaceMode.ONLY_AIR;
         return replaceMode;
-    }
-
-    public ReplaceMode getReplaceModeRaw() {
-        return replaceMode;
-    }
-
-    public boolean isQuickReplacing() {
-        return getReplaceMode() != ReplaceMode.ONLY_AIR;
     }
 
     public ModeOptions.ActionEnum getReplaceModeActionEnum() {

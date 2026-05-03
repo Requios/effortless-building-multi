@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Rotation;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
@@ -36,7 +36,7 @@ public class RadialMirrorModifier extends AbstractModifier {
 
 
     @Override
-    public void processBlocks(BlockSet blocks, Player player, BuildChain.BuildState action) {
+    public void processBlocks(BlockSet blocks, Player player, BuildPipeline.BuildState action) {
         if (slices <= 1) return;
         int effectiveSize = Math.min(size, ServerConfig.INSTANCE.getMaxMirrorSize(player));
         List<BlockPos> snapshot = new ArrayList<>(blocks.keySet());

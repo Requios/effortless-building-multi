@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.buildmode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import nl.requios.effortlessbuilding.buildchain.BuildChain;
+import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
@@ -147,7 +147,7 @@ public abstract class ThreeClicksBuildMode extends BaseBuildMode {
 	}
 
 	public static BlockPos findHeight(Player player, BlockPos secondPos, boolean skipRaytrace) {
-		Vec3 look = BuildChain.getPlayerLookVec(player);
+		Vec3 look = BuildPipeline.getPlayerLookVec(player);
 		Vec3 start = new Vec3(player.getX(), player.getY() + player.getEyeHeight(), player.getZ());
 
 		List<HeightCriteria> criteriaList = new ArrayList<>(2);

@@ -7,8 +7,7 @@ import java.util.List;
 
 /**
  * Pure JSON serialization/deserialization for modifier lists.
- * Used by both {@link ModifierPersistence} (client-side file),
- * {@link ModifierServerStorage} (server-side file), and network packets.
+ * Used by {@link ModifierServerStorage} and network packets.
  */
 public class ModifierSerializer {
 
