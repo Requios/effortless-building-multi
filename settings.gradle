@@ -2,6 +2,10 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
+        maven {
+            name = 'Forgix'
+            url = uri('https://raw.githubusercontent.com/PacifistMC/Forgix/main/maven')
+        }
         exclusiveContent {
             forRepository {
                 maven {
