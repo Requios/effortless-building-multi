@@ -18,6 +18,7 @@ import nl.requios.effortlessbuilding.utilities.*;
  * <ol>
  *   <li>Breaking disabled — all entries marked if breaking is disallowed (breaking only)</li>
  *   <li>Max blocks limit — entries beyond the cap are marked {@link BlockStatus#MAX_BLOCKS_EXCEEDED}</li>
+ *   <li>Protected tile entities — tile entities the player wants protected</li>
  *   <li>Only-placed-blocks — positions not tracked by {@link PlacedBlockTracker}</li>
  *   <li>Max hardness — blocks exceeding {@code survivalMaxHardness}</li>
  *   <li>Require tools — blocks that need a tool the player doesn't have</li>
@@ -30,12 +31,39 @@ public class ConstraintSystem implements IBuildSystem {
 
     public static final ConstraintSystem INSTANCE = new ConstraintSystem();
 
+    /**
+     * Thread-local placement context set by the server before running the pipeline.
+     * On the client, this is null and the system reads from ClientConfig instead.
+     */
+    private static final ThreadLocal<PlacementContext> PLACEMENT_CTX = new ThreadLocal<>();
+
+    public record PlacementContext(boolean protectTileEntities) {}
+
+    public static void setPlacementContext(PlacementContext ctx) {
+        PLACEMENT_CTX.set(ctx);
+    }
+
+    public static void clearPlacementContext() {
+        PLACEMENT_CTX.remove();
+    }
+
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildPipeline.BuildState action) {
-        if (player.getAbilities().instabuild) return; // Creative skips all constraints
-
         Level level = player.level();
         boolean isBreaking = action == BuildPipeline.BuildState.BREAKING;
+
+        // World border + build height — applies to ALL players (including creative)
+        var worldBorder = level.getWorldBorder();
+        for (var mapEntry : blocks.entrySet()) {
+            BlockEntry entry = mapEntry.getValue();
+            if (!entry.isValid()) continue;
+            BlockPos pos = mapEntry.getKey();
+            if (level.isOutsideBuildHeight(pos) || !worldBorder.isWithinBounds(pos)) {
+                entry.markRejected(BlockStatus.WORLD_BORDER);
+            }
+        }
+
+        if (player.getAbilities().instabuild) return; // Creative skips survival constraints
 
         // Check if breaking is globally disabled
         if (isBreaking && !ServerConfig.INSTANCE.survivalAllowBreaking) {
@@ -55,6 +83,9 @@ public class ConstraintSystem implements IBuildSystem {
             }
         }
 
+        // Determine if tile entities should be protected
+        boolean protectTiles = getProtectTileEntities();
+
         // Per-position survival checks for breaking OR replacing existing blocks during placement
         for (var mapEntry : blocks.entrySet()) {
             BlockEntry entry = mapEntry.getValue();
@@ -69,6 +100,12 @@ public class ConstraintSystem implements IBuildSystem {
             } else {
                 // For placement: only apply breaking constraints to non-replaceable existing blocks
                 if (state.canBeReplaced()) continue;
+            }
+
+            // Protected tile entity check
+            if (protectTiles && level.getBlockEntity(pos) != null) {
+                entry.markRejected(BlockStatus.PROTECTED_TILE_ENTITY);
+                continue;
             }
 
             // Only placed blocks check
@@ -93,6 +130,23 @@ public class ConstraintSystem implements IBuildSystem {
                     entry.markRejected(BlockStatus.MISSING_TOOL);
                 }
             }
+        }
+    }
+
+    /**
+     * Gets the protectTileEntities setting. Server reads from ThreadLocal context,
+     * client reads from ClientConfig.
+     */
+    private boolean getProtectTileEntities() {
+        PlacementContext ctx = PLACEMENT_CTX.get();
+        if (ctx != null) {
+            return ctx.protectTileEntities();
+        }
+        // Client-side: read from ClientConfig
+        try {
+            return nl.requios.effortlessbuilding.config.ClientConfig.INSTANCE.shouldProtectTileEntities();
+        } catch (Exception e) {
+            return false; // Fallback if ClientConfig not available (dedicated server)
         }
     }
 }

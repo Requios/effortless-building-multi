@@ -18,7 +18,7 @@ public class MixinMinecraft {
     private void onStartUseItem(CallbackInfo ci) {
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
-        if (!BuildPipelineClient.shouldIntercept()) return;
+        if (!BuildPipelineClient.shouldInterceptPlacing()) return;
         boolean sequenceActive = BuildPipelineClient.getBuildState() != null;
         if (BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem()) || sequenceActive) ci.cancel();
     }
@@ -28,7 +28,7 @@ public class MixinMinecraft {
     private void onStartAttack(CallbackInfoReturnable<Boolean> cir) {
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
-        if (!BuildPipelineClient.shouldIntercept()) return;
+        if (!BuildPipelineClient.shouldInterceptBreaking()) return;
         boolean sequenceActive = BuildPipelineClient.getBuildState() != null;
         if (!sequenceActive && !BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())) return;
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
@@ -43,7 +43,7 @@ public class MixinMinecraft {
         if (!leftClick) return;
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
-        if (!BuildPipelineClient.shouldIntercept()) return;
+        if (!BuildPipelineClient.shouldInterceptBreaking()) return;
         boolean sequenceActive = BuildPipelineClient.getBuildState() != null;
         if (!sequenceActive && !BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())) return;
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {

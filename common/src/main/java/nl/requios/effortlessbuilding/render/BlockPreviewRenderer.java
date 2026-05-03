@@ -182,7 +182,7 @@ public class BlockPreviewRenderer {
         }
         if (!unbreakablePositions.isEmpty()) {
             renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
-                    camX, camY, camZ, outlineWidth, 255, 80, 80, 255);
+                    camX, camY, camZ, outlineWidth, 100, 100, 100, 255);
             bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
         }
     }

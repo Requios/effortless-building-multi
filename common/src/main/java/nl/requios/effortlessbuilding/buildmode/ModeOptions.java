@@ -1,5 +1,6 @@
 package nl.requios.effortlessbuilding.buildmode;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import nl.requios.effortlessbuilding.AllIcons;
 import nl.requios.effortlessbuilding.network.PacketHandler;
@@ -72,10 +73,6 @@ public class ModeOptions {
 		switch (action) {
 			case UNDO -> PacketHandler.sendToServer(new UndoPacket());
 			case REDO -> PacketHandler.sendToServer(new RedoPacket());
-//			case OPEN_MODIFIER_SETTINGS -> ClientEvents.openModifierSettings();
-//			case OPEN_PLAYER_SETTINGS -> ClientEvents.openPlayerSettings();
-//			case PREVIOUS_BUILD_MODE -> EffortlessBuildingClient.BUILD_MODES.activatePreviousBuildMode();
-//			case DISABLE_BUILD_MODE_TOGGLE -> EffortlessBuildingClient.BUILD_MODES.activateDisableBuildModeToggle();
 
 			case CYCLE_REPLACE_MODE -> BuildSettings.CLIENT.cycleReplaceMode();
 
@@ -98,25 +95,27 @@ public class ModeOptions {
 
 			case CIRCLE_START_CENTER -> circleStart = ActionEnum.CIRCLE_START_CENTER;
 			case CIRCLE_START_CORNER -> circleStart = ActionEnum.CIRCLE_START_CORNER;
+
+			default -> {}
 		}
 
-		if (player.level().isClientSide &&
-			action != ActionEnum.OPEN_MODIFIER_SETTINGS &&
-			action != ActionEnum.OPEN_SERVER_CONFIG &&
-			action != ActionEnum.OPEN_CLIENT_CONFIG &&
-			action != ActionEnum.OPEN_PLAYER_SETTINGS &&
-			action != ActionEnum.PREVIOUS_BUILD_MODE &&
-			action != ActionEnum.DISABLE_BUILD_MODE_TOGGLE) {
-
-//			EffortlessBuilding.logTranslate(player, "", action.getNameKey(), "", true);
+		// Show action bar message for mode/option changes (not for screen-opening or undo/redo actions)
+		if (player.level().isClientSide
+				&& action != ActionEnum.OPEN_MODIFIER_SETTINGS
+				&& action != ActionEnum.OPEN_SERVER_CONFIG
+				&& action != ActionEnum.OPEN_CLIENT_CONFIG
+				&& action != ActionEnum.PREVIOUS_BUILD_MODE
+				&& action != ActionEnum.DISABLE_BUILD_MODE_TOGGLE
+				&& action != ActionEnum.UNDO
+				&& action != ActionEnum.REDO) {
+			player.displayClientMessage(Component.translatable(action.getNameKey()), true);
 		}
 	}
 
 	public enum ActionEnum {
 		UNDO("undo", AllIcons.I_UNDO),
 		REDO("redo", AllIcons.I_REDO),
-		OPEN_MODIFIER_SETTINGS("open_modifier_settings", AllIcons.I_SETTINGS),
-		OPEN_PLAYER_SETTINGS("open_player_settings", AllIcons.I_SETTINGS),
+		OPEN_MODIFIER_SETTINGS("open_modifier_settings", AllIcons.I_MODIFIERS),
 		PREVIOUS_BUILD_MODE("previous_build_mode", AllIcons.I_SINGLE),
 		DISABLE_BUILD_MODE_TOGGLE("disable_build_mode_toggle", AllIcons.I_DISABLE),
 
@@ -145,8 +144,8 @@ public class ModeOptions {
 
 		CIRCLE_START_CORNER("start_corner", AllIcons.I_CIRCLE_START_CORNER),
 		CIRCLE_START_CENTER("start_center", AllIcons.I_CIRCLE_START_CENTER),
-		OPEN_SERVER_CONFIG("open_server_config", AllIcons.I_SETTINGS),
-		OPEN_CLIENT_CONFIG("open_client_config", AllIcons.I_SETTINGS);
+		OPEN_SERVER_CONFIG("open_server_config", AllIcons.I_SERVER_SETTINGS),
+		OPEN_CLIENT_CONFIG("open_client_config", AllIcons.I_CLIENT_SETTINGS);
 
 		public String name;
 		public AllIcons icon;

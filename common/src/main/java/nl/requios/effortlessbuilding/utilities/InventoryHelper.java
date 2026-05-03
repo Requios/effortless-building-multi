@@ -101,6 +101,22 @@ public class InventoryHelper {
     }
 
     /**
+     * Finds the best tool in the player's inventory for the given block state.
+     * Returns the tool stack (with enchantments etc.) so it can be used for drop calculations.
+     * Falls back to the main hand item if no specific tool is found.
+     */
+    public static ItemStack findCorrectTool(Player player, BlockState state) {
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (!stack.isEmpty() && stack.isCorrectToolForDrops(state)) {
+                return stack;
+            }
+        }
+        return player.getMainHandItem();
+    }
+
+    /**
      * Finds the first tool in the player's inventory that can harvest the given block state
      * and damages it by 1. If no specific tool is needed, damages the main hand item (if damageable).
      */

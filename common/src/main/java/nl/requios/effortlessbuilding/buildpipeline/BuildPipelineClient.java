@@ -28,6 +28,7 @@ import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.utilities.BlockStatus;
 import nl.requios.effortlessbuilding.utilities.BreakDisplayTracker;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
@@ -85,16 +86,23 @@ public class BuildPipelineClient {
 
     /**
      * Returns {@code true} if the mod should intercept vanilla click handling.
-     * True when:
-     * <ul>
-     *   <li>A build mode other than DISABLED is active, OR</li>
-     *   <li>Mode is DISABLED but at least one modifier is active (would produce >1 block)</li>
-     * </ul>
      */
-    public static boolean shouldIntercept() {
-        BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
-        if (mode != BuildModeEnum.DISABLED) return true;
-        return ModifierSystem.CLIENT.hasActiveModifiers();
+    public static boolean shouldInterceptPlacing() {
+        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return false;
+        return true;
+    }
+    
+    /**
+     * Returns {@code true} if the mod should intercept vanilla break handling.
+     */
+    public static boolean shouldInterceptBreaking() {
+        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && !mc.player.getAbilities().instabuild
+                && !ServerConfig.INSTANCE.survivalAllowBreaking) {
+            return false;
+        }
+        return true;
     }
 
     // -------------------------------------------------------------------------
@@ -113,8 +121,7 @@ public class BuildPipelineClient {
         BuildModeEnum mode = BuildModes.CLIENT.getBuildMode();
         Player player = mc.player;
         if (player == null || mc.level == null) return;
-
-
+        
         BlockPos clickedPos;
         if (mode.instance.isFirstClick()) {
             Vec3 start = player.getEyePosition();
@@ -156,21 +163,23 @@ public class BuildPipelineClient {
                 BlockPos thirdPos  = intermediate != null ? blocks.lastPos : null;
 
                 if (action == BuildPipeline.BuildState.PLACING) {
-                    // Check for unreplaceable blocks and warn
-                    if (!player.getAbilities().instabuild
-                            && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR) {
-                        boolean hasUnreplaceable = false;
-                        var dimension = mc.level.dimension();
-                        for (BlockPos pos : blocks.keySet()) {
-                            if (!mc.level.getBlockState(pos).canBeReplaced()
-                                    && !PlacedBlockTracker.clientIsTracked(dimension, pos)) {
-                                hasUnreplaceable = true;
-                                break;
-                            }
-                        }
-                        if (hasUnreplaceable) {
+                    // Show warnings for rejected entries during placement
+                    if (!blocks.rejectedEntries().isEmpty()) {
+                        BlockStatus firstRejection = blocks.rejectedEntries().getFirst().getValue().getStatus();
+                        if (firstRejection == BlockStatus.WORLD_BORDER) {
                             player.displayClientMessage(
-                                    Component.translatable("effortlessbuilding.message.only_replace_placed"), true);
+                                    Component.translatable("effortlessbuilding.message.world_border"), true);
+                        } else if (!player.getAbilities().instabuild) {
+                            if (firstRejection == BlockStatus.NOT_PLACED_BY_PLAYER) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.only_replace_placed"), true);
+                            } else if (firstRejection == BlockStatus.TOO_HARD) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.too_hard"), true);
+                            } else if (firstRejection == BlockStatus.PROTECTED_TILE_ENTITY) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"), true);
+                            }
                         }
                     }
                     Direction hitFace = firstClickHit != null ? firstClickHit.getDirection() : Direction.UP;
@@ -185,19 +194,30 @@ public class BuildPipelineClient {
                     // Client-side placement tracking
                     PlacedBlockTracker.clientTrackAll(mc.level.dimension(), blocks.keySet());
                 } else {
-                    // Breaking disabled warning comes from ConstraintSystem marking entries now
-                    if (!player.getAbilities().instabuild && !ServerConfig.INSTANCE.survivalAllowBreaking) {
-                        player.displayClientMessage(
-                                Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
-                        mode.instance.initialize();
-                        buildState = null;
-                        firstClickHit = null;
-                        return;
+                    // Show warnings for specific rejection reasons
+                    if (!blocks.rejectedEntries().isEmpty()) {
+                        BlockStatus firstRejection = blocks.rejectedEntries().getFirst().getValue().getStatus();
+                        if (firstRejection == BlockStatus.WORLD_BORDER) {
+                            player.displayClientMessage(
+                                    Component.translatable("effortlessbuilding.message.world_border"), true);
+                        } else if (!player.getAbilities().instabuild) {
+                            if (firstRejection == BlockStatus.NOT_PLACED_BY_PLAYER) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.only_break_placed"), true);
+                            } else if (firstRejection == BlockStatus.TOO_HARD) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.too_hard"), true);
+                            } else if (firstRejection == BlockStatus.PROTECTED_TILE_ENTITY) {
+                                player.displayClientMessage(
+                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"), true);
+                            }
+                        }
                     }
                     PacketHandler.sendToServer(new BreakBuildModePacket(
                             mode, blocks.firstPos, secondPos, thirdPos,
                             ModeOptions.getFill(), ModeOptions.getCubeFill(),
-                            ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart()));
+                            ModeOptions.getRaisedEdge(), ModeOptions.getCircleStart(),
+                            ClientConfig.INSTANCE.shouldProtectTileEntities()));
                 }
             } else {
                 Constants.LOG.warn("[EffortlessBuilding] Build mode {} produced no block positions", mode);
@@ -305,6 +325,11 @@ public class BuildPipelineClient {
     private static BlockPos resolveFirstClickPos(BlockHitResult hit, BuildPipeline.BuildState action, Level level) {
         BlockPos hitPos = hit.getBlockPos();
         if (action == BuildPipeline.BuildState.BREAKING) return hitPos;
+        // Tools interact with the clicked block itself, not adjacent
+        var mc = Minecraft.getInstance();
+        if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof net.minecraft.world.item.DiggerItem) {
+            return hitPos;
+        }
         // When replacing blocks, click on the block itself instead of adjacent
         if (BuildSettings.CLIENT.shouldOffsetStartPosition()) return hitPos;
         if (level.getBlockState(hitPos).canBeReplaced()) return hitPos;

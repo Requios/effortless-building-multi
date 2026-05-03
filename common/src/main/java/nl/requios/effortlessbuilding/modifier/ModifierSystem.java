@@ -46,27 +46,6 @@ public class ModifierSystem implements IBuildSystem {
         Collections.swap(modifiers, index, target);
     }
 
-    /**
-     * Returns {@code true} if at least one modifier is enabled.
-     * Used to determine whether DISABLED mode should intercept vanilla clicks.
-     */
-    public boolean hasActiveModifiers() {
-        for (IModifier modifier : modifiers) {
-            if (modifier.isEnabled()) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Returns {@code true} if at least one modifier is enabled and matches the player's dimension.
-     */
-    public boolean hasActiveModifiers(Player player) {
-        for (IModifier modifier : modifiers) {
-            if (modifier.isEnabled() && modifier.matchesDimension(player)) return true;
-        }
-        return false;
-    }
-
     @Override
     public void processBlocks(BlockSet blocks, Player player, BuildPipeline.BuildState action) {
         for (IModifier modifier : modifiers) {

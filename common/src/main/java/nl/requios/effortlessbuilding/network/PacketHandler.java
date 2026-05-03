@@ -7,9 +7,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -82,7 +84,8 @@ public class PacketHandler {
         BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
                 packet.buildMode(), packet.firstPos(), packet.secondPos(), packet.thirdPos(),
                 player, BuildPipeline.BuildState.PLACING,
-                packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
+                packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart(), 
+                packet.protectTileEntities());
 
         if (blockSet == null) {
             Constants.LOG.warn("[EffortlessBuilding] Received PlaceBuildModePacket but mode {} returned no blocks", packet.buildMode());
@@ -97,7 +100,6 @@ public class PacketHandler {
         boolean creative = player.isCreative();
 
         BuildSettings.ReplaceMode replaceMode = packet.replaceMode();
-        boolean protectTiles = packet.protectTileEntities();
 
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
 
@@ -113,13 +115,16 @@ public class PacketHandler {
                 BlockPos pos = mapEntry.getKey();
                 if (!creative && placed >= available) break;
 
-                if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
+                if (BuildSettings.canPlaceAt(level, pos, replaceMode, offHand)) {
                     BlockState oldState = level.getBlockState(pos);
 
                     // Survival: give drops and damage tools for displaced non-replaceable blocks
                     if (!creative && !oldState.canBeReplaced()) {
+                        ItemStack toolForDrops = ServerConfig.INSTANCE.survivalRequireTools
+                                ? InventoryHelper.findCorrectTool(player, oldState)
+                                : player.getMainHandItem();
                         var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
-                                player, player.getMainHandItem());
+                                player, toolForDrops);
                         for (ItemStack drop : drops) {
                             InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
                         }
@@ -154,13 +159,16 @@ public class PacketHandler {
                 for (var mapEntry : blockSet.validEntries()) {
                     BlockPos pos = mapEntry.getKey();
                     if (placed >= maxPlace) break;
-                    if (BuildSettings.canPlaceAt(level, pos, replaceMode, protectTiles, offHand)) {
+                    if (BuildSettings.canPlaceAt(level, pos, replaceMode, offHand)) {
                         BlockState oldState = level.getBlockState(pos);
 
                         // Survival: give drops and damage tools for displaced non-replaceable blocks
                         if (!creative && !oldState.canBeReplaced()) {
+                            ItemStack toolForDrops = ServerConfig.INSTANCE.survivalRequireTools
+                                    ? InventoryHelper.findCorrectTool(player, oldState)
+                                    : player.getMainHandItem();
                             var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
-                                    player, player.getMainHandItem());
+                                    player, toolForDrops);
                             for (ItemStack drop : drops) {
                                 InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
                             }
@@ -178,6 +186,28 @@ public class PacketHandler {
                     player.setItemInHand(InteractionHand.MAIN_HAND,
                             new ItemStack(net.minecraft.world.item.Items.BUCKET));
                 }
+            }
+        } else if (held.getItem() instanceof DiggerItem) {
+            // Tool interactions: axe strips logs, shovel makes paths, hoe tills dirt, etc.
+            // Calls useOn for each position — works for vanilla and modded tools.
+            net.minecraft.world.level.Level worldLevel = level;
+            for (var mapEntry : blockSet.validEntries()) {
+                BlockPos pos = mapEntry.getKey();
+                BlockState oldState = level.getBlockState(pos);
+
+                Vec3 localHit = new Vec3(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5);
+                BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
+                UseOnContext useCtx = new OpenUseOnContext(worldLevel, player, InteractionHand.MAIN_HAND, held, serverHit);
+                var result = held.getItem().useOn(useCtx);
+                if (result.consumesAction()) {
+                    BlockState newState = level.getBlockState(pos);
+                    if (!oldState.equals(newState)) {
+                        undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, newState));
+                        placed++;
+                    }
+                }
+                // Stop if tool breaks
+                if (held.isEmpty()) break;
             }
         } else {
             return;
@@ -208,7 +238,8 @@ public class PacketHandler {
         BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
                 packet.buildMode(), packet.firstPos(), packet.secondPos(), packet.thirdPos(),
                 player, BuildPipeline.BuildState.BREAKING,
-                packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart());
+                packet.fill(), packet.cubeFill(), packet.raisedEdge(), packet.circleStart(),
+                packet.protectTileEntities());
 
         if (blockSet == null) {
             Constants.LOG.warn("[EffortlessBuilding] Received BreakBuildModePacket but mode {} returned no blocks", packet.buildMode());
@@ -226,9 +257,12 @@ public class PacketHandler {
 
             if (!creative) {
 
-                // Give drops to inventory instead of dropping in world
+                // Use the correct tool from inventory for drop calculation (enchantments matter)
+                ItemStack toolForDrops = ServerConfig.INSTANCE.survivalRequireTools
+                        ? InventoryHelper.findCorrectTool(player, oldState)
+                        : player.getMainHandItem();
                 var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
-                        player, player.getMainHandItem());
+                        player, toolForDrops);
                 for (ItemStack drop : drops) {
                     InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
                 }
@@ -335,6 +369,14 @@ public class PacketHandler {
     private static final class OpenBlockPlaceContext extends BlockPlaceContext {
         OpenBlockPlaceContext(net.minecraft.world.level.Level level, net.minecraft.world.entity.player.Player player,
                               InteractionHand hand, ItemStack stack, BlockHitResult hit) {
+            super(level, player, hand, stack, hit);
+        }
+    }
+
+    /** Exposes the protected {@link UseOnContext} constructor for server-side use. */
+    private static final class OpenUseOnContext extends UseOnContext {
+        OpenUseOnContext(net.minecraft.world.level.Level level, net.minecraft.world.entity.player.Player player,
+                         InteractionHand hand, ItemStack stack, BlockHitResult hit) {
             super(level, player, hand, stack, hit);
         }
     }

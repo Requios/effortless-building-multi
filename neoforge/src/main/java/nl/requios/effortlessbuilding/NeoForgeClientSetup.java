@@ -71,7 +71,7 @@ public class NeoForgeClientSetup {
                     mc.setScreen(RadialMenu.instance);
                 }
 
-                if (mc.player != null && mc.level != null && BuildPipelineClient.shouldIntercept()) {
+                if (mc.player != null && mc.level != null && BuildPipelineClient.shouldInterceptPlacing()) {
                     boolean rightDown = mc.options.keyUse.isDown();
                     boolean leftDown = mc.options.keyAttack.isDown();
                     boolean rightJustPressed = rightDown && !prevRightDown;
@@ -85,7 +85,7 @@ public class NeoForgeClientSetup {
                             BuildPipelineClient.handleRightClick(mc);
                         }
                     }
-                    if (leftJustPressed) {
+                    if (leftJustPressed && BuildPipelineClient.shouldInterceptBreaking()) {
                         if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (mc.player.getMainHandItem().isEmpty()
@@ -120,7 +120,7 @@ public class NeoForgeClientSetup {
         @SubscribeEvent
         public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
             if (!event.getEntity().level().isClientSide()) return;
-            if (!BuildPipelineClient.shouldIntercept()) return;
+            if (!BuildPipelineClient.shouldInterceptPlacing()) return;
             var player = event.getEntity();
             if (player.getMainHandItem().isEmpty()
                     || BuildPipeline.isBuildTriggerItem(player.getMainHandItem())

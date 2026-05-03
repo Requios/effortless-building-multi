@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -78,6 +79,10 @@ public class BuildPipeline {
         if (stack.getItem() instanceof BucketItem) {
             return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
         }
+        // Tools that modify blocks on right-click (axe strips logs, shovel makes paths, hoe tills)
+        if (stack.getItem() instanceof DiggerItem) {
+            return true;
+        }
         return false;
     }
 
@@ -128,9 +133,11 @@ public class BuildPipeline {
                                                 @Nullable BlockPos thirdPos,
                                                 Player player, BuildState action,
                                                 ModeOptions.ActionEnum fill, ModeOptions.ActionEnum cubeFill,
-                                                ModeOptions.ActionEnum raisedEdge, ModeOptions.ActionEnum circleStart) {
+                                                ModeOptions.ActionEnum raisedEdge, ModeOptions.ActionEnum circleStart,
+                                                boolean protectTileEntities) {
         BuildModeSystem.setContext(new BuildModeSystem.Context(
                 mode, firstPos, secondPos, thirdPos, fill, cubeFill, raisedEdge, circleStart));
+        ConstraintSystem.setPlacementContext(new ConstraintSystem.PlacementContext(protectTileEntities));
         try {
             BlockSet blockSet = new BlockSet();
             processBlocks(blockSet, player, action);
@@ -138,6 +145,7 @@ public class BuildPipeline {
             return blockSet;
         } finally {
             BuildModeSystem.clearContext();
+            ConstraintSystem.clearPlacementContext();
         }
     }
 

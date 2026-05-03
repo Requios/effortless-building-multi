@@ -117,7 +117,9 @@
   "effortlessbuilding.message.only_break_placed": "You can only break blocks that you placed this session",
   "effortlessbuilding.message.only_replace_placed": "You can only replace blocks that you placed this session",
   "effortlessbuilding.message.breaking_disabled": "Breaking blocks with build modes is disabled in survival",
-  "effortlessbuilding.message.too_hard": "Some blocks are too hard to break with current server settings",
+  "effortlessbuilding.message.too_hard": "Some blocks exceeded the maximum hardness",
+  "effortlessbuilding.message.protected_tile_entity": "Some blocks were protected (tile entities)",
+  "effortlessbuilding.message.world_border": "Some blocks are outside the world border or build height",
   "effortlessbuilding.message.not_operator": "You must be an operator to change server config",
 
   "effortlessbuilding.action.open_server_config": "Edit Server Config",

@@ -22,7 +22,7 @@ public class AllIcons {
     private int iconY;
 
     public static final AllIcons
-    I_SETTINGS = newRow(),
+    I_MODIFIERS = newRow(),
     I_UNDO = next(),
     I_REDO = next(),
     I_REPLACE = next(),
@@ -30,7 +30,9 @@ public class AllIcons {
     I_REPLACE_BLOCKS_AND_AIR = next(),
     I_REPLACE_BLOCKS = next(),
     I_REPLACE_OFFHAND_FILTERED = next(),
-    I_PROTECT_TILE_ENTITIES = next();
+    I_PROTECT_TILE_ENTITIES = next(),
+    I_CLIENT_SETTINGS = next(),
+    I_SERVER_SETTINGS = next();
 
 
     public static final AllIcons

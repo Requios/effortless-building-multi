@@ -23,7 +23,7 @@ public class MixinBlockItem {
     @Inject(method = "place(Lnet/minecraft/world/item/context/BlockPlaceContext;)Lnet/minecraft/world/InteractionResult;", at = @At("HEAD"), cancellable = true)
     private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!context.getLevel().isClientSide()) return;
-        if (!BuildPipelineClient.shouldIntercept()) return;
+        if (!BuildPipelineClient.shouldInterceptPlacing()) return;
         cir.setReturnValue(InteractionResult.sidedSuccess(true));
         cir.cancel();
     }

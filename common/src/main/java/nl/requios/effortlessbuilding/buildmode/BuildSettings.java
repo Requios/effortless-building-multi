@@ -72,21 +72,17 @@ public class BuildSettings {
     /**
      * Determines whether a block position can be placed at, given the current
      * replace settings. Call this on the server with the settings sent in the packet.
+     * Tile entity protection is handled by {@link nl.requios.effortlessbuilding.buildpipeline.ConstraintSystem}.
      *
      * @param level         the server level
      * @param pos           the block position to test
      * @param replaceMode   the replace mode sent from the client
-     * @param protectTiles  whether tile entities should be protected
      * @param offHandStack  the player's off-hand item (for filtered mode)
      */
     public static boolean canPlaceAt(Level level, BlockPos pos, ReplaceMode replaceMode,
-                                     boolean protectTiles, ItemStack offHandStack) {
+                                     ItemStack offHandStack) {
         BlockState existing = level.getBlockState(pos);
 
-        // Always protect tile entities if the setting is on
-        if (protectTiles && level.getBlockEntity(pos) != null) {
-            return existing.canBeReplaced();
-        }
 
         return switch (replaceMode) {
             case ONLY_AIR -> existing.canBeReplaced();

@@ -62,7 +62,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         // Cancel vanilla block breaking when the build pipeline should intercept
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (!world.isClientSide()) return InteractionResult.PASS;
-            if (!BuildPipelineClient.shouldIntercept()) return InteractionResult.PASS;
+            if (!BuildPipelineClient.shouldInterceptBreaking()) return InteractionResult.PASS;
             if (player.getMainHandItem().isEmpty()
                     || BuildPipeline.isBuildTriggerItem(player.getMainHandItem())
                     || BuildPipelineClient.getBuildState() != null) {
@@ -97,7 +97,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
 
-                if (client.player != null && client.level != null && BuildPipelineClient.shouldIntercept()) {
+                if (client.player != null && client.level != null && BuildPipelineClient.shouldInterceptPlacing()) {
                     boolean rightDown = client.options.keyUse.isDown();
                     boolean leftDown = client.options.keyAttack.isDown();
                     boolean rightJustPressed = rightDown && !prevRightDown;
@@ -111,7 +111,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                             BuildPipelineClient.handleRightClick(Minecraft.getInstance());
                         }
                     }
-                    if (leftJustPressed) {
+                    if (leftJustPressed && BuildPipelineClient.shouldInterceptBreaking()) {
                         if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (client.player.getMainHandItem().isEmpty()

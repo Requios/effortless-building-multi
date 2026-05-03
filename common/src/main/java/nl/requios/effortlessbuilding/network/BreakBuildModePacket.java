@@ -22,7 +22,8 @@ public record BreakBuildModePacket(
         ModeOptions.ActionEnum fill,
         ModeOptions.ActionEnum cubeFill,
         ModeOptions.ActionEnum raisedEdge,
-        ModeOptions.ActionEnum circleStart
+        ModeOptions.ActionEnum circleStart,
+        boolean protectTileEntities
 ) implements CustomPacketPayload {
 
     public static final Type<BreakBuildModePacket> TYPE =
@@ -43,6 +44,7 @@ public record BreakBuildModePacket(
         buf.writeVarInt(p.cubeFill.ordinal());
         buf.writeVarInt(p.raisedEdge.ordinal());
         buf.writeVarInt(p.circleStart.ordinal());
+        buf.writeBoolean(p.protectTileEntities);
     }
 
     private static BreakBuildModePacket decode(FriendlyByteBuf buf) {
@@ -54,7 +56,8 @@ public record BreakBuildModePacket(
         ModeOptions.ActionEnum cubeFill = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum raisedEdge = ModeOptions.ActionEnum.values()[buf.readVarInt()];
         ModeOptions.ActionEnum circleStart = ModeOptions.ActionEnum.values()[buf.readVarInt()];
-        return new BreakBuildModePacket(buildMode, firstPos, secondPos, thirdPos, fill, cubeFill, raisedEdge, circleStart);
+        boolean protectTileEntities = buf.readBoolean();
+        return new BreakBuildModePacket(buildMode, firstPos, secondPos, thirdPos, fill, cubeFill, raisedEdge, circleStart, protectTileEntities);
     }
 
     @Override

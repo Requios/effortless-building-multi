@@ -197,8 +197,8 @@ public class ServerConfigScreen extends Screen {
         // Survival header
         y += ROW_H;
 
-        // 6 int fields + 2 toggles + 1 float field + 1 toggle = 10 widgets
-        for (int n = 0; n < 10; n++) { setPos(i++, fieldX, y); y += ROW_H; }
+        // 6 int fields + 3 toggles + 1 float field + 1 toggle = 11 widgets
+        for (int n = 0; n < 11; n++) { setPos(i++, fieldX, y); y += ROW_H; }
 
         y += SECTION_GAP;
 
