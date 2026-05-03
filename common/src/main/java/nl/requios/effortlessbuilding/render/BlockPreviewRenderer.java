@@ -96,6 +96,8 @@ public class BlockPreviewRenderer {
         positions = breakablePositions;
 
         // Pass 1: block/fluid preview (placing only).
+        // Limit rendered block models to maxBlockPreviews to avoid lag with large shapes.
+        int maxPreviews = ClientConfig.INSTANCE.getMaxBlockPreviews();
         if (!isBreaking) {
             
             float blockScale = ClientConfig.INSTANCE.getPreviewBlockSize();
@@ -116,7 +118,9 @@ public class BlockPreviewRenderer {
                     var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                     var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                     Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
+                    int rendered = 0;
                     for (BlockPos pos : positions) {
+                        if (rendered >= maxPreviews) break;
                         // Apply per-block mirror/rotation transforms from the modifier pipeline.
                         BlockState state = baseState;
                         BlockEntry entry = blockSet.get(pos);
@@ -133,6 +137,7 @@ public class BlockPreviewRenderer {
                                 isMissing ? missingSource : wrappedSource,
                                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
                         poseStack.popPose();
+                        rendered++;
                     }
                     // Flush all render types — entity-rendered blocks (beds, chests)
                     // may use types other than translucent().
@@ -161,10 +166,10 @@ public class BlockPreviewRenderer {
         // Separate valid positions from missing positions for different edge colors
         Set<BlockPos> missingSet = BuildPipelineClient.ITEM_USAGE.missingPositions;
         List<BlockPos> validPositions = new ArrayList<>();
-        List<BlockPos> missingPositions = new ArrayList<>();
-        for (BlockPos pos : positions) {
+        List<BlockPos> missingPositionsList = new ArrayList<>();
+        for (BlockPos pos : breakablePositions) {
             if (missingSet.contains(pos)) {
-                missingPositions.add(pos);
+                missingPositionsList.add(pos);
             } else {
                 validPositions.add(pos);
             }
@@ -175,8 +180,8 @@ public class BlockPreviewRenderer {
                     camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
             bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
         }
-        if (!missingPositions.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositions),
+        if (!missingPositionsList.isEmpty()) {
+            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositionsList),
                     camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
             bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
         }

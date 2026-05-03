@@ -4,7 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -22,7 +22,6 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
-import nl.requios.effortlessbuilding.screen.ClientConfigScreen;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
@@ -31,8 +30,9 @@ public class EffortlessBuilding {
 
     public EffortlessBuilding(IEventBus eventBus, ModContainer modContainer) {
 
-        modContainer.registerExtensionPoint(IConfigScreenFactory.class,
-                (container, parent) -> new ClientConfigScreen());
+        if (FMLEnvironment.dist.isClient()) {
+            NeoForgeConfigScreenRegistrar.register(modContainer);
+        }
 
         eventBus.addListener((RegisterPayloadHandlersEvent event) -> {
             var registrar = event.registrar(Constants.MOD_ID);

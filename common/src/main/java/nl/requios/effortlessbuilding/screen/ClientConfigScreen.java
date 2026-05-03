@@ -1,28 +1,38 @@
 package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import nl.requios.effortlessbuilding.config.ClientConfig;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class ClientConfigScreen extends Screen {
 
-    private static final int PANEL_W = 280;
-    private static final int PANEL_H = 142;
+    private static final int PANEL_W = 320;
+    private static final int ROW_H = 24;
+    private static final int FIELD_W = 100;
+    private static final int FIELD_H = 20;
 
-    // --- Slider state (rendered manually; value stored as fraction 0-1 within allowed range) ---
-    private float sizeValue;        // 0.10 – 1.0
-    private float transparencyValue; // 0.0 – 1.0
+    /** Label keys in row order, used for both rendering and tooltip lookup. */
+    private static final String[] LABEL_KEYS = {
+        "effortlessbuilding.config.preview_block_size",
+        "effortlessbuilding.config.preview_block_transparency",
+        "effortlessbuilding.config.max_block_previews",
+        "effortlessbuilding.config.protect_tile_entities",
+    };
+
+    private float sizeValue;
+    private float transparencyValue;
+    private int maxBlockPreviews;
     private boolean protectTileEntities;
 
-    private boolean draggingSize;
-    private boolean draggingTransparency;
-
-    // Slider geometry
-    private static final int SLIDER_W = 100;
-    private static final int SLIDER_H = 14;
+    private EditBox maxPreviewsField;
 
     public ClientConfigScreen() {
         super(Component.translatable("effortlessbuilding.screen.client_config"));
@@ -35,37 +45,90 @@ public class ClientConfigScreen extends Screen {
 
         sizeValue = cfg.getPreviewBlockSize();
         transparencyValue = cfg.getPreviewBlockTransparency();
+        maxBlockPreviews = cfg.getMaxBlockPreviews();
         protectTileEntities = cfg.shouldProtectTileEntities();
 
         int left = (width - PANEL_W) / 2;
-        int top = (height - PANEL_H) / 2;
-        int rowX = left + PANEL_W - 114;
-        int rowY = top + 25;
+        int totalH = LABEL_KEYS.length * ROW_H + 40;
+        int top = (height - totalH) / 2;
+        int fieldX = left + PANEL_W - FIELD_W - 10;
+        int rowY = top;
 
-        // Row 1 & 2: sliders are rendered manually (no widget needed, handled in mouse events)
+        // Row 1: Preview block size (slider)
+        addRenderableWidget(new AbstractSliderButton(fieldX, rowY, FIELD_W, FIELD_H,
+                Component.literal(Math.round(sizeValue * 100) + "%"), sizeFraction(sizeValue)) {
+            @Override
+            protected void updateMessage() {
+                setMessage(Component.literal(Math.round(sizeValue * 100) + "%"));
+            }
+            @Override
+            protected void applyValue() {
+                sizeValue = sizeFromFraction((float) this.value);
+            }
+        });
 
-        // Row 3: protect tile entities toggle
-        rowY += 28 * 2;
+        // Row 2: Preview block transparency (slider)
+        rowY += ROW_H;
+        addRenderableWidget(new AbstractSliderButton(fieldX, rowY, FIELD_W, FIELD_H,
+                Component.literal(Math.round(transparencyValue * 100) + "%"), transparencyValue) {
+            @Override
+            protected void updateMessage() {
+                setMessage(Component.literal(Math.round(transparencyValue * 100) + "%"));
+            }
+            @Override
+            protected void applyValue() {
+                transparencyValue = Math.round((float) this.value * 20f) / 20f;
+            }
+        });
+
+        // Row 3: Max block previews (int field with -/+ buttons)
+        rowY += ROW_H;
+        int btnW = 14;
+        int editW = FIELD_W - btnW * 2;
+        addRenderableWidget(Button.builder(Component.literal("−"),
+                        btn -> stepMaxPreviews(-50))
+                .bounds(fieldX, rowY, btnW, FIELD_H).build());
+        maxPreviewsField = new EditBox(font, fieldX + btnW, rowY, editW, FIELD_H, Component.empty());
+        maxPreviewsField.setValue(String.valueOf(maxBlockPreviews));
+        maxPreviewsField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,5}"));
+        maxPreviewsField.setResponder(s -> {
+            try { maxBlockPreviews = Integer.parseInt(s); }
+            catch (NumberFormatException ignored) {}
+        });
+        addRenderableWidget(maxPreviewsField);
+        addRenderableWidget(Button.builder(Component.literal("+"),
+                        btn -> stepMaxPreviews(50))
+                .bounds(fieldX + btnW + editW, rowY, btnW, FIELD_H).build());
+
+        // Row 4: Protect tile entities (toggle)
+        rowY += ROW_H;
         addRenderableWidget(Button.builder(
                         Component.literal(onOff(protectTileEntities)),
                         btn -> {
                             protectTileEntities = !protectTileEntities;
                             btn.setMessage(Component.literal(onOff(protectTileEntities)));
                         })
-                .bounds(rowX, rowY, SLIDER_W, SLIDER_H).build());
+                .bounds(fieldX, rowY, FIELD_W, FIELD_H).build());
 
         // Save / Cancel
-        rowY += 34;
+        rowY += 40;
         addRenderableWidget(Button.builder(Component.translatable("effortlessbuilding.button.save"), btn -> save())
                 .bounds(left + PANEL_W / 2 - 60, rowY, 55, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), btn -> onClose())
                 .bounds(left + PANEL_W / 2 + 5, rowY, 55, 20).build());
     }
 
+    private void stepMaxPreviews(int delta) {
+        maxBlockPreviews = Math.clamp(maxBlockPreviews + delta,
+                ClientConfig.MIN_MAX_BLOCK_PREVIEWS, ClientConfig.MAX_MAX_BLOCK_PREVIEWS);
+        maxPreviewsField.setValue(String.valueOf(maxBlockPreviews));
+    }
+
     private void save() {
         ClientConfig cfg = ClientConfig.INSTANCE;
         cfg.setPreviewBlockSize(sizeValue);
         cfg.setPreviewBlockTransparency(transparencyValue);
+        cfg.setMaxBlockPreviews(maxBlockPreviews);
         cfg.setProtectTileEntities(protectTileEntities);
         cfg.save();
         onClose();
@@ -74,7 +137,6 @@ public class ClientConfigScreen extends Screen {
     // =========================================================================
     // Rendering
     // =========================================================================
-
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
@@ -86,119 +148,78 @@ public class ClientConfigScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int left = (width - PANEL_W) / 2;
-        int top = (height - PANEL_H) / 2;
+        int totalH = LABEL_KEYS.length * ROW_H + 40;
+        int top = (height - totalH) / 2;
+        int labelX = left + 10;
 
         // Title
-        graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, top - 16, 0xFFFFFF);
 
+        // Labels
+        int rowY = top;
+        for (String key : LABEL_KEYS) {
+            graphics.drawString(font, Component.translatable(key), labelX, rowY + 6, 0xFFFFFF);
+            rowY += ROW_H;
+        }
+
+        // Tooltips — render last so they appear on top
+        renderRowTooltips(graphics, mouseX, mouseY);
+    }
+
+    private void renderRowTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        int left = (width - PANEL_W) / 2;
+        int totalH = LABEL_KEYS.length * ROW_H + 40;
+        int top = (height - totalH) / 2;
         int labelX = left + 10;
-        int sliderX = left + PANEL_W - 114;
-        int rowY = top + 25;
+        int labelMaxX = left + PANEL_W - FIELD_W - 15;
 
-        // Row 1: preview block size slider
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.preview_block_size"), labelX, rowY + 3, 0xFFFFFF);
-        renderSlider(graphics, sliderX, rowY, sizeFraction(), Math.round(sizeValue * 100) + "%");
+        if (mouseX < labelX || mouseX >= labelMaxX) return;
 
-        // Row 2: preview block transparency slider
-        rowY += 28;
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.preview_block_transparency"), labelX, rowY + 3, 0xFFFFFF);
-        renderSlider(graphics, sliderX, rowY, transparencyValue, Math.round(transparencyValue * 100) + "%");
-
-        // Row 3: protect tile entities (button already rendered by super)
-        rowY += 28;
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.protect_tile_entities"), labelX, rowY + 3, 0xFFFFFF);
+        int rowY = top;
+        for (String key : LABEL_KEYS) {
+            if (mouseY >= rowY && mouseY < rowY + ROW_H) {
+                String tooltipKey = key + ".tooltip";
+                String text = Component.translatable(tooltipKey).getString();
+                // Don't show tooltip if translation is missing (returns the key itself)
+                if (!text.equals(tooltipKey)) {
+                    String[] lines = text.split("\n");
+                    List<Component> components = new ArrayList<>();
+                    for (String line : lines) {
+                        components.add(Component.literal(line));
+                    }
+                    graphics.renderTooltip(font, components, Optional.empty(), mouseX, mouseY);
+                }
+                return;
+            }
+            rowY += ROW_H;
+        }
     }
 
-    private void renderSlider(GuiGraphics graphics, int x, int y, float fraction, String label) {
-        // Track
-        graphics.fill(x, y, x + SLIDER_W, y + SLIDER_H, 0xFF000000);
-        graphics.fill(x + 1, y + 1, x + SLIDER_W - 1, y + SLIDER_H - 1, 0xFF333333);
-        // Filled portion
-        int fillW = (int) ((SLIDER_W - 2) * fraction);
-        graphics.fill(x + 1, y + 1, x + 1 + fillW, y + SLIDER_H - 1, 0xFF4488CC);
-        // Handle
-        int hx = x + 1 + fillW - 2;
-        graphics.fill(Math.max(hx, x + 1), y + 1, Math.min(hx + 4, x + SLIDER_W - 1), y + SLIDER_H - 1, 0xFFFFFFFF);
-        // Label
-        graphics.drawCenteredString(font, label, x + SLIDER_W / 2, y + 3, 0xFFFFFF);
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        // Allow scrolling over the max previews field
+        if (maxPreviewsField != null
+                && mouseX >= maxPreviewsField.getX() && mouseX <= maxPreviewsField.getX() + maxPreviewsField.getWidth()
+                && mouseY >= maxPreviewsField.getY() && mouseY <= maxPreviewsField.getY() + maxPreviewsField.getHeight()) {
+            stepMaxPreviews(verticalAmount > 0 ? 50 : -50);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    /** Maps sizeValue (0.10–1.0) to a 0–1 fraction for the slider track. */
-    private float sizeFraction() {
-        return (sizeValue - ClientConfig.MIN_PREVIEW_BLOCK_SIZE)
+    // =========================================================================
+    // Value mapping
+    // =========================================================================
+
+    private static float sizeFraction(float size) {
+        return (size - ClientConfig.MIN_PREVIEW_BLOCK_SIZE)
                 / (ClientConfig.MAX_PREVIEW_BLOCK_SIZE - ClientConfig.MIN_PREVIEW_BLOCK_SIZE);
     }
 
-    /** Maps a 0–1 slider fraction back to the size value (0.10–1.0). */
-    private float sizeFromFraction(float frac) {
-        return ClientConfig.MIN_PREVIEW_BLOCK_SIZE
+    private static float sizeFromFraction(float frac) {
+        float raw = ClientConfig.MIN_PREVIEW_BLOCK_SIZE
                 + frac * (ClientConfig.MAX_PREVIEW_BLOCK_SIZE - ClientConfig.MIN_PREVIEW_BLOCK_SIZE);
-    }
-
-    // =========================================================================
-    // Input (slider dragging)
-    // =========================================================================
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            int sliderX = (width - PANEL_W) / 2 + PANEL_W - 114;
-            int top = (height - PANEL_H) / 2;
-
-            int sizeY = top + 25;
-            if (isInSlider(mouseX, mouseY, sliderX, sizeY)) {
-                draggingSize = true;
-                updateSizeSlider(mouseX, sliderX);
-                return true;
-            }
-            int transY = sizeY + 28;
-            if (isInSlider(mouseX, mouseY, sliderX, transY)) {
-                draggingTransparency = true;
-                updateTransparencySlider(mouseX, sliderX);
-                return true;
-            }
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        int sliderX = (width - PANEL_W) / 2 + PANEL_W - 114;
-        if (draggingSize) {
-            updateSizeSlider(mouseX, sliderX);
-            return true;
-        }
-        if (draggingTransparency) {
-            updateTransparencySlider(mouseX, sliderX);
-            return true;
-        }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        draggingSize = false;
-        draggingTransparency = false;
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    private boolean isInSlider(double mx, double my, int sx, int sy) {
-        return mx >= sx && mx <= sx + SLIDER_W && my >= sy && my <= sy + SLIDER_H;
-    }
-
-    /** Snaps a 0–1 fraction to the nearest 5% step. */
-    private static float snapToStep(float frac) {
-        return Math.round(frac * 20f) / 20f; // 1/20 = 0.05 = 5%
-    }
-
-    private void updateSizeSlider(double mouseX, int sliderX) {
-        float frac = Mth.clamp((float) (mouseX - sliderX - 1) / (SLIDER_W - 2), 0f, 1f);
-        sizeValue = snapToStep(sizeFromFraction(frac));
-    }
-
-    private void updateTransparencySlider(double mouseX, int sliderX) {
-        float frac = Mth.clamp((float) (mouseX - sliderX - 1) / (SLIDER_W - 2), 0f, 1f);
-        transparencyValue = snapToStep(frac);
+        return Math.round(raw * 20f) / 20f; // snap to 5%
     }
 
     // =========================================================================
@@ -214,5 +235,4 @@ public class ClientConfigScreen extends Screen {
         return false;
     }
 }
-
 

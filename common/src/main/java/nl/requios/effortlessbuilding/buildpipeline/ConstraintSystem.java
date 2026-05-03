@@ -16,8 +16,9 @@ import nl.requios.effortlessbuilding.utilities.*;
  *
  * <p>Checks performed (in order):
  * <ol>
- *   <li>Breaking disabled — all entries marked if breaking is disallowed (breaking only)</li>
- *   <li>Max blocks limit — entries beyond the cap are marked {@link BlockStatus#MAX_BLOCKS_EXCEEDED}</li>
+ *   <li>World border / build height — all players including creative</li>
+ *   <li>Max blocks limit — entries beyond the cap are marked {@link BlockStatus#MAX_BLOCKS_EXCEEDED} (all players)</li>
+ *   <li>Breaking disabled — all entries marked if breaking is disallowed (survival, breaking only)</li>
  *   <li>Protected tile entities — tile entities the player wants protected</li>
  *   <li>Only-placed-blocks — positions not tracked by {@link PlacedBlockTracker}</li>
  *   <li>Max hardness — blocks exceeding {@code survivalMaxHardness}</li>
@@ -63,6 +64,29 @@ public class ConstraintSystem implements IBuildSystem {
             }
         }
 
+        // Max blocks limit — applies to ALL players (including creative)
+        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
+        int validCount = 0;
+        for (BlockEntry entry : blocks.values()) {
+            if (!entry.isValid()) continue; // don't count already-rejected entries
+            validCount++;
+            if (validCount > maxBlocks) {
+                entry.markRejected(BlockStatus.MAX_BLOCKS_EXCEEDED);
+            }
+        }
+
+        // Protected tile entities — applies to ALL players (including creative)
+        boolean protectTiles = getProtectTileEntities();
+        if (protectTiles) {
+            for (var mapEntry : blocks.entrySet()) {
+                BlockEntry entry = mapEntry.getValue();
+                if (!entry.isValid()) continue;
+                if (level.getBlockEntity(mapEntry.getKey()) != null) {
+                    entry.markRejected(BlockStatus.PROTECTED_TILE_ENTITY);
+                }
+            }
+        }
+
         if (player.getAbilities().instabuild) return; // Creative skips survival constraints
 
         // Check if breaking is globally disabled
@@ -73,18 +97,7 @@ public class ConstraintSystem implements IBuildSystem {
             return;
         }
 
-        // Max blocks limit — mark entries beyond the cap
-        int maxBlocks = ServerConfig.INSTANCE.getMaxBlocksPlaced(player);
-        int count = 0;
-        for (BlockEntry entry : blocks.values()) {
-            count++;
-            if (count > maxBlocks) {
-                entry.markRejected(BlockStatus.MAX_BLOCKS_EXCEEDED);
-            }
-        }
 
-        // Determine if tile entities should be protected
-        boolean protectTiles = getProtectTileEntities();
 
         // Per-position survival checks for breaking OR replacing existing blocks during placement
         for (var mapEntry : blocks.entrySet()) {
@@ -102,11 +115,6 @@ public class ConstraintSystem implements IBuildSystem {
                 if (state.canBeReplaced()) continue;
             }
 
-            // Protected tile entity check
-            if (protectTiles && level.getBlockEntity(pos) != null) {
-                entry.markRejected(BlockStatus.PROTECTED_TILE_ENTITY);
-                continue;
-            }
 
             // Only placed blocks check
             if (ServerConfig.INSTANCE.survivalOnlyPlacedBlocks

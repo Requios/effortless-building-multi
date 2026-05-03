@@ -155,8 +155,12 @@
   "effortlessbuilding.action.open_client_config.description": "",
   "effortlessbuilding.screen.client_config": "Client Config",
   "effortlessbuilding.config.preview_block_size": "Preview Block Size",
+  "effortlessbuilding.config.preview_block_size.tooltip": "Size of block previews as a percentage of a full block.",
   "effortlessbuilding.config.preview_block_transparency": "Preview Transparency",
+  "effortlessbuilding.config.preview_block_transparency.tooltip": "Transparency of block previews. 0% = invisible, 100% = solid.",
+  "effortlessbuilding.config.max_block_previews": "Max Block Previews",
+  "effortlessbuilding.config.max_block_previews.tooltip": "Maximum number of block models rendered in the preview.\nLower values improve performance with large shapes.\nOutlines are always drawn for all blocks.",
   "effortlessbuilding.config.protect_tile_entities": "Protect Tile Entities",
-  "effortlessbuilding.config.max_block_previews": "Max Block Previews"
+  "effortlessbuilding.config.protect_tile_entities.tooltip": "If on, blocks that hold data such as chests, furnaces, and hoppers cannot be replaced or broken."
 }
 

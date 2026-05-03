@@ -24,17 +24,21 @@ public class ClientConfig {
     public static final float DEFAULT_PREVIEW_BLOCK_SIZE = 0.5f;
     public static final float DEFAULT_PREVIEW_BLOCK_TRANSPARENCY = 0.8f;
     public static final boolean DEFAULT_PROTECT_TILE_ENTITIES = true;
+    public static final int DEFAULT_MAX_BLOCK_PREVIEWS = 1000;
 
     // --- Bounds ---
     public static final float MIN_PREVIEW_BLOCK_SIZE = 0.10f;
     public static final float MAX_PREVIEW_BLOCK_SIZE = 1.0f;
     public static final float MIN_PREVIEW_BLOCK_TRANSPARENCY = 0.0f;
     public static final float MAX_PREVIEW_BLOCK_TRANSPARENCY = 1.0f;
+    public static final int MIN_MAX_BLOCK_PREVIEWS = 50;
+    public static final int MAX_MAX_BLOCK_PREVIEWS = 10000;
 
     // --- Settings ---
     private float previewBlockSize = DEFAULT_PREVIEW_BLOCK_SIZE;
     private float previewBlockTransparency = DEFAULT_PREVIEW_BLOCK_TRANSPARENCY;
     private boolean protectTileEntities = DEFAULT_PROTECT_TILE_ENTITIES;
+    private int maxBlockPreviews = DEFAULT_MAX_BLOCK_PREVIEWS;
 
     // --- Getters ---
 
@@ -52,6 +56,11 @@ public class ClientConfig {
         return protectTileEntities;
     }
 
+    /** Maximum number of block previews to render (50 – 10000). */
+    public int getMaxBlockPreviews() {
+        return maxBlockPreviews;
+    }
+
     // --- Setters (clamped) ---
 
     public void setPreviewBlockSize(float value) {
@@ -66,6 +75,10 @@ public class ClientConfig {
         this.protectTileEntities = value;
     }
 
+    public void setMaxBlockPreviews(int value) {
+        this.maxBlockPreviews = Math.clamp(value, MIN_MAX_BLOCK_PREVIEWS, MAX_MAX_BLOCK_PREVIEWS);
+    }
+
     // --- Serialization ---
 
     public String toJson() {
@@ -73,6 +86,7 @@ public class ClientConfig {
         obj.addProperty("previewBlockSize", previewBlockSize);
         obj.addProperty("previewBlockTransparency", previewBlockTransparency);
         obj.addProperty("protectTileEntities", protectTileEntities);
+        obj.addProperty("maxBlockPreviews", maxBlockPreviews);
         return GSON.toJson(obj);
     }
 
@@ -82,6 +96,7 @@ public class ClientConfig {
             if (obj.has("previewBlockSize")) setPreviewBlockSize(obj.get("previewBlockSize").getAsFloat());
             if (obj.has("previewBlockTransparency")) setPreviewBlockTransparency(obj.get("previewBlockTransparency").getAsFloat());
             if (obj.has("protectTileEntities")) setProtectTileEntities(obj.get("protectTileEntities").getAsBoolean());
+            if (obj.has("maxBlockPreviews")) setMaxBlockPreviews(obj.get("maxBlockPreviews").getAsInt());
         } catch (Exception ignored) {
             // Keep current / default values on parse failure
         }

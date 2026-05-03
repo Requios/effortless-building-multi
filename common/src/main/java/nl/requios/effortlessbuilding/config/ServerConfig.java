@@ -31,7 +31,7 @@ public class ServerConfig {
 
     // --- Creative settings ---
     public int creativeReach = 200;
-    public int creativeMaxBlocksPlaced = 10000;
+    public int creativeMaxBlocksPlaced = 50000;
     public int creativeMaxBlocksPerAxis = 1000;
     public int creativeMaxMirrorSize = 256;
     public int creativeMaxArrayCount = 256;

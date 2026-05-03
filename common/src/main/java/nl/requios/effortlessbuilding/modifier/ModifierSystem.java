@@ -13,7 +13,7 @@ import java.util.List;
  * An {@link IBuildSystem} that holds an ordered list of {@link IModifier}s.
  * Each enabled modifier is applied in sequence.
  *
- * <p>Register {@link #CLIENT} with {@link BuildPipeline#CLIENT} once during client init.
+ * <p>Register {@link #CLIENT} with {@link nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient#CLIENT} once during client init.
  */
 public class ModifierSystem implements IBuildSystem {
 
