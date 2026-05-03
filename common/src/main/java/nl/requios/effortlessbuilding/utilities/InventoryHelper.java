@@ -1,10 +1,13 @@
 package nl.requios.effortlessbuilding.utilities;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Server-safe inventory helpers for counting, consuming, and giving items.
@@ -78,6 +81,46 @@ public class InventoryHelper {
                 player.level().addFreshEntity(drop);
             }
             remaining -= batchSize;
+        }
+    }
+
+    /**
+     * Checks if the player has a tool in their inventory that can correctly harvest the given block state.
+     * A block that doesn't require a correct tool returns true immediately.
+     */
+    public static boolean hasCorrectToolForBlock(Player player, BlockState state) {
+        if (!state.requiresCorrectToolForDrops()) return true;
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (!stack.isEmpty() && stack.isCorrectToolForDrops(state)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Finds the first tool in the player's inventory that can harvest the given block state
+     * and damages it by 1. If no specific tool is needed, damages the main hand item (if damageable).
+     */
+    public static void damageCorrectTool(Player player, BlockState state) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
+        ServerLevel serverLevel = serverPlayer.serverLevel();
+
+        Inventory inv = player.getInventory();
+        // First try to find a tool that matches the block
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (!stack.isEmpty() && stack.isDamageableItem() && stack.isCorrectToolForDrops(state)) {
+                stack.hurtAndBreak(1, serverLevel, serverPlayer, item -> {});
+                return;
+            }
+        }
+        // If no specific tool found but block doesn't require one, damage main hand if it's a tool
+        ItemStack mainHand = player.getMainHandItem();
+        if (!mainHand.isEmpty() && mainHand.isDamageableItem()) {
+            mainHand.hurtAndBreak(1, serverLevel, serverPlayer, item -> {});
         }
     }
 }

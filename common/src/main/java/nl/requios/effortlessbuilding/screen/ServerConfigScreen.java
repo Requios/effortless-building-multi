@@ -34,6 +34,7 @@ public class ServerConfigScreen extends Screen {
         "effortlessbuilding.config.only_placed_blocks.tooltip",
         "effortlessbuilding.config.max_hardness.tooltip",
         "effortlessbuilding.config.require_tools.tooltip",
+        "effortlessbuilding.config.use_durability.tooltip",
     };
 
     /** Tooltip keys for creative rows (in order). */
@@ -59,6 +60,7 @@ public class ServerConfigScreen extends Screen {
     private boolean survOnlyPlacedBlocks;
     private EditBox survMaxHardnessField;
     private boolean survRequireTools;
+    private boolean survUseDurability;
 
     // Creative
     private EditBox creReachField;
@@ -94,6 +96,7 @@ public class ServerConfigScreen extends Screen {
         survAllowBreaking = scratch.survivalAllowBreaking;
         survOnlyPlacedBlocks = scratch.survivalOnlyPlacedBlocks;
         survRequireTools = scratch.survivalRequireTools;
+        survUseDurability = scratch.survivalUseDurability;
 
         int left = (width - PANEL_W) / 2;
         int fieldX = left + 220;
@@ -139,6 +142,13 @@ public class ServerConfigScreen extends Screen {
                 btn -> { survRequireTools = !survRequireTools; btn.setMessage(Component.literal(onOff(survRequireTools))); })
                 .bounds(fieldX, 0, fieldW, 18).build());
         widgetOrder.add(btnRequireTools);
+        y += ROW_H;
+
+        var btnUseDurability = addRenderableWidget(Button.builder(
+                Component.literal(onOff(survUseDurability)),
+                btn -> { survUseDurability = !survUseDurability; btn.setMessage(Component.literal(onOff(survUseDurability))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnUseDurability);
         y += ROW_H;
 
         y += SECTION_GAP;
@@ -217,6 +227,7 @@ public class ServerConfigScreen extends Screen {
         scratch.survivalOnlyPlacedBlocks = survOnlyPlacedBlocks;
         scratch.survivalMaxHardness = parseFloatOrDefault(survMaxHardnessField.getValue(), -1f);
         scratch.survivalRequireTools = survRequireTools;
+        scratch.survivalUseDurability = survUseDurability;
 
         scratch.creativeReach = parseOrDefault(creReachField.getValue(), 64);
         scratch.creativeMaxBlocksPlaced = parseOrDefault(creMaxPlacedField.getValue(), 10000);
@@ -272,6 +283,7 @@ public class ServerConfigScreen extends Screen {
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.only_placed_blocks"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_hardness"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.require_tools"); y += ROW_H;
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.use_durability"); y += ROW_H;
 
         y += SECTION_GAP;
 
@@ -315,7 +327,7 @@ public class ServerConfigScreen extends Screen {
         // Survival data rows
         for (String key : SURVIVAL_TOOLTIP_KEYS) {
             if (mouseY >= y && mouseY < y + ROW_H) {
-                graphics.renderTooltip(font, Component.translatable(key), mouseX, mouseY);
+                renderMultiLineTooltip(graphics, key, mouseX, mouseY);
                 return;
             }
             y += ROW_H;
@@ -329,11 +341,22 @@ public class ServerConfigScreen extends Screen {
         // Creative data rows
         for (String key : CREATIVE_TOOLTIP_KEYS) {
             if (mouseY >= y && mouseY < y + ROW_H) {
-                graphics.renderTooltip(font, Component.translatable(key), mouseX, mouseY);
+                renderMultiLineTooltip(graphics, key, mouseX, mouseY);
                 return;
             }
             y += ROW_H;
         }
+    }
+
+    /** Renders a tooltip, splitting the translated text on newlines for multi-line support. */
+    private void renderMultiLineTooltip(GuiGraphics graphics, String key, int mouseX, int mouseY) {
+        String text = Component.translatable(key).getString();
+        String[] lines = text.split("\n");
+        List<Component> components = new ArrayList<>();
+        for (String line : lines) {
+            components.add(Component.literal(line));
+        }
+        graphics.renderTooltip(font, components, java.util.Optional.empty(), mouseX, mouseY);
     }
 
     private boolean isInRow(int mouseX, int mouseY, int left, int rowY) {

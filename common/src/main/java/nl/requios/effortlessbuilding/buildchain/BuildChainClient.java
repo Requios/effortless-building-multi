@@ -27,8 +27,10 @@ import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.PlaceBuildModePacket;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.BucketItem;
@@ -150,8 +152,17 @@ public class BuildChainClient {
                     // Client-side placement tracking
                     PlacedBlockTracker.clientTrackAll(mc.level.dimension(), blocks.keySet());
                 } else {
+                    // Check if breaking is allowed in survival
+                    if (!player.getAbilities().instabuild && !ServerConfig.INSTANCE.survivalAllowBreaking) {
+                        player.displayClientMessage(
+                                Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
+                        mode.instance.initialize();
+                        buildState = null;
+                        firstClickHit = null;
+                        return;
+                    }
                     // Check for unbreakable blocks and warn
-                    if (!player.getAbilities().instabuild) {
+                    if (!player.getAbilities().instabuild && ServerConfig.INSTANCE.survivalOnlyPlacedBlocks) {
                         boolean hasUnbreakable = false;
                         for (BlockPos pos : blocks.keySet()) {
                             if (!PlacedBlockTracker.clientIsTracked(mc.level.dimension(), pos)) {
@@ -162,6 +173,21 @@ public class BuildChainClient {
                         if (hasUnbreakable) {
                             player.displayClientMessage(
                                     Component.translatable("effortlessbuilding.message.only_break_placed"), true);
+                        }
+                    }
+                    // Check for blocks exceeding max hardness and warn
+                    if (!player.getAbilities().instabuild && ServerConfig.INSTANCE.survivalMaxHardness >= 0) {
+                        boolean hasTooHard = false;
+                        for (BlockPos pos : blocks.keySet()) {
+                            float hardness = mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos);
+                            if (hardness > ServerConfig.INSTANCE.survivalMaxHardness) {
+                                hasTooHard = true;
+                                break;
+                            }
+                        }
+                        if (hasTooHard) {
+                            player.displayClientMessage(
+                                    Component.translatable("effortlessbuilding.message.too_hard"), true);
                         }
                     }
                     PacketHandler.sendToServer(new BreakBuildModePacket(
@@ -200,6 +226,26 @@ public class BuildChainClient {
             CLIENT.processBlocks(previewBlocks, player, action);
             if (previewBlocks.isEmpty()) return null;
             previewBlocks.truncate(ServerConfig.INSTANCE.getMaxBlocksPlaced(player));
+
+            // For breaking preview in survival, remove blocks that exceed max hardness
+            if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild
+                    && ServerConfig.INSTANCE.survivalMaxHardness >= 0) {
+                float maxHardness = ServerConfig.INSTANCE.survivalMaxHardness;
+                previewBlocks.keySet().removeIf(pos -> {
+                    float h = mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos);
+                    return h > maxHardness;
+                });
+            }
+
+            // For breaking preview in survival, remove blocks requiring tools the player doesn't have
+            if (action == BuildChain.BuildState.BREAKING && !player.getAbilities().instabuild
+                    && ServerConfig.INSTANCE.survivalRequireTools) {
+                previewBlocks.keySet().removeIf(pos -> {
+                    BlockState state = mc.level.getBlockState(pos);
+                    return !InventoryHelper.hasCorrectToolForBlock(player, state);
+                });
+            }
+
             result = previewBlocks;
         } else {
             Vec3 start = player.getEyePosition();

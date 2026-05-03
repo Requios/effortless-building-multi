@@ -196,6 +196,13 @@ public class PacketHandler {
     public static void handleBreakBuildMode(BreakBuildModePacket packet, ServerPlayer player) {
         boolean creative = player.isCreative();
 
+        // Enforce survivalAllowBreaking
+        if (!creative && !ServerConfig.INSTANCE.survivalAllowBreaking) {
+            player.displayClientMessage(
+                    Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
+            return;
+        }
+
         ServerLevel level = player.serverLevel();
 
         BlockSet blockSet = BuildChain.SERVER.computeServerBlocks(
@@ -225,8 +232,18 @@ public class PacketHandler {
             if (oldState.isAir()) continue;
 
             if (!creative) {
-                // Survival: only allow breaking positions the player placed this session
-                if (!PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
+                // Enforce survivalOnlyPlacedBlocks: skip positions the player didn't place
+                if (ServerConfig.INSTANCE.survivalOnlyPlacedBlocks
+                        && !PlacedBlockTracker.isTracked(player.getUUID(), level.dimension(), pos)) continue;
+
+                // Enforce survivalMaxHardness: skip blocks that are too hard
+                float hardness = oldState.getDestroySpeed(level, pos);
+                if (ServerConfig.INSTANCE.survivalMaxHardness >= 0 && hardness > ServerConfig.INSTANCE.survivalMaxHardness) continue;
+
+                // Enforce survivalRequireTools: skip blocks the player can't harvest
+                if (ServerConfig.INSTANCE.survivalRequireTools && oldState.requiresCorrectToolForDrops()) {
+                    if (!InventoryHelper.hasCorrectToolForBlock(player, oldState)) continue;
+                }
 
                 // Give drops to inventory instead of dropping in world
                 var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos),
@@ -234,7 +251,10 @@ public class PacketHandler {
                 for (ItemStack drop : drops) {
                     InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
                 }
-                // Also drop XP? Skip for simplicity.
+                // Use tool durability if enabled
+                if (ServerConfig.INSTANCE.survivalUseDurability) {
+                    InventoryHelper.damageCorrectTool(player, oldState);
+                }
                 level.setBlock(pos, airState, 3);
             } else {
                 level.destroyBlock(pos, false, player);

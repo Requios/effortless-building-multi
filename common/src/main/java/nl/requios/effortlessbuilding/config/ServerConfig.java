@@ -27,6 +27,7 @@ public class ServerConfig {
     public boolean survivalOnlyPlacedBlocks = true;
     public float survivalMaxHardness = -1f; // -1 = no limit
     public boolean survivalRequireTools = false;
+    public boolean survivalUseDurability = false;
 
     // --- Creative settings ---
     public int creativeReach = 200;
@@ -91,6 +92,7 @@ public class ServerConfig {
         this.survivalOnlyPlacedBlocks = other.survivalOnlyPlacedBlocks;
         this.survivalMaxHardness = other.survivalMaxHardness;
         this.survivalRequireTools = other.survivalRequireTools;
+        this.survivalUseDurability = other.survivalUseDurability;
 
         this.creativeReach = other.creativeReach;
         this.creativeMaxBlocksPlaced = other.creativeMaxBlocksPlaced;
@@ -118,6 +120,7 @@ public class ServerConfig {
         obj.addProperty("survivalOnlyPlacedBlocks", survivalOnlyPlacedBlocks);
         obj.addProperty("survivalMaxHardness", survivalMaxHardness);
         obj.addProperty("survivalRequireTools", survivalRequireTools);
+        obj.addProperty("survivalUseDurability", survivalUseDurability);
 
         obj.addProperty("creativeReach", creativeReach);
         obj.addProperty("creativeMaxBlocksPlaced", creativeMaxBlocksPlaced);
@@ -142,6 +145,7 @@ public class ServerConfig {
             if (obj.has("survivalOnlyPlacedBlocks")) config.survivalOnlyPlacedBlocks = obj.get("survivalOnlyPlacedBlocks").getAsBoolean();
             if (obj.has("survivalMaxHardness")) config.survivalMaxHardness = obj.get("survivalMaxHardness").getAsFloat();
             if (obj.has("survivalRequireTools")) config.survivalRequireTools = obj.get("survivalRequireTools").getAsBoolean();
+            if (obj.has("survivalUseDurability")) config.survivalUseDurability = obj.get("survivalUseDurability").getAsBoolean();
 
             if (obj.has("creativeReach")) config.creativeReach = obj.get("creativeReach").getAsInt();
             if (obj.has("creativeMaxBlocksPlaced")) config.creativeMaxBlocksPlaced = obj.get("creativeMaxBlocksPlaced").getAsInt();
