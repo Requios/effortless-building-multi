@@ -327,7 +327,7 @@ public class BuildPipelineClient {
         if (action == BuildPipeline.BuildState.BREAKING) return hitPos;
         // Tools interact with the clicked block itself, not adjacent
         var mc = Minecraft.getInstance();
-        if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof net.minecraft.world.item.DiggerItem) {
+        if (mc.player != null && mc.player.getMainHandItem().has(net.minecraft.core.component.DataComponents.TOOL)) {
             return hitPos;
         }
         // When replacing blocks, click on the block itself instead of adjacent

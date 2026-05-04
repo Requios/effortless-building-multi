@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.Constants;
 
 /**
@@ -12,7 +12,7 @@ import nl.requios.effortlessbuilding.Constants;
 public record RedoPacket() implements CustomPacketPayload {
 
     public static final Type<RedoPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "redo"));
+            new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "redo"));
 
     public static final StreamCodec<FriendlyByteBuf, RedoPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> { /* nothing to write */ },

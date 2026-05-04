@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.Constants;
 
 /**
@@ -13,7 +13,7 @@ import nl.requios.effortlessbuilding.Constants;
 public record UpdateServerConfigC2SPacket(String json) implements CustomPacketPayload {
 
     public static final Type<UpdateServerConfigC2SPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "update_server_config"));
+            new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "update_server_config"));
 
     public static final StreamCodec<FriendlyByteBuf, UpdateServerConfigC2SPacket> STREAM_CODEC = StreamCodec.of(
             UpdateServerConfigC2SPacket::encode,

@@ -6,8 +6,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -15,7 +15,7 @@ import java.awt.Color;
 
 public class AllIcons {
 
-    public static final ResourceLocation ICON_ATLAS = ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "textures/gui/icons.png");
+    public static final Identifier ICON_ATLAS = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "textures/gui/icons.png");
     public static final int ICON_ATLAS_SIZE = 256;
     private static int x = 0, y = -1;
     private int iconX;

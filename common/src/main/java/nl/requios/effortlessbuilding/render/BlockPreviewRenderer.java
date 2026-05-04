@@ -6,7 +6,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -24,7 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
@@ -39,11 +40,11 @@ import java.util.Set;
 public class BlockPreviewRenderer {
 
 
-    private static final ResourceLocation CHECKERBOARD_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/checkerboard.png");
+    private static final Identifier CHECKERBOARD_TEXTURE =
+            Identifier.fromNamespaceAndPath("effortlessbuilding", "textures/special/checkerboard.png");
 
-    private static final ResourceLocation OUTLINE_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/blank.png");
+    private static final Identifier OUTLINE_TEXTURE =
+            Identifier.fromNamespaceAndPath("effortlessbuilding", "textures/special/blank.png");
 
     // Vanilla survival block reach; used to suppress the extended-reach outline
     // when the player is already within normal interaction range.
@@ -380,7 +381,7 @@ public class BlockPreviewRenderer {
         public VertexConsumer getBuffer(RenderType renderType) {
             // Keep the original render type so entity-rendered blocks (beds, chests, banners)
             // retain their correct textures. Only override alpha on the vertex consumer.
-            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderType.translucent() : renderType;
+            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderTypes.translucent() : renderType;
             return new AlphaVertexConsumer(delegate.getBuffer(renderTypeToUse), alpha);
         }
     }

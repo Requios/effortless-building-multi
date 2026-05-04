@@ -5,7 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
@@ -46,7 +46,7 @@ public record PlaceBuildModePacket(
 ) implements CustomPacketPayload {
 
     public static final Type<PlaceBuildModePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "place_build_mode"));
+            new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "place_build_mode"));
 
     public static final StreamCodec<FriendlyByteBuf, PlaceBuildModePacket> STREAM_CODEC = StreamCodec.of(
             PlaceBuildModePacket::encode,

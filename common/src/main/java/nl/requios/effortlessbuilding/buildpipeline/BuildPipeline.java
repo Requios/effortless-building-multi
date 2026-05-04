@@ -1,10 +1,10 @@
 package nl.requios.effortlessbuilding.buildpipeline;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -80,7 +80,7 @@ public class BuildPipeline {
             return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
         }
         // Tools that modify blocks on right-click (axe strips logs, shovel makes paths, hoe tills)
-        if (stack.getItem() instanceof DiggerItem) {
+        if (stack.has(DataComponents.TOOL)) {
             return true;
         }
         return false;

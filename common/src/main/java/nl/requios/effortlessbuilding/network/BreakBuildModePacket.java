@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
@@ -27,7 +27,7 @@ public record BreakBuildModePacket(
 ) implements CustomPacketPayload {
 
     public static final Type<BreakBuildModePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "break_build_mode"));
+            new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "break_build_mode"));
 
     public static final StreamCodec<FriendlyByteBuf, BreakBuildModePacket> STREAM_CODEC = StreamCodec.of(
             BreakBuildModePacket::encode,

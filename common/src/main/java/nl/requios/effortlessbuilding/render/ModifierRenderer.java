@@ -6,9 +6,9 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.MirrorModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
@@ -20,8 +20,8 @@ import nl.requios.effortlessbuilding.modifier.RadialMirrorModifier;
  */
 public class ModifierRenderer {
 
-    private static final ResourceLocation BLANK_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("effortlessbuilding", "textures/special/blank.png");
+    private static final Identifier BLANK_TEXTURE =
+            Identifier.fromNamespaceAndPath("effortlessbuilding", "textures/special/blank.png");
 
     /** Number of line segments used to approximate a radial circle. */
     private static final int CIRCLE_SEGMENTS = 64;

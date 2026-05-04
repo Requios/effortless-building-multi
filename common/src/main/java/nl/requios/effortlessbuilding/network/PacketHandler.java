@@ -1,13 +1,13 @@
 package nl.requios.effortlessbuilding.network;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -187,7 +187,7 @@ public class PacketHandler {
                             new ItemStack(net.minecraft.world.item.Items.BUCKET));
                 }
             }
-        } else if (held.getItem() instanceof DiggerItem) {
+        } else if (held.has(DataComponents.TOOL)) {
             // Tool interactions: axe strips logs, shovel makes paths, hoe tills dirt, etc.
             // Calls useOn for each position — works for vanilla and modded tools.
             net.minecraft.world.level.Level worldLevel = level;
