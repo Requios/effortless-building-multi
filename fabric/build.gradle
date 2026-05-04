@@ -16,7 +16,7 @@ dependencies {
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-    modImplementation("com.terraformersmc:modmenu:11.0.3") { transitive = false }
+    modImplementation("com.terraformersmc:modmenu:17.0.0") { transitive = false }
 }
 
 loom {

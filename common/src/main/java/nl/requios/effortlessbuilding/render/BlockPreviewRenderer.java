@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -150,15 +149,11 @@ public class BlockPreviewRenderer {
         }
 
         // Pass 2: bounding box faces with checkerboard texture.
-        // Disable depth writes so the translucent faces don't occlude the
-        // outline edges drawn in Pass 3.
-        RenderSystem.depthMask(false);
         renderBoundingBoxFaces(poseStack, bufferSource, breakablePositions, camX, camY, camZ, isBreaking, false);
         if (!unbreakablePositions.isEmpty()) {
             renderBoundingBoxFaces(poseStack, bufferSource, unbreakablePositions, camX, camY, camZ, isBreaking, true);
         }
-        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
-        RenderSystem.depthMask(true);
+        bufferSource.endBatch(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units
@@ -179,17 +174,17 @@ public class BlockPreviewRenderer {
         if (!validPositions.isEmpty()) {
             renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(validPositions),
                     camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
-            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
         if (!missingPositionsList.isEmpty()) {
             renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositionsList),
                     camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
-            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
         if (!unbreakablePositions.isEmpty()) {
             renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
                     camX, camY, camZ, outlineWidth, 100, 100, 100, 255);
-            bufferSource.endBatch(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
     }
 
@@ -198,7 +193,7 @@ public class BlockPreviewRenderer {
                                                 boolean isBreaking, boolean isUnbreakable) {
         Set<BlockPos> posSet = new HashSet<>(positions);
 
-        var consumer = bufferSource.getBuffer(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
         var pose = poseStack.last();
         int r, g, b;
         if (isUnbreakable) {
@@ -251,7 +246,7 @@ public class BlockPreviewRenderer {
     private static void renderEdgeQuads(PoseStack poseStack, MultiBufferSource bufferSource,
                                          Set<EdgeKey> edges, double camX, double camY, double camZ,
                                          float halfWidth, int r, int g, int b, int a) {
-        var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(OUTLINE_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         var pose = poseStack.last();
 
         for (EdgeKey edge : edges) {
@@ -363,10 +358,8 @@ public class BlockPreviewRenderer {
     }
 
     /**
-     * Routes all render type requests to {@link RenderType#translucent()} and
-     * overrides the alpha channel on every vertex so the block preview appears
-     * semi-transparent. All other vertex data (position, UV, lightmap, normal)
-     * is forwarded unchanged.
+     * Routes all render type requests and overrides the alpha channel on every vertex
+     * so the block preview appears semi-transparent.
      */
     private static class AlphaMultiBufferSource implements MultiBufferSource {
         private final MultiBufferSource.BufferSource delegate;
@@ -379,10 +372,7 @@ public class BlockPreviewRenderer {
 
         @Override
         public VertexConsumer getBuffer(RenderType renderType) {
-            // Keep the original render type so entity-rendered blocks (beds, chests, banners)
-            // retain their correct textures. Only override alpha on the vertex consumer.
-            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderTypes.translucent() : renderType;
-            return new AlphaVertexConsumer(delegate.getBuffer(renderTypeToUse), alpha);
+            return new AlphaVertexConsumer(delegate.getBuffer(renderType), alpha);
         }
     }
 
@@ -408,6 +398,14 @@ public class BlockPreviewRenderer {
         }
 
         @Override
+        public VertexConsumer setColor(int color) {
+            // Replace alpha channel with our override
+            int rgb = color & 0x00FFFFFF;
+            delegate.setColor(rgb | (alpha << 24));
+            return this;
+        }
+
+        @Override
         public VertexConsumer setUv(float u, float v) {
             delegate.setUv(u, v);
             return this;
@@ -428,6 +426,12 @@ public class BlockPreviewRenderer {
         @Override
         public VertexConsumer setNormal(float nx, float ny, float nz) {
             delegate.setNormal(nx, ny, nz);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setLineWidth(float width) {
+            delegate.setLineWidth(width);
             return this;
         }
     }
@@ -456,8 +460,7 @@ public class BlockPreviewRenderer {
 
         @Override
         public VertexConsumer getBuffer(RenderType renderType) {
-            var renderTypeToUse = renderType.toString().contains("entity_cutout") ? RenderType.translucent() : renderType;
-            return new TintedVertexConsumer(delegate.getBuffer(renderTypeToUse), r, g, b, a);
+            return new TintedVertexConsumer(delegate.getBuffer(renderType), r, g, b, a);
         }
     }
 
@@ -472,9 +475,11 @@ public class BlockPreviewRenderer {
 
         @Override public VertexConsumer addVertex(float x, float y, float z) { delegate.addVertex(x, y, z); return this; }
         @Override public VertexConsumer setColor(int cr, int cg, int cb, int ca) { delegate.setColor(r, g, b, a); return this; }
+        @Override public VertexConsumer setColor(int color) { delegate.setColor(a << 24 | r << 16 | g << 8 | b); return this; }
         @Override public VertexConsumer setUv(float u, float v) { delegate.setUv(u, v); return this; }
         @Override public VertexConsumer setUv1(int u, int v) { delegate.setUv1(u, v); return this; }
         @Override public VertexConsumer setUv2(int u, int v) { delegate.setUv2(u, v); return this; }
         @Override public VertexConsumer setNormal(float nx, float ny, float nz) { delegate.setNormal(nx, ny, nz); return this; }
+        @Override public VertexConsumer setLineWidth(float width) { delegate.setLineWidth(width); return this; }
     }
 }

@@ -122,7 +122,7 @@ public class InventoryHelper {
      */
     public static void damageCorrectTool(Player player, BlockState state) {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
-        ServerLevel serverLevel = serverPlayer.serverLevel();
+        ServerLevel serverLevel = serverPlayer.level();
 
         Inventory inv = player.getInventory();
         // First try to find a tool that matches the block

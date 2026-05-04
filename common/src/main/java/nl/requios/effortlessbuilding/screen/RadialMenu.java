@@ -1,33 +1,27 @@
 package nl.requios.effortlessbuilding.screen;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.server.permissions.Permissions;
 import nl.requios.effortlessbuilding.AllIcons;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
+import nl.requios.effortlessbuilding.mixin.GuiGraphicsAccessor;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 
@@ -85,7 +79,7 @@ public class RadialMenu extends Screen {
 	public void tick() {
 		super.tick();
 
-		long window = minecraft.getWindow().getWindow();
+		var window = minecraft.getWindow();
 		boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
 				InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
 		if (!altHeld) {
@@ -97,8 +91,7 @@ public class RadialMenu extends Screen {
 	public void render(GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTicks) {
 		BuildModeEnum currentBuildMode = BuildModes.CLIENT.getBuildMode();
 
-		graphics.pose().pushPose();
-		graphics.pose().translate(0, 0, 200);
+		graphics.pose().pushMatrix();
 
 		visibility += fadeSpeed * partialTicks;
 		if (visibility > 1f) visibility = 1f;
@@ -110,12 +103,8 @@ public class RadialMenu extends Screen {
 
 		graphics.fill(0, 0, width, height, bgColor);
 
-//		RenderSystem.disableTexture();
-		RenderSystem.disableDepthTest();
-		RenderSystem.enableBlend();
-		RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		final BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+		// Create a custom GUI element to hold the radial menu quads
+		var element = new RadialMenuGuiElement(graphics.pose());
 
 		final double middleX = width / 2.0;
 		final double middleY = height / 2.0;
@@ -149,7 +138,7 @@ public class RadialMenu extends Screen {
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
 
 		// Server config button — only visible to operators
-		if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
+		if (minecraft.player != null && minecraft.player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
 			buttons.add(new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 52, 13, Direction.DOWN));
 		}
 
@@ -178,26 +167,23 @@ public class RadialMenu extends Screen {
 		doAction = null;
 
 		//Draw buildmode backgrounds
-		drawRadialButtonBackgrounds(currentBuildMode, buffer, middleX, middleY, mouseXCenter, mouseYCenter, mouseRadians,
+		drawRadialButtonBackgrounds(currentBuildMode, element, middleX, middleY, mouseXCenter, mouseYCenter, mouseRadians,
 				quarterCircle, modes, scale);
 
 		//Draw action backgrounds
-		drawSideButtonBackgrounds(buffer, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
+		drawSideButtonBackgrounds(element, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
 
-		MeshData meshData = buffer.buildOrThrow();
-		BufferUploader.drawWithShader(meshData);
-		RenderSystem.enableDepthTest();
-		RenderSystem.disableBlend();
-//		RenderSystem.enableTexture();
+		// Submit the element to the GUI render state
+		((GuiGraphicsAccessor) graphics).effortlessbuilding$getGuiRenderState().submitGuiElement(element);
 
 		drawIcons(graphics, middleX, middleY, modes, buttons, scale);
 
 		drawTexts(graphics, currentBuildMode, middleX, middleY, modes, buttons, options, mouseXX, mouseYY, scale);
 
-		graphics.pose().popPose();
+		graphics.pose().popMatrix();
 	}
 
-	private void drawRadialButtonBackgrounds(BuildModeEnum currentBuildMode, BufferBuilder buffer, double middleX, double middleY,
+	private void drawRadialButtonBackgrounds(BuildModeEnum currentBuildMode, RadialMenuGuiElement element, double middleX, double middleY,
 											 double mouseXCenter, double mouseYCenter, double mouseRadians, double quarterCircle, ArrayList<MenuRegion> modes, double scale) {
 		if (!modes.isEmpty()) {
 			final int totalModes = Math.max(3, modes.size());
@@ -242,13 +228,15 @@ public class RadialMenu extends Screen {
 					switchTo = menuRegion.mode;
 				}
 
-				buffer.addVertex((float)(middleX + x1m1), (float)(middleY + y1m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m1), (float)(middleY + y2m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m2), (float)(middleY + y2m2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x1m2), (float)(middleY + y1m2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+				element.addQuad(
+						(float)(middleX + x1m1), (float)(middleY + y1m1),
+						(float)(middleX + x2m1), (float)(middleY + y2m1),
+						(float)(middleX + x2m2), (float)(middleY + y2m2),
+						(float)(middleX + x1m2), (float)(middleY + y1m2),
+						color.x(), color.y(), color.z(), color.w());
 
 				//Category line
-				color = menuRegion.mode.category.color;
+				Vector4f catColor = menuRegion.mode.category.color;
 				final double categoryLineOuterEdge = (ringInnerEdge + categoryLineWidth) * scale;
 
 				final double x1m3 = Math.cos(beginRadians + fragment) * categoryLineOuterEdge;
@@ -256,15 +244,17 @@ public class RadialMenu extends Screen {
 				final double y1m3 = Math.sin(beginRadians + fragment) * categoryLineOuterEdge;
 				final double y2m3 = Math.sin(endRadians - fragment) * categoryLineOuterEdge;
 
-				buffer.addVertex((float)(middleX + x1m1), (float)(middleY + y1m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m1), (float)(middleY + y2m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m3), (float)(middleY + y2m3), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x1m3), (float)(middleY + y1m3), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+				element.addQuad(
+						(float)(middleX + x1m1), (float)(middleY + y1m1),
+						(float)(middleX + x2m1), (float)(middleY + y2m1),
+						(float)(middleX + x2m3), (float)(middleY + y2m3),
+						(float)(middleX + x1m3), (float)(middleY + y1m3),
+						catColor.x(), catColor.y(), catColor.z(), catColor.w());
 			}
 		}
 	}
 
-	private void drawSideButtonBackgrounds(BufferBuilder buffer, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons, double scale) {
+	private void drawSideButtonBackgrounds(RadialMenuGuiElement element, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons, double scale) {
 		for (final MenuButton btn : buttons) {
 
 			final double bx1 = btn.x1 * scale, bx2 = btn.x2 * scale, by1 = btn.y1 * scale, by2 = btn.y2 * scale;
@@ -279,8 +269,6 @@ public class RadialMenu extends Screen {
 					btn.action == ModeOptions.getCircleStart() ||
 					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR);
 
-
-
 			Vector4f color = sideButtonColor;
 			if (isSelected) color = selectedColor;
 			if (isHighlighted) color = highlightColor;
@@ -291,20 +279,17 @@ public class RadialMenu extends Screen {
 				doAction = btn.action;
 			}
 
-			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			element.addQuad(
+					(float)(middleX + bx1), (float)(middleY + by1),
+					(float)(middleX + bx1), (float)(middleY + by2),
+					(float)(middleX + bx2), (float)(middleY + by2),
+					(float)(middleX + bx2), (float)(middleY + by1),
+					color.x(), color.y(), color.z(), color.w());
 		}
 	}
 
 	private void drawIcons(GuiGraphics graphics, double middleX, double middleY,
 						   ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, double scale) {
-		graphics.pose().pushPose();
-//		RenderSystem.enableTexture();
-		RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
 		//Draw buildmode icons
 		for (final MenuRegion menuRegion : modes) {
 
@@ -322,8 +307,6 @@ public class RadialMenu extends Screen {
 
 			button.getIcon().render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
 		}
-
-		graphics.pose().popPose();
 	}
 
 	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {
@@ -392,7 +375,7 @@ public class RadialMenu extends Screen {
 					}
 				}
 
-				graphics.renderComponentTooltip(font, tooltip, mouseX, mouseY);
+				graphics.setComponentTooltipForNextFrame(font, tooltip, mouseX, mouseY);
 			}
 		}
 	}
@@ -421,10 +404,10 @@ public class RadialMenu extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
 		performAction(true);
 
-		return super.mouseClicked(mouseX, mouseY, mouseButton);
+		return super.mouseClicked(event, flag);
 	}
 
 	@Override

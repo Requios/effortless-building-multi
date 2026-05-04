@@ -247,7 +247,7 @@ public class ScreenWidgets {
             String text = (cb.value() ? "\u2611" : "\u2610") + (cb.label().isEmpty() ? "" : " " + cb.label());
             boolean hovered = mouseX >= cb.x() && mouseX < cb.x() + cb.w()
                     && mouseY >= cb.y() && mouseY < cb.y() + cb.h();
-            int color = hovered ? 0xFFFFFF : 0xCCCCCC;
+            int color = hovered ? 0xFFFFFFFF : 0xFFCCCCCC;
             graphics.drawString(font, text, cb.x(), cb.y(), color);
         }
     }
@@ -257,9 +257,9 @@ public class ScreenWidgets {
         int fieldStart = sx + LABEL_W;
         int spacing = VEC_EDIT_W + 4;
         int labelY = y - 9;
-        graphics.drawString(font, "X", fieldStart + VEC_EDIT_W / 2 - 2, labelY, 0xCCCCCC);
-        graphics.drawString(font, "Y", fieldStart + spacing + VEC_EDIT_W / 2 - 2, labelY, 0xCCCCCC);
-        graphics.drawString(font, "Z", fieldStart + spacing * 2 + VEC_EDIT_W / 2 - 2, labelY, 0xCCCCCC);
+        graphics.drawString(font, "X", fieldStart + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
+        graphics.drawString(font, "Y", fieldStart + spacing + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
+        graphics.drawString(font, "Z", fieldStart + spacing * 2 + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
     }
 
     // =========================================================================

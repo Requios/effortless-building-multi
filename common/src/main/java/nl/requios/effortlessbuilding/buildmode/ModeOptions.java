@@ -100,7 +100,7 @@ public class ModeOptions {
 		}
 
 		// Show action bar message for mode/option changes (not for screen-opening or undo/redo actions)
-		if (player.level().isClientSide
+		if (player.level().isClientSide()
 				&& action != ActionEnum.OPEN_MODIFIER_SETTINGS
 				&& action != ActionEnum.OPEN_SERVER_CONFIG
 				&& action != ActionEnum.OPEN_CLIENT_CONFIG

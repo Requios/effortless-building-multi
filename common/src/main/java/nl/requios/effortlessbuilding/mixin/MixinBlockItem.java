@@ -24,7 +24,7 @@ public class MixinBlockItem {
     private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (!context.getLevel().isClientSide()) return;
         if (!BuildPipelineClient.shouldInterceptPlacing()) return;
-        cir.setReturnValue(InteractionResult.sidedSuccess(true));
+        cir.setReturnValue(InteractionResult.SUCCESS);
         cir.cancel();
     }
 

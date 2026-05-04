@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import nl.requios.effortlessbuilding.modifier.*;
@@ -91,7 +92,7 @@ public class ModifiersScreen extends Screen {
 
     private static String currentDimension() {
         var player = Minecraft.getInstance().player;
-        return player != null ? player.level().dimension().location().toString() : "";
+        return player != null ? player.level().dimension().identifier().toString() : "";
     }
 
     // =========================================================================
@@ -171,7 +172,9 @@ public class ModifiersScreen extends Screen {
     // =========================================================================
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
+        double mouseX = event.x();
+        double mouseY = event.y();
         if (widgets.handleCheckboxClick(mouseX, mouseY)) return true;
 
         int px = panelX(), py = panelY();
@@ -189,7 +192,7 @@ public class ModifiersScreen extends Screen {
                 }
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, flag);
     }
 
     @Override
@@ -218,17 +221,17 @@ public class ModifiersScreen extends Screen {
         graphics.fill(divX, py + 2, divX + 1, py + PANEL_H - 2, 0xFF555555);
 
         // Headers
-        graphics.drawString(font, "Modifiers", px + 5, py + 8, 0xFFFFFF);
+        graphics.drawString(font, "Modifiers", px + 5, py + 8, 0xFFFFFFFF);
         String settingsHeader = (selectedIndex >= 0 && selectedIndex < filteredModifiers.size())
                 ? filteredModifiers.get(selectedIndex).getDisplayName().getString() + " Settings"
                 : "Settings";
-        graphics.drawString(font, settingsHeader, divX + 5, py + 8, 0xFFFFFF);
+        graphics.drawString(font, settingsHeader, divX + 5, py + 8, 0xFFFFFFFF);
 
         // List rows
         int lx = px + 4;
         int rowBase = py + 24;
         if (filteredModifiers.isEmpty()) {
-            graphics.drawString(font, "Add a modifier below.", lx + 2, rowBase + 7, 0x888888);
+            graphics.drawString(font, "Add a modifier below.", lx + 2, rowBase + 7, 0xFF888888);
         } else {
             for (int i = 0; i < filteredModifiers.size(); i++) {
                 int ry = rowBase + i * ROW_H;
@@ -236,7 +239,7 @@ public class ModifiersScreen extends Screen {
                     graphics.fill(lx, ry, lx + LIST_W, ry + ROW_H - 1, 0x40FFFFFF);
                 }
                 graphics.drawString(font, filteredModifiers.get(i).getDisplayName().getString(),
-                        lx + 20, ry + 7, 0xEEEEEE);
+                        lx + 20, ry + 7, 0xFFEEEEEE);
             }
         }
 
@@ -249,7 +252,7 @@ public class ModifiersScreen extends Screen {
             int sy = py + 24;
             settingsPanel.renderLabels(graphics, filteredModifiers.get(selectedIndex), sx, sy);
         } else if (!filteredModifiers.isEmpty()) {
-            graphics.drawString(font, "Select a modifier", divX + 6, py + 32, 0x888888);
+            graphics.drawString(font, "Select a modifier", divX + 6, py + 32, 0xFF888888);
         }
     }
 

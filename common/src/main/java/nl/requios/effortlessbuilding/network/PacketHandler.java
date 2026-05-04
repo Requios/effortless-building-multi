@@ -5,6 +5,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -78,7 +79,7 @@ public class PacketHandler {
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      */
     public static void handlePlaceBuildMode(PlaceBuildModePacket packet, ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
 
         // Run the full server pipeline: BuildMode → Modifiers → Constraints
         BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
@@ -232,7 +233,7 @@ public class PacketHandler {
             return;
         }
 
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
 
         // Run the full server pipeline: BuildMode → Modifiers → Constraints
         BlockSet blockSet = BuildPipeline.SERVER.runServerPipeline(
@@ -317,7 +318,7 @@ public class PacketHandler {
     public static void handleUpdateModifiers(UpdateModifiersC2SPacket packet, ServerPlayer player) {
         List<IModifier> modifiers = ModifierSerializer.deserialize(packet.json());
         ModifierServerStorage.setModifiers(player.getUUID(), modifiers);
-        ModifierServerStorage.savePlayer(player.server, player.getUUID());
+        ModifierServerStorage.savePlayer(player.level().getServer(), player.getUUID());
         // Echo back to client as confirmation
         sendToClient(player, new SyncModifiersS2CPacket(
                 ModifierServerStorage.serializePlayer(player.getUUID())));
@@ -340,18 +341,18 @@ public class PacketHandler {
      * Only operators (permission level 2+) may update the config.
      */
     public static void handleUpdateServerConfig(UpdateServerConfigC2SPacket packet, ServerPlayer player) {
-        if (!player.hasPermissions(2)) {
+        if (!player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
             player.displayClientMessage(
                     Component.translatable("effortlessbuilding.message.not_operator"), false);
             return;
         }
         ServerConfig incoming = ServerConfig.fromJson(packet.json());
         ServerConfig.INSTANCE.copyFrom(incoming);
-        ServerConfigStorage.save(player.server);
+        ServerConfigStorage.save(player.level().getServer());
 
         // Broadcast updated config to all connected players
         String json = ServerConfig.INSTANCE.toJson();
-        for (ServerPlayer p : player.server.getPlayerList().getPlayers()) {
+        for (ServerPlayer p : player.level().getServer().getPlayerList().getPlayers()) {
             sendToClient(p, new SyncServerConfigS2CPacket(json));
         }
     }

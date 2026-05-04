@@ -25,7 +25,7 @@ import org.lwjgl.glfw.GLFW;
 public class NeoForgeClientSetup {
 
     // Mod-bus events (RegisterKeyMappingsEvent).
-    @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT)
     public static class ModEvents {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -38,7 +38,7 @@ public class NeoForgeClientSetup {
     }
 
     // Game-bus events (ClientTickEvent).
-    @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+    @EventBusSubscriber(modid = Constants.MOD_ID, value = Dist.CLIENT)
     public static class GameEvents {
         private static boolean prevRightDown = false;
         private static boolean prevLeftDown = false;
@@ -51,20 +51,20 @@ public class NeoForgeClientSetup {
             // Undo/redo keybindings — require Ctrl held
             Minecraft mc = Minecraft.getInstance();
             while (KeyBindings.undo.consumeClick()) {
-                if (InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
-                        || InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
                     PacketHandler.sendToServer(new UndoPacket());
                 }
             }
             while (KeyBindings.redo.consumeClick()) {
-                if (InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
-                        || InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
                     PacketHandler.sendToServer(new RedoPacket());
                 }
             }
 
             if (mc.screen == null) {
-                long window = mc.getWindow().getWindow();
+                var window = mc.getWindow();
                 boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
                                   InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
                 if (altHeld) {
@@ -109,9 +109,8 @@ public class NeoForgeClientSetup {
         }
 
         @SubscribeEvent
-        public static void onRenderLevel(RenderLevelStageEvent event) {
-            if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) return;
-            var camPos = event.getCamera().getPosition();
+        public static void onRenderLevel(RenderLevelStageEvent.AfterEntities event) {
+            var camPos = event.getLevelRenderState().cameraRenderState.pos;
             var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
             RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,
                     camPos.x, camPos.y, camPos.z);

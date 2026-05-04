@@ -25,6 +25,6 @@ public interface IModifier extends IBuildSystem {
     default boolean matchesDimension(Player player) {
         String dim = getDimension();
         if (dim == null || dim.isEmpty()) return true; // global
-        return dim.equals(player.level().dimension().location().toString());
+        return dim.equals(player.level().dimension().identifier().toString());
     }
 }

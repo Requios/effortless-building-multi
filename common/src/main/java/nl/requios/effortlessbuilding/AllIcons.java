@@ -1,12 +1,13 @@
 package nl.requios.effortlessbuilding;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -100,16 +101,15 @@ public class AllIcons {
     }
 
     public void bind() {
-        RenderSystem.setShaderTexture(0, ICON_ATLAS);
+        // No-op in 1.21.11 — texture binding is handled by the render pipeline
     }
 
     public void render(GuiGraphics graphics, int x, int y) {
-        bind();
-        graphics.blit(ICON_ATLAS, x, y, 0, (float) iconX, (float) iconY, 16, 16, 256, 256);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_ATLAS, x, y, (float) iconX, (float) iconY, 16, 16, 256, 256);
     }
 
     public void render(PoseStack ms, MultiBufferSource buffer, int color) {
-        VertexConsumer builder = buffer.getBuffer(RenderType.textSeeThrough(ICON_ATLAS));
+        VertexConsumer builder = buffer.getBuffer(RenderTypes.textSeeThrough(ICON_ATLAS));
         Matrix4f matrix = ms.last().pose();
         Color rgb = new Color(color);
         int light = LightTexture.FULL_BRIGHT;

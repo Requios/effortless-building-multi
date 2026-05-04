@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -51,10 +51,10 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 RenderHandler.onRenderGui(graphics));
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-            if (context.consumers() == null || context.matrixStack() == null) return;
-            var camPos = context.camera().getPosition();
+            if (context.consumers() == null || context.matrices() == null) return;
+            var camPos = context.worldState().cameraRenderState.pos;
             RenderHandler.onRenderLevel(
-                    context.matrixStack(),
+                    context.matrices(),
                     (MultiBufferSource.BufferSource) context.consumers(),
                     camPos.x, camPos.y, camPos.z);
         });
@@ -77,20 +77,20 @@ public class EffortlessBuildingClient implements ClientModInitializer {
             }
             // Undo/redo keybindings — require Ctrl held
             while (KeyBindings.undo.consumeClick()) {
-                if (InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
-                        || InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                if (InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
                     PacketHandler.sendToServer(new UndoPacket());
                 }
             }
             while (KeyBindings.redo.consumeClick()) {
-                if (InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
-                        || InputConstants.isKeyDown(client.getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
+                if (InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL)) {
                     PacketHandler.sendToServer(new RedoPacket());
                 }
             }
 
             if (client.screen == null) {
-                long window = client.getWindow().getWindow();
+                var window = client.getWindow();
                 boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
                                   InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
                 if (altHeld) {

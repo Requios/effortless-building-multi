@@ -44,20 +44,20 @@ public class ModifierSettingsPanel {
     public void renderLabels(GuiGraphics graphics, IModifier modifier, int sx, int sy) {
         if (modifier instanceof MirrorModifier) {
             int vecY = sy + ROW_GAP + VEC3_EXTRA_Y;
-            graphics.drawString(Minecraft.getInstance().font, "Axis", sx, sy + 3, 0xCCCCCC);
-            graphics.drawString(Minecraft.getInstance().font, "Position", sx, vecY + 4, 0xCCCCCC);
-            graphics.drawString(Minecraft.getInstance().font, "Size", sx, vecY + ROW_GAP + 4, 0xCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Axis", sx, sy + 3, 0xFFCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Position", sx, vecY + 4, 0xFFCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Size", sx, vecY + ROW_GAP + 4, 0xFFCCCCCC);
             widgets.renderVec3Labels(graphics, sx, vecY);
         } else if (modifier instanceof ArrayModifier) {
             int vecY = sy + ROW_GAP + VEC3_EXTRA_Y;
-            graphics.drawString(Minecraft.getInstance().font, "Count", sx, sy + 4, 0xCCCCCC);
-            graphics.drawString(Minecraft.getInstance().font, "Offset", sx, vecY + 4, 0xCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Count", sx, sy + 4, 0xFFCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Offset", sx, vecY + 4, 0xFFCCCCCC);
             widgets.renderVec3Labels(graphics, sx, vecY);
         } else if (modifier instanceof RadialMirrorModifier) {
             int vecY = sy + ROW_GAP * 2 + VEC3_EXTRA_Y;
-            graphics.drawString(Minecraft.getInstance().font, "Slices", sx, sy + 4, 0xCCCCCC);
-            graphics.drawString(Minecraft.getInstance().font, "Position", sx, vecY + 4, 0xCCCCCC);
-            graphics.drawString(Minecraft.getInstance().font, "Size", sx, vecY + ROW_GAP + 4, 0xCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Slices", sx, sy + 4, 0xFFCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Position", sx, vecY + 4, 0xFFCCCCCC);
+            graphics.drawString(Minecraft.getInstance().font, "Size", sx, vecY + ROW_GAP + 4, 0xFFCCCCCC);
             widgets.renderVec3Labels(graphics, sx, vecY);
         }
     }
@@ -128,4 +128,3 @@ public class ModifierSettingsPanel {
         return player != null ? player.blockPosition() : BlockPos.ZERO;
     }
 }
-

@@ -2,6 +2,7 @@ package nl.requios.effortlessbuilding.utilities;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -10,7 +11,8 @@ import org.lwjgl.glfw.GLFW;
  */
 public class KeyBindings {
 
-    public static final String CATEGORY = "key.categories.effortlessbuilding";
+    public static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(Identifier.fromNamespaceAndPath("effortlessbuilding", "keybindings"));
 
     public static KeyMapping openModifiersScreen = new KeyMapping(
             "key.effortlessbuilding.open_modifiers_screen",

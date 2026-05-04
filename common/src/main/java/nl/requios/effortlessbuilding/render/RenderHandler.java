@@ -224,11 +224,9 @@ public class RenderHandler {
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
-        // Push above the item icon's z-level (items render at z ~150)
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 200);
+        // Push above the item icon — use nextStratum for z-ordering in 1.21.11
+        guiGraphics.nextStratum();
         guiGraphics.drawString(font, text, textX, textY, color, true);
-        guiGraphics.pose().popPose();
     }
 
     // =========================================================================
@@ -246,14 +244,10 @@ public class RenderHandler {
         int screenHeight = mc.getWindow().getGuiScaledHeight();
         var font = mc.font;
 
-        graphics.pose().pushPose();
-        graphics.pose().translate(screenWidth / 2.0, screenHeight - 54, 0.0);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         int w = font.width(text);
-        graphics.drawString(font, text, -w / 2, -4, 0xffffffff, true);
-        RenderSystem.disableBlend();
-        graphics.pose().popPose();
+        int drawX = screenWidth / 2 - w / 2;
+        int drawY = screenHeight - 54 - 4;
+        graphics.drawString(font, text, drawX, drawY, 0xffffffff, true);
     }
 }
 

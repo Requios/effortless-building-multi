@@ -70,7 +70,7 @@ public class UndoManager {
         if (undoStack == null || undoStack.isEmpty()) return -1;
 
         UndoEntry entry = undoStack.pop();
-        ServerLevel level = player.server.getLevel(entry.dimension());
+        ServerLevel level = player.level().getServer().getLevel(entry.dimension());
         if (level == null) {
             Constants.LOG.warn("[EffortlessBuilding] Cannot undo: dimension {} no longer loaded", entry.dimension());
             return -1;
@@ -139,7 +139,7 @@ public class UndoManager {
         if (redoStack == null || redoStack.isEmpty()) return -1;
 
         UndoEntry entry = redoStack.pop();
-        ServerLevel level = player.server.getLevel(entry.dimension());
+        ServerLevel level = player.level().getServer().getLevel(entry.dimension());
         if (level == null) {
             Constants.LOG.warn("[EffortlessBuilding] Cannot redo: dimension {} no longer loaded", entry.dimension());
             return -1;

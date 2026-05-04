@@ -1,12 +1,12 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import nl.requios.effortlessbuilding.modifier.IModifier;
@@ -42,9 +42,7 @@ public class ModifierRenderer {
         }
 
         // Flush all modifier visuals.
-        RenderSystem.depthMask(false);
-        bufferSource.endBatch(RenderType.entityTranslucent(BLANK_TEXTURE));
-        RenderSystem.depthMask(true);
+        bufferSource.endBatch(RenderTypes.entityTranslucent(BLANK_TEXTURE));
     }
 
     // =========================================================================
@@ -53,7 +51,7 @@ public class ModifierRenderer {
 
     private static void renderMirrorPlanes(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                             MirrorModifier mirror, double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(BLANK_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
         var pose = poseStack.last();
         int radius = mirror.size / 2;
 
@@ -105,7 +103,7 @@ public class ModifierRenderer {
     private static void renderRadialBoundary(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                               RadialMirrorModifier radial,
                                               double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(BLANK_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
         var pose = poseStack.last();
 
         float ox = (float)(radial.originX - camX);
@@ -169,4 +167,3 @@ public class ModifierRenderer {
         consumer.addVertex(pose, x3, y3, z3).setColor(r, g, b, a).setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
     }
 }
-

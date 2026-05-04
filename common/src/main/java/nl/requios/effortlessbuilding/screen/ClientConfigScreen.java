@@ -153,12 +153,12 @@ public class ClientConfigScreen extends Screen {
         int labelX = left + 10;
 
         // Title
-        graphics.drawCenteredString(font, title, width / 2, top - 16, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, top - 16, 0xFFFFFFFF);
 
         // Labels
         int rowY = top;
         for (String key : LABEL_KEYS) {
-            graphics.drawString(font, Component.translatable(key), labelX, rowY + 6, 0xFFFFFF);
+            graphics.drawString(font, Component.translatable(key), labelX, rowY + 6, 0xFFFFFFFF);
             rowY += ROW_H;
         }
 
@@ -187,7 +187,7 @@ public class ClientConfigScreen extends Screen {
                     for (String line : lines) {
                         components.add(Component.literal(line));
                     }
-                    graphics.renderTooltip(font, components, Optional.empty(), mouseX, mouseY);
+                    graphics.setComponentTooltipForNextFrame(font, components, mouseX, mouseY);
                 }
                 return;
             }

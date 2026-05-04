@@ -266,12 +266,12 @@ public class ServerConfigScreen extends Screen {
         // Use scissor to clip scrollable content above the bottom bar
         graphics.enableScissor(0, 0, width, height - BOTTOM_BAR_H);
 
-        graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFFFF);
 
         int y = top + 24;
 
         // --- Survival ---
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_survival"), labelX, y + 5, 0x55FF55);
+        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_survival"), labelX, y + 5, 0xFF55FF55);
         y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.reach"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_blocks_placed"); y += ROW_H;
@@ -288,7 +288,7 @@ public class ServerConfigScreen extends Screen {
         y += SECTION_GAP;
 
         // --- Creative ---
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_creative"), labelX, y + 5, 0xFFFF55);
+        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_creative"), labelX, y + 5, 0xFFFFFF55);
         y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.reach"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_blocks_placed"); y += ROW_H;
@@ -356,7 +356,7 @@ public class ServerConfigScreen extends Screen {
         for (String line : lines) {
             components.add(Component.literal(line));
         }
-        graphics.renderTooltip(font, components, java.util.Optional.empty(), mouseX, mouseY);
+        graphics.setComponentTooltipForNextFrame(font, components, mouseX, mouseY);
     }
 
     private boolean isInRow(int mouseX, int mouseY, int left, int rowY) {
@@ -364,7 +364,7 @@ public class ServerConfigScreen extends Screen {
     }
 
     private void drawLabel(GuiGraphics graphics, int x, int y, String key) {
-        graphics.drawString(font, Component.translatable(key), x, y + 5, 0xFFFFFF);
+        graphics.drawString(font, Component.translatable(key), x, y + 5, 0xFFFFFFFF);
     }
 
     @Override

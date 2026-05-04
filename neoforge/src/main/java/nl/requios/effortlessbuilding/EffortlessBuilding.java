@@ -30,7 +30,7 @@ public class EffortlessBuilding {
 
     public EffortlessBuilding(IEventBus eventBus, ModContainer modContainer) {
 
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             NeoForgeConfigScreenRegistrar.register(modContainer);
         }
 
@@ -81,7 +81,7 @@ public class EffortlessBuilding {
         // Load + send modifiers and config on player join
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedInEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-                ModifierServerStorage.loadPlayer(serverPlayer.server, serverPlayer.getUUID());
+                ModifierServerStorage.loadPlayer(serverPlayer.level().getServer(), serverPlayer.getUUID());
                 PacketHandler.sendToClient(serverPlayer, new SyncModifiersS2CPacket(
                         ModifierServerStorage.serializePlayer(serverPlayer.getUUID())));
                 PacketHandler.sendToClient(serverPlayer, new SyncServerConfigS2CPacket(
@@ -92,7 +92,7 @@ public class EffortlessBuilding {
         // Save + clean up on player disconnect
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-                ModifierServerStorage.savePlayer(serverPlayer.server, serverPlayer.getUUID());
+                ModifierServerStorage.savePlayer(serverPlayer.level().getServer(), serverPlayer.getUUID());
                 ModifierServerStorage.removePlayer(serverPlayer.getUUID());
             }
             UndoManager.clearPlayer(event.getEntity().getUUID());
