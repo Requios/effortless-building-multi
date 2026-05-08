@@ -8,8 +8,8 @@
         "${mod_author}"
     ],
     "contact": {
-        "homepage": "https://fabricmc.net/",
-        "sources": "https://github.com/FabricMC/fabric-example-mod"
+        "homepage": "https://github.com/Requios/effortless-building-multi",
+        "sources": "https://github.com/Requios/effortless-building-multi"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",

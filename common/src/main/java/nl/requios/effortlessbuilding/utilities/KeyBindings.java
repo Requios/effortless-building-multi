@@ -2,7 +2,9 @@ package nl.requios.effortlessbuilding.utilities;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import nl.requios.effortlessbuilding.mixin.KeyMappingAccessor;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -14,6 +16,13 @@ public class KeyBindings {
     public static final KeyMapping.Category CATEGORY =
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("effortlessbuilding", "keybindings"));
 
+    public static KeyMapping openRadialMenu = new KeyMapping(
+            "key.effortlessbuilding.open_radial_menu",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_ALT,
+            CATEGORY
+    );
+    
     public static KeyMapping openModifiersScreen = new KeyMapping(
             "key.effortlessbuilding.open_modifiers_screen",
             InputConstants.Type.KEYSYM,
@@ -34,5 +43,13 @@ public class KeyBindings {
             GLFW.GLFW_KEY_Y,
             CATEGORY
     );
-}
 
+    /**
+     * Checks if the physical key bound to a KeyMapping is currently held down.
+     * Unlike KeyMapping.isDown(), this works even when a Screen is open.
+     */
+    public static boolean isKeyDown(KeyMapping keyMapping) {
+        var window = Minecraft.getInstance().getWindow();
+        return InputConstants.isKeyDown(window, ((KeyMappingAccessor) keyMapping).effortlessbuilding$getKey().getValue());
+    }
+}

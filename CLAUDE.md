@@ -1,6 +1,6 @@
 # Effortless Building Multi-Loader
 
-Minecraft mod for **1.21.1** targeting **NeoForge** and **Fabric**.
+Minecraft mod for **1.21.11** targeting **NeoForge** and **Fabric**.
 
 Being rebuilt incrementally from an older Forge 1.20.1 version.
 

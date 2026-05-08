@@ -10,6 +10,7 @@
   ],
   "client": [
     "GuiGraphicsAccessor",
+    "KeyMappingAccessor",
     "MixinGameRenderer",
     "MixinMinecraft"
   ],
