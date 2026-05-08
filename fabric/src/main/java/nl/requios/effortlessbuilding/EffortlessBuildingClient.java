@@ -34,6 +34,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientConfig.INSTANCE.load();
 
+        KeyBindingHelper.registerKeyBinding(KeyBindings.openRadialMenu);
         KeyBindingHelper.registerKeyBinding(KeyBindings.openModifiersScreen);
         KeyBindingHelper.registerKeyBinding(KeyBindings.undo);
         KeyBindingHelper.registerKeyBinding(KeyBindings.redo);
@@ -90,10 +91,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
             }
 
             if (client.screen == null) {
-                long window = client.getWindow().getWindow();
-                boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
-                                  InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
-                if (altHeld) {
+                if (KeyBindings.openRadialMenu.isDown()) {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
 

@@ -109,6 +109,7 @@
 
   "key.categories.effortlessbuilding": "Effortless Building",
   "key.effortlessbuilding.open_modifiers_screen": "Open Modifier Settings",
+  "key.effortlessbuilding.open_radial_menu": "Open Radial Menu",
 
   "effortlessbuilding.message.undo": "Undo: restored %s blocks",
   "effortlessbuilding.message.redo": "Redo: re-applied %s blocks",

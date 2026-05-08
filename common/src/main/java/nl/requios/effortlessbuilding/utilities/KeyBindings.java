@@ -11,7 +11,14 @@ import org.lwjgl.glfw.GLFW;
 public class KeyBindings {
 
     public static final String CATEGORY = "key.categories.effortlessbuilding";
-
+    
+    public static KeyMapping openRadialMenu = new KeyMapping(
+            "key.effortlessbuilding.open_radial_menu",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_ALT,
+            CATEGORY
+    );
+    
     public static KeyMapping openModifiersScreen = new KeyMapping(
             "key.effortlessbuilding.open_modifiers_screen",
             InputConstants.Type.KEYSYM,

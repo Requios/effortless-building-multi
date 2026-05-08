@@ -31,6 +31,7 @@ public class NeoForgeClientSetup {
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
             ClientConfig.INSTANCE.load();
 
+            event.register(KeyBindings.openRadialMenu);
             event.register(KeyBindings.openModifiersScreen);
             event.register(KeyBindings.undo);
             event.register(KeyBindings.redo);
@@ -64,10 +65,7 @@ public class NeoForgeClientSetup {
             }
 
             if (mc.screen == null) {
-                long window = mc.getWindow().getWindow();
-                boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
-                                  InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
-                if (altHeld) {
+                if (KeyBindings.openRadialMenu.isDown()) {
                     mc.setScreen(RadialMenu.instance);
                 }
 
