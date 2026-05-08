@@ -2,6 +2,8 @@ package nl.requios.effortlessbuilding.utilities;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import nl.requios.effortlessbuilding.mixin.KeyMappingAccessor;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -39,5 +41,13 @@ public class KeyBindings {
             GLFW.GLFW_KEY_Y,
             CATEGORY
     );
-}
 
+    /**
+     * Checks if the physical key bound to a KeyMapping is currently held down.
+     * Unlike KeyMapping.isDown(), this works even when a Screen is open.
+     */
+    public static boolean isKeyDown(KeyMapping keyMapping) {
+        long window = Minecraft.getInstance().getWindow().getWindow();
+        return InputConstants.isKeyDown(window, ((KeyMappingAccessor) keyMapping).effortlessbuilding$getKey().getValue());
+    }
+}

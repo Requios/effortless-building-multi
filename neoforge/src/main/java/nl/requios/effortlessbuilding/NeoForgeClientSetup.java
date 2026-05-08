@@ -65,7 +65,7 @@ public class NeoForgeClientSetup {
             }
 
             if (mc.screen == null) {
-                if (KeyBindings.openRadialMenu.isDown()) {
+                if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
                     mc.setScreen(RadialMenu.instance);
                 }
 

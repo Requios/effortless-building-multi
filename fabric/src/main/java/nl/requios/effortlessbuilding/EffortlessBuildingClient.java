@@ -91,7 +91,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
             }
 
             if (client.screen == null) {
-                if (KeyBindings.openRadialMenu.isDown()) {
+                if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
                     Minecraft.getInstance().setScreen(RadialMenu.instance);
                 }
 

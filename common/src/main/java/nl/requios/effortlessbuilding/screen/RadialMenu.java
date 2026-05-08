@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.screen;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -26,7 +25,6 @@ import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -85,10 +83,7 @@ public class RadialMenu extends Screen {
 	public void tick() {
 		super.tick();
 
-		long window = minecraft.getWindow().getWindow();
-		boolean altHeld = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) ||
-				InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
-		if (!altHeld) {
+		if (!KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
 			onClose();
 		}
 	}
