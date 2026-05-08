@@ -114,21 +114,21 @@ public class BlockPreviewRenderer {
                 }
             }
             if (baseState != null) {
-                try {
-                    var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
-                    var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
-                    Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
-                    int rendered = 0;
-                    for (BlockPos pos : positions) {
-                        if (rendered >= maxPreviews) break;
-                        // Apply per-block mirror/rotation transforms from the modifier pipeline.
-                        BlockState state = baseState;
-                        BlockEntry entry = blockSet.get(pos);
-                        if (entry != null) {
-                            state = entry.applyTransforms(state);
-                        }
-                        boolean isMissing = missingPositions.contains(pos);
-                        poseStack.pushPose();
+                var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
+                var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
+                Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
+                int rendered = 0;
+                for (BlockPos pos : positions) {
+                    if (rendered >= maxPreviews) break;
+                    // Apply per-block mirror/rotation transforms from the modifier pipeline.
+                    BlockState state = baseState;
+                    BlockEntry entry = blockSet.get(pos);
+                    if (entry != null) {
+                        state = entry.applyTransforms(state);
+                    }
+                    boolean isMissing = missingPositions.contains(pos);
+                    poseStack.pushPose();
+                    try {
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
                         poseStack.translate(0.5, 0.5, 0.5);
                         poseStack.scale(blockScale, blockScale, blockScale);
@@ -136,15 +136,16 @@ public class BlockPreviewRenderer {
                         mc.getBlockRenderer().renderSingleBlock(state, poseStack,
                                 isMissing ? missingSource : wrappedSource,
                                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                    } catch (Exception ignored) {
+                        // Render failed for this block; outline-only fallback handled by Pass 2.
+                    } finally {
                         poseStack.popPose();
-                        rendered++;
                     }
-                    // Flush all render types — entity-rendered blocks (beds, chests)
-                    // may use types other than translucent().
-                    bufferSource.endBatch();
-                } catch (Exception ignored) {
-                    // Render failed; outline-only fallback handled by Pass 2.
+                    rendered++;
                 }
+                // Flush all render types — entity-rendered blocks (beds, chests)
+                // may use types other than translucent().
+                bufferSource.endBatch();
             }
         }
 

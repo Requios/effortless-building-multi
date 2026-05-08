@@ -3,6 +3,18 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+repositories {
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
+}
+
+dependencies {
+//    runtimeOnly("maven.modrinth:sodium:mc1.21.11-0.8.11-neoforge") { transitive = false }
+//    runtimeOnly("maven.modrinth:sodium-extra:mc1.21.11-0.8.3+neoforge") { transitive = false }
+}
+
 neoForge {
     version = neoforge_version
     // Automatically enable neoforge AccessTransformers if the file exists
