@@ -1,6 +1,6 @@
 package nl.requios.effortlessbuilding.screen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -132,7 +132,6 @@ public class ServerConfigScreen extends Screen {
 
         survMaxHardnessField = new EditBox(font, fieldX, 0, fieldW, 18, Component.literal(""));
         survMaxHardnessField.setValue(formatFloat(scratch.survivalMaxHardness));
-        survMaxHardnessField.setFilter(s -> s.isEmpty() || s.matches("-?\\d{0,5}\\.?\\d{0,2}"));
         addRenderableWidget(survMaxHardnessField);
         widgetOrder.add(survMaxHardnessField);
         y += ROW_H;
@@ -181,7 +180,6 @@ public class ServerConfigScreen extends Screen {
     private EditBox addIntField(int x, int w, int value) {
         EditBox field = new EditBox(font, x, 0, w, 18, Component.literal(""));
         field.setValue(String.valueOf(value));
-        field.setFilter(s -> s.isEmpty() || s.matches("\\d{0,6}"));
         addRenderableWidget(field);
         widgetOrder.add(field);
         return field;
@@ -250,14 +248,14 @@ public class ServerConfigScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fill(0, 0, this.width, this.height, 150 << 24);
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         // Render widgets (fields, toggles) via super
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         int left = (width - PANEL_W) / 2;
         int top = 20 - scrollOffset;
@@ -266,12 +264,12 @@ public class ServerConfigScreen extends Screen {
         // Use scissor to clip scrollable content above the bottom bar
         graphics.enableScissor(0, 0, width, height - BOTTOM_BAR_H);
 
-        graphics.drawCenteredString(font, title, width / 2, top + 6, 0xFFFFFFFF);
+        graphics.centeredText(font, title, width / 2, top + 6, 0xFFFFFFFF);
 
         int y = top + 24;
 
         // --- Survival ---
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_survival"), labelX, y + 5, 0xFF55FF55);
+        graphics.text(font, Component.translatable("effortlessbuilding.config.section_survival"), labelX, y + 5, 0xFF55FF55);
         y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.reach"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_blocks_placed"); y += ROW_H;
@@ -288,7 +286,7 @@ public class ServerConfigScreen extends Screen {
         y += SECTION_GAP;
 
         // --- Creative ---
-        graphics.drawString(font, Component.translatable("effortlessbuilding.config.section_creative"), labelX, y + 5, 0xFFFFFF55);
+        graphics.text(font, Component.translatable("effortlessbuilding.config.section_creative"), labelX, y + 5, 0xFFFFFF55);
         y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.reach"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_blocks_placed"); y += ROW_H;
@@ -301,14 +299,14 @@ public class ServerConfigScreen extends Screen {
 
         // Bottom bar — drawn AFTER scissor is disabled so it's never clipped
         graphics.fill(0, height - BOTTOM_BAR_H, width, height, 0xFF000000);
-        saveBtn.render(graphics, mouseX, mouseY, partialTick);
-        cancelBtn.render(graphics, mouseX, mouseY, partialTick);
+        saveBtn.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        cancelBtn.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         // Tooltips — render last so they appear on top of everything
         renderRowTooltips(graphics, mouseX, mouseY);
     }
 
-    private void renderRowTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderRowTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         // Don't show tooltips if hovering over the bottom bar
         if (mouseY >= height - BOTTOM_BAR_H) return;
 
@@ -349,7 +347,7 @@ public class ServerConfigScreen extends Screen {
     }
 
     /** Renders a tooltip, splitting the translated text on newlines for multi-line support. */
-    private void renderMultiLineTooltip(GuiGraphics graphics, String key, int mouseX, int mouseY) {
+    private void renderMultiLineTooltip(GuiGraphicsExtractor graphics, String key, int mouseX, int mouseY) {
         String text = Component.translatable(key).getString();
         String[] lines = text.split("\n");
         List<Component> components = new ArrayList<>();
@@ -363,8 +361,8 @@ public class ServerConfigScreen extends Screen {
         return mouseX >= left && mouseX < left + PANEL_W && mouseY >= rowY && mouseY < rowY + ROW_H;
     }
 
-    private void drawLabel(GuiGraphics graphics, int x, int y, String key) {
-        graphics.drawString(font, Component.translatable(key), x, y + 5, 0xFFFFFFFF);
+    private void drawLabel(GuiGraphicsExtractor graphics, int x, int y, String key) {
+        graphics.text(font, Component.translatable(key), x, y + 5, 0xFFFFFFFF);
     }
 
     @Override

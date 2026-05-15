@@ -1,6 +1,6 @@
 package nl.requios.effortlessbuilding.screen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -10,7 +10,6 @@ import nl.requios.effortlessbuilding.config.ClientConfig;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class ClientConfigScreen extends Screen {
 
@@ -90,7 +89,6 @@ public class ClientConfigScreen extends Screen {
                 .bounds(fieldX, rowY, btnW, FIELD_H).build());
         maxPreviewsField = new EditBox(font, fieldX + btnW, rowY, editW, FIELD_H, Component.empty());
         maxPreviewsField.setValue(String.valueOf(maxBlockPreviews));
-        maxPreviewsField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,5}"));
         maxPreviewsField.setResponder(s -> {
             try { maxBlockPreviews = Integer.parseInt(s); }
             catch (NumberFormatException ignored) {}
@@ -139,13 +137,13 @@ public class ClientConfigScreen extends Screen {
     // =========================================================================
 
     @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fill(0, 0, this.width, this.height, 150 << 24);
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         int left = (width - PANEL_W) / 2;
         int totalH = LABEL_KEYS.length * ROW_H + 40;
@@ -153,12 +151,12 @@ public class ClientConfigScreen extends Screen {
         int labelX = left + 10;
 
         // Title
-        graphics.drawCenteredString(font, title, width / 2, top - 16, 0xFFFFFFFF);
+        graphics.centeredText(font, title, width / 2, top - 16, 0xFFFFFFFF);
 
         // Labels
         int rowY = top;
         for (String key : LABEL_KEYS) {
-            graphics.drawString(font, Component.translatable(key), labelX, rowY + 6, 0xFFFFFFFF);
+            graphics.text(font, Component.translatable(key), labelX, rowY + 6, 0xFFFFFFFF);
             rowY += ROW_H;
         }
 
@@ -166,7 +164,7 @@ public class ClientConfigScreen extends Screen {
         renderRowTooltips(graphics, mouseX, mouseY);
     }
 
-    private void renderRowTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderRowTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         int left = (width - PANEL_W) / 2;
         int totalH = LABEL_KEYS.length * ROW_H + 40;
         int top = (height - totalH) / 2;

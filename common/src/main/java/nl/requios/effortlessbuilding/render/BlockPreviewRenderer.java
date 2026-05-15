@@ -1,13 +1,20 @@
 package nl.requios.effortlessbuilding.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.BlockQuadOutput;
+import net.minecraft.client.renderer.block.BlockStateModelSet;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -37,6 +44,8 @@ import java.util.List;
 import java.util.Set;
 
 public class BlockPreviewRenderer {
+
+    private static final int FULL_BRIGHT = 0x00F000F0;
 
 
     private static final Identifier CHECKERBOARD_TEXTURE =
@@ -117,6 +126,12 @@ public class BlockPreviewRenderer {
                 var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                 var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                 Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
+
+                // Set up ModelBlockRenderer for the new tesselateBlock API
+                BlockColors blockColors = mc.getBlockColors();
+                BlockStateModelSet modelSet = mc.getModelManager().getBlockStateModelSet();
+                ModelBlockRenderer blockRenderer = new ModelBlockRenderer(false, false, blockColors);
+
                 int rendered = 0;
                 for (BlockPos pos : positions) {
                     if (rendered >= maxPreviews) break;
@@ -127,15 +142,30 @@ public class BlockPreviewRenderer {
                         state = entry.applyTransforms(state);
                     }
                     boolean isMissing = missingPositions.contains(pos);
+                    MultiBufferSource source = isMissing ? missingSource : wrappedSource;
                     poseStack.pushPose();
                     try {
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
                         poseStack.translate(0.5, 0.5, 0.5);
                         poseStack.scale(blockScale, blockScale, blockScale);
                         poseStack.translate(-0.5, -0.5, -0.5);
-                        mc.getBlockRenderer().renderSingleBlock(state, poseStack,
-                                isMissing ? missingSource : wrappedSource,
-                                LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+
+                        BlockStateModel model = modelSet.get(state);
+                        long seed = state.getSeed(pos);
+                        BlockQuadOutput output = (float qx, float qy, float qz, BakedQuad quad, QuadInstance instance) -> {
+                            ChunkSectionLayer layer = quad.materialInfo().layer();
+                            RenderType renderType = switch (layer) {
+                                case SOLID -> RenderTypes.solidMovingBlock();
+                                case CUTOUT -> RenderTypes.cutoutMovingBlock();
+                                case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
+                            };
+                            VertexConsumer consumer = source.getBuffer(renderType);
+                            poseStack.pushPose();
+                            poseStack.translate(qx, qy, qz);
+                            consumer.putBakedQuad(poseStack.last(), quad, instance);
+                            poseStack.popPose();
+                        };
+                        blockRenderer.tesselateBlock(output, 0f, 0f, 0f, mc.level, pos, state, model, seed);
                     } catch (Exception ignored) {
                         // Render failed for this block; outline-only fallback handled by Pass 2.
                     } finally {
@@ -233,10 +263,10 @@ public class BlockPreviewRenderer {
                                  float x2, float y2, float z2,
                                  float x3, float y3, float z3,
                                  float nx, float ny, float nz, int r, int g, int b, int a) {
-        consumer.addVertex(pose, x0, y0, z0).setColor(r,g,b,a).setUv(0,0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(pose, x1, y1, z1).setColor(r,g,b,a).setUv(0,1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(pose, x2, y2, z2).setColor(r,g,b,a).setUv(1,1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(pose, x3, y3, z3).setColor(r,g,b,a).setUv(1,0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
+        consumer.addVertex(pose, x0, y0, z0).setColor(r,g,b,a).setUv(0,0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT).setNormal(pose, nx, ny, nz);
+        consumer.addVertex(pose, x1, y1, z1).setColor(r,g,b,a).setUv(0,1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT).setNormal(pose, nx, ny, nz);
+        consumer.addVertex(pose, x2, y2, z2).setColor(r,g,b,a).setUv(1,1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT).setNormal(pose, nx, ny, nz);
+        consumer.addVertex(pose, x3, y3, z3).setColor(r,g,b,a).setUv(1,0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT).setNormal(pose, nx, ny, nz);
     }
 
     /**

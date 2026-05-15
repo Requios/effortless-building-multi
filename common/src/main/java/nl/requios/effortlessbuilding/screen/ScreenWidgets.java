@@ -1,7 +1,7 @@
 package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -64,7 +64,6 @@ public class ScreenWidgets {
     public void addIntField(int x, int y, String value, IntConsumer setter) {
         EditBox field = new EditBox(font, x + LABEL_W + 12, y, EDIT_W, FIELD_H, Component.empty());
         field.setValue(value);
-        field.setFilter(s -> s.matches("-?\\d*"));
         field.setResponder(s -> {
             try { setter.accept(Integer.parseInt(s)); }
             catch (NumberFormatException ignored) {}
@@ -98,7 +97,6 @@ public class ScreenWidgets {
     public void addDoubleField(int x, int y, String value, DoubleConsumer setter) {
         EditBox field = new EditBox(font, x + LABEL_W + 16, y, EDIT_W, FIELD_H, Component.empty());
         field.setValue(value);
-        field.setFilter(s -> s.matches("-?\\d*\\.?\\d*"));
         field.setResponder(s -> {
             try { setter.accept(Double.parseDouble(s)); }
             catch (NumberFormatException ignored) {}
@@ -149,7 +147,6 @@ public class ScreenWidgets {
     private void addSmallDoubleField(int x, int y, String value, DoubleConsumer setter) {
         EditBox field = new EditBox(font, x, y, VEC_EDIT_W, FIELD_H, Component.empty());
         field.setValue(value);
-        field.setFilter(s -> s.matches("-?\\d*\\.?\\d*"));
         field.setResponder(s -> {
             try { setter.accept(Double.parseDouble(s)); }
             catch (NumberFormatException ignored) {}
@@ -162,7 +159,6 @@ public class ScreenWidgets {
     private void addSmallIntField(int x, int y, String value, IntConsumer setter) {
         EditBox field = new EditBox(font, x, y, VEC_EDIT_W, FIELD_H, Component.empty());
         field.setValue(value);
-        field.setFilter(s -> s.matches("-?\\d*"));
         field.setResponder(s -> {
             try { setter.accept(Integer.parseInt(s)); }
             catch (NumberFormatException ignored) {}
@@ -242,24 +238,24 @@ public class ScreenWidgets {
     // =========================================================================
 
     /** Renders all checkboxes as plain text with hover highlight. */
-    public void renderCheckboxes(GuiGraphics graphics, int mouseX, int mouseY) {
+    public void renderCheckboxes(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         for (CheckboxEntry cb : checkboxes) {
             String text = (cb.value() ? "\u2611" : "\u2610") + (cb.label().isEmpty() ? "" : " " + cb.label());
             boolean hovered = mouseX >= cb.x() && mouseX < cb.x() + cb.w()
                     && mouseY >= cb.y() && mouseY < cb.y() + cb.h();
             int color = hovered ? 0xFFFFFFFF : 0xFFCCCCCC;
-            graphics.drawString(font, text, cb.x(), cb.y(), color);
+            graphics.text(font, text, cb.x(), cb.y(), color);
         }
     }
 
     /** Renders X/Y/Z sub-labels above a vector3 field row. */
-    public void renderVec3Labels(GuiGraphics graphics, int sx, int y) {
+    public void renderVec3Labels(GuiGraphicsExtractor graphics, int sx, int y) {
         int fieldStart = sx + LABEL_W;
         int spacing = VEC_EDIT_W + 4;
         int labelY = y - 9;
-        graphics.drawString(font, "X", fieldStart + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
-        graphics.drawString(font, "Y", fieldStart + spacing + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
-        graphics.drawString(font, "Z", fieldStart + spacing * 2 + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
+        graphics.text(font, "X", fieldStart + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
+        graphics.text(font, "Y", fieldStart + spacing + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
+        graphics.text(font, "Z", fieldStart + spacing * 2 + VEC_EDIT_W / 2 - 2, labelY, 0xFFCCCCCC);
     }
 
     // =========================================================================
