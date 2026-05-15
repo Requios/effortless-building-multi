@@ -4,60 +4,14 @@ plugins {
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
     // Forgix merges Fabric + NeoForge JARs into one universal JAR
-    id 'io.github.pacifistmc.forgix' version '1.2.9'
+    id 'io.github.pacifistmc.forgix' version '2.0.0-SNAPSHOT.5.1'
 }
 
 forgix {
-    group = 'nl.requios.effortlessbuilding'
-    mergedJarName = "effortlessbuilding-${version}+${project.property('minecraft_version')}.jar"
-    outputDir = 'build/libs/merged'
+    destinationDirectory = layout.projectDirectory.dir("build/libs/merged")
+    archiveClassifier = ""
+    archiveVersion = "${version}+${project.property('minecraft_version')}"
 
-    fabric {
-        jarLocation = "build/libs/effortlessbuilding-fabric-${project.property('minecraft_version')}-${version}.jar"
-    }
-    neoforge {
-        jarLocation = "build/libs/effortlessbuilding-neoforge-${project.property('minecraft_version')}-${version}.jar"
-    }
+    fabric()
+    neoforge()
 }
-
-// Fix Forgix double-prefixing of META-INF/services files.
-// After mergeJars runs, rename the double-prefixed service files to single-prefix.
-tasks.named('mergeJars').configure {
-    doLast {
-        def mergedJar = file("build/libs/merged/effortlessbuilding-${version}+${project.property('minecraft_version')}.jar")
-        if (!mergedJar.exists()) return
-        
-        def fixedJar = file("${mergedJar}.tmp")
-        def zipIn = new java.util.zip.ZipFile(mergedJar)
-        def zipOut = new java.util.zip.ZipOutputStream(new FileOutputStream(fixedJar))
-        
-        zipIn.entries().each { entry ->
-            def name = entry.name
-            // Fix double-prefixed service file names
-            ['fabric', 'neoforge'].each { loader ->
-                def doublePrefix = "META-INF/services/${loader}.${loader}."
-                def singlePrefix = "META-INF/services/${loader}."
-                if (name.startsWith(doublePrefix)) {
-                    name = singlePrefix + name.substring(doublePrefix.length())
-                }
-            }
-            zipOut.putNextEntry(new java.util.zip.ZipEntry(name))
-            def content = zipIn.getInputStream(entry).bytes
-            // Also fix content inside service files
-            if (name.startsWith('META-INF/services/')) {
-                def text = new String(content, 'UTF-8')
-                ['fabric', 'neoforge'].each { loader ->
-                    text = text.replace("${loader}.${loader}.", "${loader}.")
-                }
-                content = text.getBytes('UTF-8')
-            }
-            zipOut.write(content)
-            zipOut.closeEntry()
-        }
-        zipOut.close()
-        zipIn.close()
-        mergedJar.delete()
-        fixedJar.renameTo(mergedJar)
-    }
-}
-
