@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Quick Orientation
-- Target: Minecraft `1.21.11`, Java `21`, primary loaders are `fabric` and `neoforge`.
+- Target: Minecraft `26.1.2`, Java `25`, primary loaders are `fabric` and `neoforge`.
 - Put shared gameplay logic in `common/`; loader projects should only contain bootstrap/events/platform glue.
 - Read first: `BuildPipeline.java`, `BuildPipelineClient.java`, `PacketHandler.java`.
 
