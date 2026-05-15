@@ -2,8 +2,7 @@ package nl.requios.effortlessbuilding;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -15,6 +14,8 @@ import org.joml.Matrix4f;
 import java.awt.Color;
 
 public class AllIcons {
+
+    private static final int FULL_BRIGHT = 0x00F000F0;
 
     public static final Identifier ICON_ATLAS = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "textures/gui/icons.png");
     public static final int ICON_ATLAS_SIZE = 256;
@@ -104,7 +105,7 @@ public class AllIcons {
         // No-op in 1.21.11 — texture binding is handled by the render pipeline
     }
 
-    public void render(GuiGraphics graphics, int x, int y) {
+    public void render(GuiGraphicsExtractor graphics, int x, int y) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_ATLAS, x, y, (float) iconX, (float) iconY, 16, 16, 256, 256);
     }
 
@@ -112,7 +113,7 @@ public class AllIcons {
         VertexConsumer builder = buffer.getBuffer(RenderTypes.textSeeThrough(ICON_ATLAS));
         Matrix4f matrix = ms.last().pose();
         Color rgb = new Color(color);
-        int light = LightTexture.FULL_BRIGHT;
+        int light = FULL_BRIGHT;
 
         Vec3 vec1 = new Vec3(0, 0, 0);
         Vec3 vec2 = new Vec3(0, 1, 0);

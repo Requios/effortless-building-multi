@@ -167,18 +167,18 @@ public class BuildPipelineClient {
                     if (!blocks.rejectedEntries().isEmpty()) {
                         BlockStatus firstRejection = blocks.rejectedEntries().getFirst().getValue().getStatus();
                         if (firstRejection == BlockStatus.WORLD_BORDER) {
-                            player.displayClientMessage(
-                                    Component.translatable("effortlessbuilding.message.world_border"), true);
+                            player.sendOverlayMessage(
+                                    Component.translatable("effortlessbuilding.message.world_border"));
                         } else if (!player.getAbilities().instabuild) {
                             if (firstRejection == BlockStatus.NOT_PLACED_BY_PLAYER) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.only_replace_placed"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.only_replace_placed"));
                             } else if (firstRejection == BlockStatus.TOO_HARD) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.too_hard"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.too_hard"));
                             } else if (firstRejection == BlockStatus.PROTECTED_TILE_ENTITY) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"));
                             }
                         }
                     }
@@ -198,18 +198,18 @@ public class BuildPipelineClient {
                     if (!blocks.rejectedEntries().isEmpty()) {
                         BlockStatus firstRejection = blocks.rejectedEntries().getFirst().getValue().getStatus();
                         if (firstRejection == BlockStatus.WORLD_BORDER) {
-                            player.displayClientMessage(
-                                    Component.translatable("effortlessbuilding.message.world_border"), true);
+                            player.sendOverlayMessage(
+                                    Component.translatable("effortlessbuilding.message.world_border"));
                         } else if (!player.getAbilities().instabuild) {
                             if (firstRejection == BlockStatus.NOT_PLACED_BY_PLAYER) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.only_break_placed"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.only_break_placed"));
                             } else if (firstRejection == BlockStatus.TOO_HARD) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.too_hard"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.too_hard"));
                             } else if (firstRejection == BlockStatus.PROTECTED_TILE_ENTITY) {
-                                player.displayClientMessage(
-                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"), true);
+                                player.sendOverlayMessage(
+                                        Component.translatable("effortlessbuilding.message.protected_tile_entity"));
                             }
                         }
                     }

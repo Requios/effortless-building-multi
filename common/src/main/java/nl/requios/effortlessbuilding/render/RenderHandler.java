@@ -1,11 +1,10 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -60,7 +59,7 @@ public class RenderHandler {
     // HUD rendering entry point
     // =========================================================================
 
-    public static void onRenderGui(GuiGraphics graphics) {
+    public static void onRenderGui(GuiGraphicsExtractor graphics) {
         renderSubtitle(graphics);
         drawStacks(graphics);
     }
@@ -120,7 +119,7 @@ public class RenderHandler {
                 msg = sb.toString();
             }
 
-            mc.player.displayClientMessage(Component.literal(msg), true);
+            mc.player.sendOverlayMessage(Component.literal(msg));
         }
     }
 
@@ -137,7 +136,7 @@ public class RenderHandler {
      * For placing: shows items consumed and missing items in red.
      * For breaking: shows blocks that will be broken, rejected blocks in red, and missing tool icons.
      */
-    private static void drawStacks(GuiGraphics guiGraphics) {
+    private static void drawStacks(GuiGraphicsExtractor guiGraphics) {
         var state = BuildPipelineClient.getBuildState();
         if (state == null) return;
 
@@ -156,7 +155,7 @@ public class RenderHandler {
         }
     }
 
-    private static void drawPlacingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {
+    private static void drawPlacingStacks(GuiGraphicsExtractor guiGraphics, Minecraft mc, int x, int y) {
         ItemUsageTracker tracker = BuildPipelineClient.ITEM_USAGE;
         var stacks = tracker.total;
 
@@ -182,7 +181,7 @@ public class RenderHandler {
         }
     }
 
-    private static void drawBreakingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {
+    private static void drawBreakingStacks(GuiGraphicsExtractor guiGraphics, Minecraft mc, int x, int y) {
         var tracker = BuildPipelineClient.BREAK_DISPLAY;
 
         // Nothing to show if no blocks
@@ -214,8 +213,8 @@ public class RenderHandler {
         }
     }
 
-    private static void drawItemStack(GuiGraphics guiGraphics, ItemStack stack, int x, int y, boolean missing) {
-        guiGraphics.renderItem(stack, x, y);
+    private static void drawItemStack(GuiGraphicsExtractor guiGraphics, ItemStack stack, int x, int y, boolean missing) {
+        guiGraphics.item(stack, x, y);
 
         // Draw count text, red if missing
         Font font = Minecraft.getInstance().font;
@@ -226,14 +225,14 @@ public class RenderHandler {
 
         // Push above the item icon — use nextStratum for z-ordering in 1.21.11
         guiGraphics.nextStratum();
-        guiGraphics.drawString(font, text, textX, textY, color, true);
+        guiGraphics.text(font, text, textX, textY, color, true);
     }
 
     // =========================================================================
     // Subtitle
     // =========================================================================
 
-    private static void renderSubtitle(GuiGraphics graphics) {
+    private static void renderSubtitle(GuiGraphicsExtractor graphics) {
         BuildPipeline.BuildState pendingAction = BuildPipelineClient.getBuildState();
         if (pendingAction == null) return;
 
@@ -247,7 +246,7 @@ public class RenderHandler {
         int w = font.width(text);
         int drawX = screenWidth / 2 - w / 2;
         int drawY = screenHeight - 54 - 4;
-        graphics.drawString(font, text, drawX, drawY, 0xffffffff, true);
+        graphics.text(font, text, drawX, drawY, 0xffffffff, true);
     }
 }
 

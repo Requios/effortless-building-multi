@@ -28,16 +28,16 @@ public class EffortlessBuilding implements ModInitializer {
         Constants.LOG.info("Hello Fabric world!");
 
         // Register C2S packets
-        PayloadTypeRegistry.playC2S().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(BreakBuildModePacket.TYPE, BreakBuildModePacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(UndoPacket.TYPE, UndoPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(BreakBuildModePacket.TYPE, BreakBuildModePacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(UndoPacket.TYPE, UndoPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
-        PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playS2C().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
 
         // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->

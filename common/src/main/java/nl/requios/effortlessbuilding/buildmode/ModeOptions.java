@@ -108,7 +108,7 @@ public class ModeOptions {
 				&& action != ActionEnum.DISABLE_BUILD_MODE_TOGGLE
 				&& action != ActionEnum.UNDO
 				&& action != ActionEnum.REDO) {
-			player.displayClientMessage(Component.translatable(action.getNameKey()), true);
+			player.sendOverlayMessage(Component.translatable(action.getNameKey()));
 		}
 	}
 

@@ -107,7 +107,7 @@ public class NeoForgeClientSetup {
         }
 
         @SubscribeEvent
-        public static void onRenderLevel(RenderLevelStageEvent.AfterEntities event) {
+        public static void onRenderLevel(RenderLevelStageEvent.AfterTranslucentFeatures event) {
             var camPos = event.getLevelRenderState().cameraRenderState.pos;
             var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
             RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,

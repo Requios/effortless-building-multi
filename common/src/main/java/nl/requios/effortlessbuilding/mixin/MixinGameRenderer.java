@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.mixin;
 
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
@@ -8,9 +7,7 @@ import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -19,14 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Extends the crosshair raytrace ({@code hitResult}) to the effective build reach
  * when a build mode is active, so that pick-block (middle-click) and the block highlight
  * work at extended range.
+ *
+ * In 26.1.2 the {@code pick(float)} method moved from {@code GameRenderer} to {@code Minecraft}.
  */
-@Mixin(GameRenderer.class)
+@Mixin(Minecraft.class)
 public class MixinGameRenderer {
-
-    @Shadow @Final Minecraft minecraft;
 
     @Inject(method = "pick(F)V", at = @At("TAIL"))
     private void onPick(float partialTicks, CallbackInfo ci) {
+        Minecraft minecraft = (Minecraft) (Object) this;
         if (minecraft.player == null || minecraft.level == null) return;
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return;
 

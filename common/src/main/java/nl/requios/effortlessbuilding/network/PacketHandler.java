@@ -228,8 +228,8 @@ public class PacketHandler {
 
         // Enforce survivalAllowBreaking (early exit before running pipeline)
         if (!creative && !ServerConfig.INSTANCE.survivalAllowBreaking) {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.breaking_disabled"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("effortlessbuilding.message.breaking_disabled"));
             return;
         }
 
@@ -290,11 +290,11 @@ public class PacketHandler {
     public static void handleUndo(ServerPlayer player) {
         int count = UndoManager.undo(player);
         if (count >= 0) {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.undo", count), true);
+            player.sendOverlayMessage(
+                    Component.translatable("effortlessbuilding.message.undo", count));
         } else {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.nothing_to_undo"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("effortlessbuilding.message.nothing_to_undo"));
         }
     }
 
@@ -304,11 +304,11 @@ public class PacketHandler {
     public static void handleRedo(ServerPlayer player) {
         int count = UndoManager.redo(player);
         if (count >= 0) {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.redo", count), true);
+            player.sendOverlayMessage(
+                    Component.translatable("effortlessbuilding.message.redo", count));
         } else {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.nothing_to_redo"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("effortlessbuilding.message.nothing_to_redo"));
         }
     }
 
@@ -342,8 +342,8 @@ public class PacketHandler {
      */
     public static void handleUpdateServerConfig(UpdateServerConfigC2SPacket packet, ServerPlayer player) {
         if (!player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
-            player.displayClientMessage(
-                    Component.translatable("effortlessbuilding.message.not_operator"), false);
+            player.sendSystemMessage(
+                    Component.translatable("effortlessbuilding.message.not_operator"));
             return;
         }
         ServerConfig incoming = ServerConfig.fromJson(packet.json());

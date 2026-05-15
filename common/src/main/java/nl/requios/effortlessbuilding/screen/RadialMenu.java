@@ -2,7 +2,7 @@ package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.language.I18n;
@@ -83,7 +83,7 @@ public class RadialMenu extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTicks) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float partialTicks) {
 		BuildModeEnum currentBuildMode = BuildModes.CLIENT.getBuildMode();
 
 		graphics.pose().pushMatrix();
@@ -169,7 +169,7 @@ public class RadialMenu extends Screen {
 		drawSideButtonBackgrounds(element, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
 
 		// Submit the element to the GUI render state
-		((GuiGraphicsAccessor) graphics).effortlessbuilding$getGuiRenderState().submitGuiElement(element);
+		((GuiGraphicsAccessor) graphics).effortlessbuilding$getGuiRenderState().addGuiElement(element);
 
 		drawIcons(graphics, middleX, middleY, modes, buttons, scale);
 
@@ -283,7 +283,7 @@ public class RadialMenu extends Screen {
 		}
 	}
 
-	private void drawIcons(GuiGraphics graphics, double middleX, double middleY,
+	private void drawIcons(GuiGraphicsExtractor graphics, double middleX, double middleY,
 						   ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, double scale) {
 		//Draw buildmode icons
 		for (final MenuRegion menuRegion : modes) {
@@ -304,17 +304,17 @@ public class RadialMenu extends Screen {
 		}
 	}
 
-	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {
+	private void drawTexts(GuiGraphicsExtractor graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {
 		//font.drawStringWithShadow("Actions", (int) (middleX - buttonDistance - 13) - font.getStringWidth("Actions") * 0.5f, (int) middleY - 38, 0xffffffff);
 
 		//Draw option strings
 		for (int i = 0; i < currentBuildMode.options.length; i++) {
 			OptionEnum option = options[i];
-			graphics.drawString(font, I18n.get(option.name), (int) (middleX + buttonDistance * scale - 9), (int) middleY - 37 + i * 39, optionTextColor, true);
+			graphics.text(font, I18n.get(option.name), (int) (middleX + buttonDistance * scale - 9), (int) middleY - 37 + i * 39, optionTextColor, true);
 		}
 
 		String credits = "Effortless Building";
-		graphics.drawString(font, credits, width - font.width(credits) - 4, height - 10, watermarkTextColor, true);
+		graphics.text(font, credits, width - font.width(credits) - 4, height - 10, watermarkTextColor, true);
 
 
 
@@ -335,12 +335,12 @@ public class RadialMenu extends Screen {
 					fixed_x -= font.width(text) / 2;
 				}
 
-				graphics.drawString(font, text, (int) middleX + fixed_x, (int) middleY + fixed_y, whiteTextColor, true);
-				graphics.drawString(font, text, (int) middleX + fixed_x, (int) middleY + fixed_y, whiteTextColor, true);
+				graphics.text(font, text, (int) middleX + fixed_x, (int) middleY + fixed_y, whiteTextColor, true);
+				graphics.text(font, text, (int) middleX + fixed_x, (int) middleY + fixed_y, whiteTextColor, true);
 
 				//Draw description
 				text = I18n.get(menuRegion.mode.getDescriptionKey());
-				graphics.drawString(font, text, (int) (middleX - font.width(text) / 2f), (int) middleY + buildModeDescriptionHeight, descriptionTextColor, true);
+				graphics.text(font, text, (int) (middleX - font.width(text) / 2f), (int) middleY + buildModeDescriptionHeight, descriptionTextColor, true);
 			}
 		}
 
@@ -419,8 +419,8 @@ public class RadialMenu extends Screen {
 
 			BuildModes.CLIENT.setBuildMode(switchTo);
 			if (minecraft.player != null) {
-				minecraft.player.displayClientMessage(
-						Component.translatable(switchTo.getNameKey()), true);
+				minecraft.player.sendOverlayMessage(
+						Component.translatable(switchTo.getNameKey()));
 			}
 
 			if (fromMouseClick) performedActionUsingMouse = true;
