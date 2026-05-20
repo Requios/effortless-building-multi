@@ -173,24 +173,26 @@ public class RenderHandler {
             int networkCount = tracker.fromNetwork.getOrDefault(entry.getKey(), 0);
             int missing = tracker.getMissingCount(entry.getKey());
 
-            // Items from inventory (white)
-            int fromInventory = Math.min(have, total);
-            if (fromInventory > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), fromInventory), x + i * 20, y, false);
+            int available = Math.min(total - missing, total);
+            boolean usingAE2 = networkCount > 0 && have < total && missing == 0;
+
+            if (available > 0) {
+                if (usingAE2) {
+                    // Single icon: combined count, green, with "AE2" suffix
+                    drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
+                            x + i * 20, y, false, ChatFormatting.GREEN.getColor(), "AE2");
+                } else {
+                    // Single icon: plain inventory count, white
+                    drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
+                            x + i * 20, y, false);
+                }
                 i++;
             }
 
-            // Items from AE2 network (green tint with "AE2" text)
-            int fromNetwork = Math.min(networkCount, total - fromInventory);
-            if (fromNetwork > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), fromNetwork), x + i * 20, y, false,
-                        ChatFormatting.GREEN.getColor(), "AE2");
-                i++;
-            }
-
-            // Truly missing items (red)
+            // Truly missing items (red) — only shown when inventory + AE2 isn't enough
             if (missing > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing), x + i * 20, y, true);
+                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing),
+                        x + i * 20, y, true);
                 i++;
             }
         }

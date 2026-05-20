@@ -33,6 +33,7 @@ import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
@@ -72,6 +73,31 @@ public class PacketHandler {
 
     public static void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
+    }
+
+    public static void sendToServer(QueryAE2CountC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
+    /**
+     * Called on the server when a {@link QueryAE2CountC2SPacket} is received.
+     * Queries the AE2 network and sends the count back to the client.
+     */
+    public static void handleQueryAE2Count(QueryAE2CountC2SPacket packet, ServerPlayer player) {
+        int count = AE2Integration.countOnNetwork(player, packet.item());
+        sendToClient(player, new SyncAE2CountS2CPacket(packet.item(), count));
+    }
+
+    /**
+     * Called on the client when a {@link SyncAE2CountS2CPacket} is received.
+     * Stores the count for the HUD preview.
+     */
+    public static void handleSyncAE2Count(SyncAE2CountS2CPacket packet) {
+        AE2Integration.setCachedCount(packet.item(), packet.count());
     }
 
     /**

@@ -4,6 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
+import nl.requios.effortlessbuilding.network.PacketHandler;
+import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 
 import java.util.*;
 
@@ -71,11 +73,29 @@ public class ItemUsageTracker {
 
         // Check AE2 network for additional items
         int networkCount = AE2Integration.countOnNetwork(player, heldItem);
-        ae2Connected = AE2Integration.isAvailable() && networkCount > 0;
-        fromNetwork.put(heldItem, networkCount);
+        boolean hasLinkedTerminal = AE2Integration.hasLinkedTerminal(player);
+        ae2Connected = hasLinkedTerminal;
+        boolean isClient = player.level().isClientSide();
+
+        if (networkCount > 0) {
+            // Server-side: real count from getLinkedGrid()
+            fromNetwork.put(heldItem, networkCount);
+        } else if (hasLinkedTerminal && isClient) {
+            // Client-side: getLinkedGrid() doesn't work (needs ServerLevel).
+            // Check if we have a server-synced cached count.
+            int cached = AE2Integration.getCachedCount(heldItem);
+            if (cached >= 0) {
+                fromNetwork.put(heldItem, cached);
+            } else {
+                // No cached count yet — send a query packet to the server.
+                // Use optimistic assumption for this frame; next frame will have real data.
+                PacketHandler.sendToServer(new QueryAE2CountC2SPacket(heldItem));
+                fromNetwork.put(heldItem, Math.max(0, count - have));
+            }
+        }
 
         // Total available = inventory + AE2
-        int totalAvailable = have + networkCount;
+        int totalAvailable = have + fromNetwork.getOrDefault(heldItem, 0);
 
         int canPlace = Math.min(count, totalAvailable);
         placed.put(heldItem, canPlace);

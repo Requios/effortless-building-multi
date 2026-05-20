@@ -16,6 +16,8 @@ import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
@@ -34,10 +36,12 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(SyncAE2CountS2CPacket.TYPE, SyncAE2CountS2CPacket.STREAM_CODEC);
 
         // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->
@@ -52,6 +56,8 @@ public class EffortlessBuilding implements ModInitializer {
                 context.server().execute(() -> PacketHandler.handleUpdateModifiers(payload, context.player())));
         ServerPlayNetworking.registerGlobalReceiver(UpdateServerConfigC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handleUpdateServerConfig(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(QueryAE2CountC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleQueryAE2Count(payload, context.player())));
 
         // Load + send modifiers and config on player join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

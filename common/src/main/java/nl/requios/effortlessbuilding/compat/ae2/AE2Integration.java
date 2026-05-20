@@ -7,6 +7,8 @@ import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.platform.Services;
 import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -118,11 +120,9 @@ public class AE2Integration {
     public static String getStatusString(Player player) {
         if (!available || bridge == null) return "";
         try {
-            // Check actual grid connection first — this verifies link + range + power
             if (bridge.playerHasGridConnection(player)) {
-                return "AE2 \u2713"; // ✓ checkmark
+                return "AE2 \u2713";
             }
-            // Terminal present but no grid — distinguish "no terminal" from "not connected"
             if (bridge.playerHasWirelessTerminal(player)) {
                 return "AE2 (not linked)";
             }
@@ -130,6 +130,35 @@ public class AE2Integration {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /**
+     * Client-safe check: returns true if a wireless terminal with a linked
+     * WAP position is found in the player's inventory (vanilla or Curios).
+     * Used by the HUD preview to know AE2 might contribute items.
+     */
+    public static boolean hasLinkedTerminal(Player player) {
+        if (!available || bridge == null) return false;
+        try {
+            return bridge.playerHasGridConnection(player);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ---- Server-synced count cache (client-side preview) -------------------
+    // The server sends SyncAE2CountS2CPacket to populate this.
+
+    private static final Map<Item, Integer> cachedCounts = new HashMap<>();
+
+    /** Called on the client when SyncAE2CountS2CPacket arrives. */
+    public static void setCachedCount(Item item, int count) {
+        cachedCounts.put(item, count);
+    }
+
+    /** Returns the last server-synced count, or -1 if not yet received. */
+    public static int getCachedCount(Item item) {
+        return cachedCounts.getOrDefault(item, -1);
     }
 
     // -------------------------------------------------------------------------
@@ -254,9 +283,44 @@ public class AE2Integration {
             return curiosHasTerminal(player);
         }
 
-        /** Returns true if a linked, in-range grid is reachable (the real connection check). */
+        /**
+         * Returns true if a linked terminal is found. Uses {@code getLinkedPosition}
+         * which reads a persistent data component — works on both client and server
+         * (unlike {@code getLinkedGrid} which requires ServerLevel).
+         */
         private boolean playerHasGridConnection(Player player) {
-            return findGrid(player) != null;
+            // 1. Check vanilla inventory
+            var inventory = player.getInventory();
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                ItemStack stack = inventory.getItem(i);
+                if (stack.getItem() instanceof appeng.items.tools.powered.WirelessTerminalItem terminal) {
+                    if (terminal.getLinkedPosition(stack) != null) return true;
+                }
+            }
+            // 2. Check Curios slots (cached reflection)
+            return curiosHasLinkedTerminal(player);
+        }
+
+        /** Like {@link #curiosHasTerminal} but also verifies the linked position is set. */
+        private boolean curiosHasLinkedTerminal(Player player) {
+            if (!curiosAvailable) return false;
+            try {
+                Object optional = curiosGetInventory.invoke(null, player);
+                if (optional instanceof java.util.Optional<?> opt && opt.isPresent()) {
+                    Object handler = opt.get();
+                    Method findFirst = findCurioMethod(handler);
+                    if (findFirst == null) return false;
+
+                    Predicate<ItemStack> isLinked = stack ->
+                            stack.getItem() instanceof appeng.items.tools.powered.WirelessTerminalItem terminal
+                            && terminal.getLinkedPosition(stack) != null;
+                    Object resultOpt = findFirst.invoke(handler, isLinked);
+                    return resultOpt instanceof java.util.Optional<?> slotOpt && slotOpt.isPresent();
+                }
+            } catch (Throwable t) {
+                curiosAvailable = false;
+            }
+            return false;
         }
 
         // ---- Curios caching ------------------------------------------------
