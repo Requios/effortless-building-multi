@@ -166,7 +166,6 @@ public class RenderHandler {
             return;
         }
 
-        Font font = mc.font;
         int i = 0;
         for (Map.Entry<Item, Integer> entry : stacks.entrySet()) {
             int total = entry.getValue();

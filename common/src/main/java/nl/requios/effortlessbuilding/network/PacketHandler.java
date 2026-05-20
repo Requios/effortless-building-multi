@@ -152,10 +152,15 @@ public class PacketHandler {
             if (!creative && placed > 0) {
                 // Consume from player inventory first
                 int consumed = InventoryHelper.consumeItems(player, heldItem, placed);
-                // If inventory didn't have enough, pull the remainder from AE2 network
+                // Pre-extract the remainder from AE2 BEFORE placement so the
+                // player pays the full cost even if network extraction fails
                 int remaining = placed - consumed;
                 if (remaining > 0) {
-                    InventoryHelper.supplementFromNetwork(player, heldItem, remaining);
+                    int extracted = InventoryHelper.supplementFromNetwork(player, heldItem, remaining);
+                    // If AE2 couldn't supply enough, reduce placed count for undo tracking
+                    if (extracted < remaining) {
+                        placed = consumed + extracted;
+                    }
                 }
                 // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
                 InventoryHelper.restockFromNetwork(player);

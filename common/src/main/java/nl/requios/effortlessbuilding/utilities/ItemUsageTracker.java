@@ -88,8 +88,8 @@ public class ItemUsageTracker {
             BlockPos playerPos = player.blockPosition();
             posList.sort(Comparator.comparingDouble(pos -> pos.distSqr(playerPos)));
 
-            // Mark the farthest (count - have) positions as missing
-            int missingCount = count - have;
+            // Mark the farthest (count - totalAvailable) positions as missing
+            int missingCount = count - totalAvailable;
             for (int i = posList.size() - missingCount; i < posList.size(); i++) {
                 missingPositions.add(posList.get(i));
             }

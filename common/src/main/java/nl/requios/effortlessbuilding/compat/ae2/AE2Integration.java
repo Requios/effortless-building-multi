@@ -111,14 +111,20 @@ public class AE2Integration {
      * Returns a human-readable status string about the AE2 connection for display
      * in the radial menu. Safe to call from the client.
      *
-     * @return one of: "AE2 ✓" (connected), "AE2 (no terminal)" (mod loaded but no terminal found),
+     * @return one of: "AE2 \u2713" (grid reachable), "AE2 (not linked)" (terminal exists but
+     *         out of range / unlinked), "AE2 (no terminal)" (no terminal found),
      *         or empty string if AE2 is not installed.
      */
     public static String getStatusString(Player player) {
         if (!available || bridge == null) return "";
         try {
-            if (bridge.playerHasWirelessTerminal(player)) {
+            // Check actual grid connection first — this verifies link + range + power
+            if (bridge.playerHasGridConnection(player)) {
                 return "AE2 \u2713"; // ✓ checkmark
+            }
+            // Terminal present but no grid — distinguish "no terminal" from "not connected"
+            if (bridge.playerHasWirelessTerminal(player)) {
+                return "AE2 (not linked)";
             }
             return "AE2 (no terminal)";
         } catch (Exception e) {
@@ -140,8 +146,8 @@ public class AE2Integration {
         private final appeng.items.tools.powered.WirelessTerminalItem terminalMarker;
 
         Internal() {
-            // Just to prove this class loads — store a reference to any AE2 class.
             terminalMarker = null;
+            tryInitCurios();
         }
 
         // ---- helpers --------------------------------------------------------
@@ -248,6 +254,11 @@ public class AE2Integration {
             return curiosHasTerminal(player);
         }
 
+        /** Returns true if a linked, in-range grid is reachable (the real connection check). */
+        private boolean playerHasGridConnection(Player player) {
+            return findGrid(player) != null;
+        }
+
         // ---- Curios caching ------------------------------------------------
 
         // Once resolved, these are the Method handles for the Curios API.
@@ -305,7 +316,7 @@ public class AE2Integration {
             return new appeng.me.helpers.PlayerSource(player);
         }
 
-        // ---- counting -------------------------------------------------------
+        // ---- counting (clamped to int range) --------------------------------
 
         int countItems(Player player, Item item) {
             appeng.api.networking.IGrid grid = findGrid(player);
@@ -314,8 +325,9 @@ public class AE2Integration {
             appeng.api.storage.MEStorage storage = getStorage(grid);
             appeng.api.stacks.AEItemKey key = appeng.api.stacks.AEItemKey.of(item);
 
-            return (int) storage.extract(key, Long.MAX_VALUE,
+            long available = storage.extract(key, Long.MAX_VALUE,
                     appeng.api.config.Actionable.SIMULATE, playerSource(player));
+            return (int) Math.min(available, Integer.MAX_VALUE);
         }
 
         // ---- extraction (for building — items are consumed, not spawned) ----
@@ -327,8 +339,9 @@ public class AE2Integration {
             appeng.api.storage.MEStorage storage = getStorage(grid);
             appeng.api.stacks.AEItemKey key = appeng.api.stacks.AEItemKey.of(item);
 
-            return (int) storage.extract(key, count,
+            long extracted = storage.extract(key, count,
                     appeng.api.config.Actionable.MODULATE, playerSource(player));
+            return (int) Math.min(extracted, Integer.MAX_VALUE);
         }
 
         // ---- restock --------------------------------------------------------
@@ -353,16 +366,13 @@ public class AE2Integration {
                     appeng.api.config.Actionable.MODULATE, playerSource(player));
 
             if (extracted > 0) {
-                // Give the extracted items to the player
-                int remaining = (int) extracted;
-                while (remaining > 0) {
-                    int batch = Math.min(remaining, maxStack);
-                    ItemStack extractedStack = key.toStack(batch);
-                    if (!player.getInventory().add(extractedStack)) {
-                        // Inventory full — drop at feet
-                        player.drop(extractedStack, false);
-                    }
-                    remaining -= batch;
+                // Grow the held stack directly — avoids inventory slot ambiguity
+                held.grow((int) extracted);
+                // Safety clamp: if we somehow overshot, drop the excess
+                int over = held.getCount() - maxStack;
+                if (over > 0) {
+                    held.shrink(over);
+                    player.drop(key.toStack(over), false);
                 }
             }
 
