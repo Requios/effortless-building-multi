@@ -133,9 +133,22 @@ public class PacketHandler {
         if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
 
-            // Count available items including AE2 ME network (if wireless terminal is present)
-            int available = creative ? Integer.MAX_VALUE
-                    : InventoryHelper.findTotalItemsWithNetwork(player, heldItem);
+            // Determine how many blocks we can afford BEFORE placing any
+            int available;
+            if (creative) {
+                available = Integer.MAX_VALUE;
+            } else {
+                int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, heldItem);
+                int validCount = blockSet.validEntries().size();
+
+                // Pre-extract from AE2 what exceeds inventory (digital — no ItemStack created)
+                int neededFromNetwork = Math.max(0, validCount - inventoryCount);
+                int ae2Extracted = 0;
+                if (neededFromNetwork > 0) {
+                    ae2Extracted = InventoryHelper.supplementFromNetwork(player, heldItem, neededFromNetwork);
+                }
+                available = inventoryCount + ae2Extracted;
+            }
 
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
             for (var mapEntry : blockSet.validEntries()) {
@@ -176,18 +189,8 @@ public class PacketHandler {
             }
 
             if (!creative && placed > 0) {
-                // Consume from player inventory first
-                int consumed = InventoryHelper.consumeItems(player, heldItem, placed);
-                // Pre-extract the remainder from AE2 BEFORE placement so the
-                // player pays the full cost even if network extraction fails
-                int remaining = placed - consumed;
-                if (remaining > 0) {
-                    int extracted = InventoryHelper.supplementFromNetwork(player, heldItem, remaining);
-                    // If AE2 couldn't supply enough, reduce placed count for undo tracking
-                    if (extracted < remaining) {
-                        placed = consumed + extracted;
-                    }
-                }
+                // Consume from player inventory (AE2 was already debited before placement)
+                InventoryHelper.consumeItems(player, heldItem, placed);
                 // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
                 InventoryHelper.restockFromNetwork(player);
             }

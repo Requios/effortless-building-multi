@@ -175,7 +175,6 @@ public class RenderHandler {
 
             int available = Math.min(total - missing, total);
             boolean usingAE2 = networkCount > 0 && have < total && missing == 0;
-
             if (available > 0) {
                 if (usingAE2) {
                     // Single icon: combined count, green, with "AE2" suffix

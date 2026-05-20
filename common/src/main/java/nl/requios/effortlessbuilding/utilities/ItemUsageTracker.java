@@ -30,8 +30,12 @@ public class ItemUsageTracker {
     /** How many of each item are available on the AE2 ME network. */
     public Map<Item, Integer> fromNetwork = new HashMap<>();
 
-    /** True if the player has an AE2 wireless terminal linked and in range. */
-    public boolean ae2Connected = false;
+    /**
+     * True if the player has an AE2 wireless terminal with a linked WAP position.
+     * Does NOT verify that the terminal is in range or the grid is reachable
+     * (getLinkedGrid requires ServerLevel which isn't available on the client).
+     */
+    public boolean ae2Linked = false;
 
     /** Set of positions that cannot be placed due to insufficient items. */
     public Set<BlockPos> missingPositions = new HashSet<>();
@@ -42,7 +46,7 @@ public class ItemUsageTracker {
         placed.clear();
         missing.clear();
         fromNetwork.clear();
-        ae2Connected = false;
+        ae2Linked = false;
         missingPositions.clear();
     }
 
@@ -74,7 +78,7 @@ public class ItemUsageTracker {
         // Check AE2 network for additional items
         int networkCount = AE2Integration.countOnNetwork(player, heldItem);
         boolean hasLinkedTerminal = AE2Integration.hasLinkedTerminal(player);
-        ae2Connected = hasLinkedTerminal;
+        ae2Linked = hasLinkedTerminal;
         boolean isClient = player.level().isClientSide();
 
         if (networkCount > 0) {

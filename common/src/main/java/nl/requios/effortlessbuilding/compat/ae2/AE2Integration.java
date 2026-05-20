@@ -110,11 +110,15 @@ public class AE2Integration {
     }
 
     /**
-     * Returns a human-readable status string about the AE2 connection for display
-     * in the radial menu. Safe to call from the client.
+     * Returns a human-readable status string about the AE2 wireless terminal
+     * for display in the radial menu. Safe to call from the client.
+     * <p>
+     * Note: this checks {@code getLinkedPosition} (client-safe component read),
+     * NOT {@code getLinkedGrid} (requires ServerLevel). A terminal that is
+     * "linked" may still be out of range or unpowered — the server verifies
+     * actual reachability during placement.
      *
-     * @return one of: "AE2 \u2713" (grid reachable), "AE2 (not linked)" (terminal exists but
-     *         out of range / unlinked), "AE2 (no terminal)" (no terminal found),
+     * @return one of: "AE2 \u2713" (terminal linked), "AE2 (no terminal)" (no terminal found),
      *         or empty string if AE2 is not installed.
      */
     public static String getStatusString(Player player) {
@@ -122,9 +126,6 @@ public class AE2Integration {
         try {
             if (bridge.playerHasGridConnection(player)) {
                 return "AE2 \u2713";
-            }
-            if (bridge.playerHasWirelessTerminal(player)) {
-                return "AE2 (not linked)";
             }
             return "AE2 (no terminal)";
         } catch (Exception e) {
