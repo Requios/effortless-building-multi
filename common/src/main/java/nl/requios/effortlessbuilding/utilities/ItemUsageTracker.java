@@ -3,6 +3,7 @@ package nl.requios.effortlessbuilding.utilities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 
 import java.util.*;
 
@@ -24,6 +25,12 @@ public class ItemUsageTracker {
     /** How many of each item are missing from inventory. */
     public Map<Item, Integer> missing = new HashMap<>();
 
+    /** How many of each item are available on the AE2 ME network. */
+    public Map<Item, Integer> fromNetwork = new HashMap<>();
+
+    /** True if the player has an AE2 wireless terminal linked and in range. */
+    public boolean ae2Connected = false;
+
     /** Set of positions that cannot be placed due to insufficient items. */
     public Set<BlockPos> missingPositions = new HashSet<>();
 
@@ -32,6 +39,8 @@ public class ItemUsageTracker {
         inInventory.clear();
         placed.clear();
         missing.clear();
+        fromNetwork.clear();
+        ae2Connected = false;
         missingPositions.clear();
     }
 
@@ -56,14 +65,23 @@ public class ItemUsageTracker {
             return;
         }
 
+        // Count items in vanilla inventory
         int have = InventoryHelper.findTotalItemsInInventory(player, heldItem);
         inInventory.put(heldItem, have);
 
-        int canPlace = Math.min(count, have);
+        // Check AE2 network for additional items
+        int networkCount = AE2Integration.countOnNetwork(player, heldItem);
+        ae2Connected = AE2Integration.isAvailable() && networkCount > 0;
+        fromNetwork.put(heldItem, networkCount);
+
+        // Total available = inventory + AE2
+        int totalAvailable = have + networkCount;
+
+        int canPlace = Math.min(count, totalAvailable);
         placed.put(heldItem, canPlace);
 
-        if (count > have) {
-            missing.put(heldItem, count - have);
+        if (count > totalAvailable) {
+            missing.put(heldItem, count - totalAvailable);
 
             // Sort positions by distance to player (closest first) so nearby blocks are placed first
             List<BlockPos> posList = new ArrayList<>(positions);

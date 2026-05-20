@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.SoundType;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -165,21 +166,53 @@ public class RenderHandler {
             return;
         }
 
+        Font font = mc.font;
         int i = 0;
         for (Map.Entry<Item, Integer> entry : stacks.entrySet()) {
             int total = entry.getValue();
+            int have = tracker.inInventory.getOrDefault(entry.getKey(), 0);
+            int networkCount = tracker.fromNetwork.getOrDefault(entry.getKey(), 0);
             int missing = tracker.getMissingCount(entry.getKey());
 
-            if (total - missing > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), total - missing), x + i * 20, y, false);
+            // Items from inventory (white)
+            int fromInventory = Math.min(have, total);
+            if (fromInventory > 0) {
+                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), fromInventory), x + i * 20, y, false);
                 i++;
             }
 
+            // Items from AE2 network (green tint with "AE2" text)
+            int fromNetwork = Math.min(networkCount, total - fromInventory);
+            if (fromNetwork > 0) {
+                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), fromNetwork), x + i * 20, y, false,
+                        ChatFormatting.GREEN.getColor(), "AE2");
+                i++;
+            }
+
+            // Truly missing items (red)
             if (missing > 0) {
                 drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing), x + i * 20, y, true);
                 i++;
             }
         }
+    }
+
+    // Overload with network indicator
+    private static void drawItemStack(GuiGraphics guiGraphics, ItemStack stack, int x, int y,
+                                       boolean missing, int textColor, @Nullable String suffix) {
+        guiGraphics.renderItem(stack, x, y);
+
+        Font font = Minecraft.getInstance().font;
+        String count = String.valueOf(stack.getCount());
+        String text = suffix != null ? count + suffix : count;
+        int color = missing ? ChatFormatting.RED.getColor() : textColor;
+        int textX = x + 19 - 2 - font.width(text);
+        int textY = y + 6 + 3;
+
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, 200);
+        guiGraphics.drawString(font, text, textX, textY, color, true);
+        guiGraphics.pose().popPose();
     }
 
     private static void drawBreakingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {

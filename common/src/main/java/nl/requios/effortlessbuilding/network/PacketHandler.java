@@ -107,8 +107,9 @@ public class PacketHandler {
         if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
 
+            // Count available items including AE2 ME network (if wireless terminal is present)
             int available = creative ? Integer.MAX_VALUE
-                    : InventoryHelper.findTotalItemsInInventory(player, heldItem);
+                    : InventoryHelper.findTotalItemsWithNetwork(player, heldItem);
 
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
             for (var mapEntry : blockSet.validEntries()) {
@@ -149,7 +150,15 @@ public class PacketHandler {
             }
 
             if (!creative && placed > 0) {
-                InventoryHelper.consumeItems(player, heldItem, placed);
+                // Consume from player inventory first
+                int consumed = InventoryHelper.consumeItems(player, heldItem, placed);
+                // If inventory didn't have enough, pull the remainder from AE2 network
+                int remaining = placed - consumed;
+                if (remaining > 0) {
+                    InventoryHelper.supplementFromNetwork(player, heldItem, remaining);
+                }
+                // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
+                InventoryHelper.restockFromNetwork(player);
             }
         } else if (held.getItem() instanceof BucketItem bucketItem) {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();

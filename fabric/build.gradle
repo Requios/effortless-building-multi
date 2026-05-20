@@ -23,6 +23,10 @@ dependencies {
     modImplementation("com.terraformersmc:modmenu:11.0.3") { transitive = false }
 //    modRuntimeOnly("maven.modrinth:sodium:mc1.21.1-0.6.13-fabric") { transitive = false }
 //    modRuntimeOnly("maven.modrinth:sodium-extra:mc1.21.1-0.6.0+fabric") { transitive = false }
+
+    // Required for compilation because common module source files are compiled here too.
+    // Only needed during compilation — the mod gracefully handles AE2 absence at runtime.
+    compileOnly("org.appliedenergistics:appliedenergistics2:19.2.17")
 }
 
 loom {
