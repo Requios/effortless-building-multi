@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "Annuler",
   "effortlessbuilding.action.redo": "Rétablir",
-  "effortlessbuilding.action.open_modifier_settings": "Ouvrir les paramètres des modificateurs",
-  "effortlessbuilding.action.open_server_config": "Modifier la configuration du serveur",
-  "effortlessbuilding.action.open_server_config.description": "Opérateurs uniquement.",
-  "effortlessbuilding.action.open_client_config": "Modifier la configuration du client",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "Ouvrir les paramètres des modificateurs",
+   "effortlessbuilding.action.open_server_config": "Paramètres fonctionnels",
+   "effortlessbuilding.action.open_server_config.description": "Modifiez la portée, les limites de placement et les blocs que vous pouvez casser ici.",
+   "effortlessbuilding.action.open_client_config": "Paramètres visuels",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "Mode de remplacement",
   "effortlessbuilding.action.cycle_replace_mode": "Changer le mode de remplacement",

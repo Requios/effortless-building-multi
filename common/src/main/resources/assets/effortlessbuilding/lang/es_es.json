@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "Deshacer",
   "effortlessbuilding.action.redo": "Rehacer",
-  "effortlessbuilding.action.open_modifier_settings": "Abrir configuración de modificadores",
-  "effortlessbuilding.action.open_server_config": "Editar configuración del servidor",
-  "effortlessbuilding.action.open_server_config.description": "Solo operadores.",
-  "effortlessbuilding.action.open_client_config": "Editar configuración del cliente",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "Abrir configuración de modificadores",
+   "effortlessbuilding.action.open_server_config": "Configuración funcional",
+   "effortlessbuilding.action.open_server_config.description": "Cambia el alcance, los límites de colocación y qué bloques puedes romper aquí.",
+   "effortlessbuilding.action.open_client_config": "Configuración visual",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "Modo de reemplazo",
   "effortlessbuilding.action.cycle_replace_mode": "Cambiar modo de reemplazo",

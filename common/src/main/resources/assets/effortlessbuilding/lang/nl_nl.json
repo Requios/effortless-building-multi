@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "Ongedaan maken",
   "effortlessbuilding.action.redo": "Opnieuw uitvoeren",
-  "effortlessbuilding.action.open_modifier_settings": "Modificatorinstellingen openen",
-  "effortlessbuilding.action.open_server_config": "Serverconfiguratie bewerken",
-  "effortlessbuilding.action.open_server_config.description": "Alleen voor operators.",
-  "effortlessbuilding.action.open_client_config": "Clientconfiguratie bewerken",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "Modificatorinstellingen openen",
+   "effortlessbuilding.action.open_server_config": "Functie-instellingen",
+   "effortlessbuilding.action.open_server_config.description": "Wijzig bereik, plaatsingslimits en welke blokken je hier kunt breken.",
+   "effortlessbuilding.action.open_client_config": "Visuele instellingen",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "Vervangmodus",
   "effortlessbuilding.action.cycle_replace_mode": "Vervangmodus wisselen",

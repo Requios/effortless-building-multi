@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "撤销",
   "effortlessbuilding.action.redo": "重做",
-  "effortlessbuilding.action.open_modifier_settings": "打开修饰器设置",
-  "effortlessbuilding.action.open_server_config": "编辑服务端配置",
-  "effortlessbuilding.action.open_server_config.description": "仅限管理员。",
-  "effortlessbuilding.action.open_client_config": "编辑客户端配置",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "打开修饰器设置",
+   "effortlessbuilding.action.open_server_config": "功能设置",
+   "effortlessbuilding.action.open_server_config.description": "更改建造距离、放置限制以及你可以在此破坏的方块。",
+   "effortlessbuilding.action.open_client_config": "视觉设置",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "替换模式",
   "effortlessbuilding.action.cycle_replace_mode": "切换替换模式",

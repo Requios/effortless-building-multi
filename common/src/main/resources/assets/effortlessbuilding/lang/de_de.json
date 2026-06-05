@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "Rückgängig",
   "effortlessbuilding.action.redo": "Wiederholen",
-  "effortlessbuilding.action.open_modifier_settings": "Modifikator-Einstellungen öffnen",
-  "effortlessbuilding.action.open_server_config": "Server-Konfiguration bearbeiten",
-  "effortlessbuilding.action.open_server_config.description": "Nur für Operatoren.",
-  "effortlessbuilding.action.open_client_config": "Client-Konfiguration bearbeiten",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "Modifikator-Einstellungen öffnen",
+   "effortlessbuilding.action.open_server_config": "Funktionale Einstellungen",
+   "effortlessbuilding.action.open_server_config.description": "Ändern Sie Reichweite, Platzierungslimits und welche Blöcke Sie hier abbauen können.",
+   "effortlessbuilding.action.open_client_config": "Visuelle Einstellungen",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "Ersetzungsmodus",
   "effortlessbuilding.action.cycle_replace_mode": "Ersetzungsmodus wechseln",

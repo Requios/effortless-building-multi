@@ -5,7 +5,7 @@ import nl.requios.effortlessbuilding.buildmode.buildmodes.*;
 
 public enum BuildModeEnum {
     DISABLED("normal", new Disabled(), BuildModeCategoryEnum.BASIC, AllIcons.I_DISABLE),
-    SINGLE("normal_plus", new Single(), BuildModeCategoryEnum.BASIC, AllIcons.I_SINGLE, ModeOptions.OptionEnum.BUILD_SPEED),
+    SINGLE("normal_plus", new Single(), BuildModeCategoryEnum.BASIC, AllIcons.I_SINGLE/*, ModeOptions.OptionEnum.BUILD_SPEED*/),
     LINE("line", new Line(), BuildModeCategoryEnum.BASIC, AllIcons.I_LINE /*, OptionEnum.THICKNESS*/),
     WALL("wall", new Wall(), BuildModeCategoryEnum.BASIC, AllIcons.I_WALL, ModeOptions.OptionEnum.FILL),
     FLOOR("floor", new Floor(), BuildModeCategoryEnum.BASIC, AllIcons.I_FLOOR, ModeOptions.OptionEnum.FILL),

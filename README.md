@@ -8,7 +8,7 @@ Many mods make it easier to break blocks, but not many focus on placing them. Ev
 
 [CurseForge](https://www.curseforge.com/minecraft/mc-mods/effortless-building) | [Modrinth](https://modrinth.com/mod/effortless-building)
 
-### Build Modes
+## Build Modes
 <iframe width="638" height="358" src="https://www.youtube.com/embed/LmYSV4z1UbE?si=YOx8QcqLMOKWQXNl" title="YouTube video player" frameborder="0" allow="clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Hold ALT to open the radial menu and select a build mode. With a block in hand, right-click to pick the starting position. Aim somewhere else, then right-click again to build the shape.
@@ -36,7 +36,7 @@ On the right side of the radial menu you can find additional options for each bu
 <iframe width="638" height="358" src="https://www.youtube.com/embed/H1D38C_nL_Y?si=YXwpB_Gx4krnoIOV" title="YouTube video player" frameborder="0" allow="clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </details>
 
-### Build Modifiers
+## Build Modifiers
 <iframe src="https://www.youtube.com/embed/kZjJhdPeVZI" height="358" width="638"></iframe>
 
 Modifiers can place additional blocks for each block you placed. You can enable any number of modifiers in the modifier settings. Open the modifier settings with the button in the radial menu, or use the keybind (default NUMPAD+).
@@ -45,7 +45,9 @@ Modifiers can place additional blocks for each block you placed. You can enable 
 * Array. Copies the block you placed in a certain direction a certain number of times. Useful for repeated builds like tunnels and walls.
 * Radial Mirror. Divides an area in slices around a central point. Each slice copies your block placements.
 
-### Replace Options
+![Modifier Settings](https://media.forgecdn.net/attachments/1718/585/2026-06-05_15-47-27_gemiddeld-png.png)
+
+## Replace Options
 Use the button to the left of the radial menu to cycle through replace options.
 
 * **Replace Only Air**: You can only place blocks where there was air. Replaceables such as short grass and ferns can still be replaced.
@@ -53,10 +55,10 @@ Use the button to the left of the radial menu to cycle through replace options.
 * **Replace Only Blocks**: You can only replace blocks, not air.
 * **Filter By Offhand**: You can only replace blocks that match the block in your offhand.
 
-### Undo and Redo
+## Undo and Redo
 Press CTRL+Z to undo and CTRL+Y to redo placing blocks.
 
-### Survival-friendly
+## Survival-friendly
 Playing this mod in survival mode is fully supported. All actions consume the right number of blocks from your inventory. It is fully configurable, so you can find settings that feel balanced for you. 
 
 Here's a small sample of what you can configure:
@@ -65,11 +67,11 @@ Here's a small sample of what you can configure:
 * The maximum size of the mirror and array
 * Whether you can break and replace multiple blocks at once, including if tools are required, if they should use durability, etc. By default, you can break and replace blocks that you placed in the same play session.
 
-<details><summary>Where can I find the settings?</summary>
 The functional settings can be found in the radial menu. You can only edit functional settings if you are an admin.
-</details>
 
-### FAQ
+![Functional Settings](https://media.forgecdn.net/attachments/1718/579/2026-06-05_15-46-00-png.png)
+
+## FAQ
 _"Can I add this mod to my modpack?"_  
 Yes, certainly!
 
@@ -82,7 +84,7 @@ No, it needs to be installed on both server and client. The server part places t
 _"Am I allowed to make my own version of this mod?"_  
 Yes, as long as you comply with the LGPL-3.0 license (usually this means: link to this page, license your modification under LGPL-3.0, make the code visible and state significant changes).
 
-### Mod Spotlights
+## Mod Spotlights
 <details><summary>Mod Spotlights</summary>
 <iframe width="638" height="358" src="https://www.youtube.com/embed/q_jeay6xRqc?si=aMp2hZ6APEwMzgUf" title="YouTube video player" frameborder="0" allow="clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -91,7 +93,7 @@ Yes, as long as you comply with the LGPL-3.0 license (usually this means: link t
 <iframe width="638" height="358" src="https://www.youtube.com/embed/WTE0MbvQbTk?si=v3yx9qG_h1bHtSnu" title="YouTube video player" frameborder="0" allow="clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </details>
 
-### Credits
+## Credits
 Many thanks to Grimmauld for porting to 1.16, Dashos for fixing 'fake player' related crashes and manapart for porting to 1.19!
 
 Radial Menu inspired by [Chisels & Bits](https://www.curseforge.com/minecraft/mc-mods/chisels-bits) by [AlgorithmX2](https://www.curseforge.com/members/algorithmx2/projects)

@@ -44,11 +44,11 @@
 
   "effortlessbuilding.action.undo": "Отменить",
   "effortlessbuilding.action.redo": "Повторить",
-  "effortlessbuilding.action.open_modifier_settings": "Открыть настройки модификаторов",
-  "effortlessbuilding.action.open_server_config": "Изменить настройки сервера",
-  "effortlessbuilding.action.open_server_config.description": "Только для операторов.",
-  "effortlessbuilding.action.open_client_config": "Изменить настройки клиента",
-  "effortlessbuilding.action.open_client_config.description": "",
+   "effortlessbuilding.action.open_modifier_settings": "Открыть настройки модификаторов",
+   "effortlessbuilding.action.open_server_config": "Функциональные настройки",
+   "effortlessbuilding.action.open_server_config.description": "Измените дальность, лимиты размещения и какие блоки вы можете ломать здесь.",
+   "effortlessbuilding.action.open_client_config": "Визуальные настройки",
+   "effortlessbuilding.action.open_client_config.description": "",
 
   "effortlessbuilding.action.replace_mode": "Режим замены",
   "effortlessbuilding.action.cycle_replace_mode": "Сменить режим замены",
