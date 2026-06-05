@@ -37,6 +37,12 @@ public class RenderHandler {
             .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
             .append(Component.literal("place").withStyle(ChatFormatting.DARK_AQUA));
 
+    private static final Component INTERACTING_TEXT = Component.literal("Left-click to ")
+            .withStyle(ChatFormatting.WHITE)
+            .append(Component.literal("cancel").withStyle(ChatFormatting.DARK_AQUA))
+            .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
+            .append(Component.literal("interact").withStyle(ChatFormatting.DARK_AQUA));
+
     private static final Component BREAKING_TEXT = Component.literal("Left-click to ")
             .withStyle(ChatFormatting.WHITE)
             .append(Component.literal("break").withStyle(ChatFormatting.RED))
@@ -240,7 +246,12 @@ public class RenderHandler {
         if (pendingAction == null) return;
 
         Minecraft mc = Minecraft.getInstance();
-        Component text = pendingAction == BuildPipeline.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
+        boolean isToolInteraction = pendingAction == BuildPipeline.BuildState.PLACING
+                && mc.player != null
+                && BuildPipeline.isToolInteractionItem(mc.player.getMainHandItem());
+        Component text = pendingAction == BuildPipeline.BuildState.BREAKING
+                ? BREAKING_TEXT
+                : (isToolInteraction ? INTERACTING_TEXT : PLACING_TEXT);
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();

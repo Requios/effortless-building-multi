@@ -40,6 +40,8 @@ public class RadialMenu extends Screen {
 
 	private final Vector4f radialButtonColor = new Vector4f(0f, 0f, 0f, .5f);
 	private final Vector4f sideButtonColor = new Vector4f(.5f, .5f, .5f, .5f);
+	private final Vector4f disabledSideButtonColor = new Vector4f(.25f, .25f, .25f, .45f);
+	private final Vector4f disabledHighlightColor = new Vector4f(.35f, .35f, .35f, .55f);
 	private final Vector4f highlightColor = new Vector4f(.6f, .8f, 1f, .6f);
 	private final Vector4f selectedColor = new Vector4f(0f, .5f, 1f, .5f);
 	private final Vector4f highlightSelectedColor = new Vector4f(0.2f, .7f, 1f, .7f);
@@ -143,10 +145,10 @@ public class RadialMenu extends Screen {
 		buttons.add(new MenuButton(ActionEnum.UNDO, -buttonDistance - 26, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
 
-		// Server config button — only visible to operators
-		if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
-			buttons.add(new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 52, 13, Direction.DOWN));
-		}
+		// Server config button is always visible, but disabled for non-operators
+		MenuButton serverConfigButton = new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 52, 13, Direction.DOWN);
+		serverConfigButton.enabled = minecraft.player != null && minecraft.player.hasPermissions(2);
+		buttons.add(serverConfigButton);
 
 		buttons.add(new MenuButton(ActionEnum.OPEN_CLIENT_CONFIG, -buttonDistance - 26, 13, Direction.DOWN));
 		MenuButton replaceBtn = new MenuButton(ActionEnum.CYCLE_REPLACE_MODE, -buttonDistance, 13, Direction.DOWN);
@@ -265,21 +267,26 @@ public class RadialMenu extends Screen {
 			final double bx1 = btn.x1 * scale, bx2 = btn.x2 * scale, by1 = btn.y1 * scale, by2 = btn.y2 * scale;
 			final boolean isHighlighted = bx1 <= mouseXCenter && bx2 >= mouseXCenter && by1 <= mouseYCenter && by2 >= mouseYCenter;
 
-			boolean isSelected =
+			boolean isSelected = btn.enabled && (
 					btn.action == ModeOptions.getBuildSpeed() ||
 					btn.action == ModeOptions.getFill() ||
 					btn.action == ModeOptions.getCubeFill() ||
 					btn.action == ModeOptions.getRaisedEdge() ||
 					btn.action == ModeOptions.getLineThickness() ||
 					btn.action == ModeOptions.getCircleStart() ||
-					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR);
+					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR));
 
 
 
-			Vector4f color = sideButtonColor;
-			if (isSelected) color = selectedColor;
-			if (isHighlighted) color = highlightColor;
-			if (isSelected && isHighlighted) color = highlightSelectedColor;
+			Vector4f color;
+			if (!btn.enabled) {
+				color = isHighlighted ? disabledHighlightColor : disabledSideButtonColor;
+			} else {
+				color = sideButtonColor;
+				if (isSelected) color = selectedColor;
+				if (isHighlighted) color = highlightColor;
+				if (isSelected && isHighlighted) color = highlightSelectedColor;
+			}
 
 			if (isHighlighted) {
 				btn.highlighted = true;
@@ -457,8 +464,13 @@ public class RadialMenu extends Screen {
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
-				performedActionUsingMouse = true;
-				minecraft.setScreen(new ServerConfigScreen());
+				if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
+					performedActionUsingMouse = true;
+					minecraft.setScreen(new ServerConfigScreen());
+				} else if (minecraft.player != null) {
+					minecraft.player.displayClientMessage(Component.translatable("effortlessbuilding.message.not_operator"), true);
+					if (fromMouseClick) performedActionUsingMouse = true;
+				}
 				return;
 			}
 
@@ -488,6 +500,7 @@ public class RadialMenu extends Screen {
 		public double x1, x2;
 		public double y1, y2;
 		public boolean highlighted;
+		public boolean enabled = true;
 		public String name;
 		public String subtitle = "";
 		public String description = "";

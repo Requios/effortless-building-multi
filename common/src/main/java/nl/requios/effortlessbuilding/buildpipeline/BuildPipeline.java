@@ -80,10 +80,13 @@ public class BuildPipeline {
             return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
         }
         // Tools that modify blocks on right-click (axe strips logs, shovel makes paths, hoe tills)
-        if (stack.getItem() instanceof DiggerItem) {
-            return true;
-        }
+        if (isToolInteractionItem(stack)) return true;
         return false;
+    }
+
+    /** Returns true for tools that interact with the clicked block on right-click. */
+    public static boolean isToolInteractionItem(ItemStack stack) {
+        return stack.getItem() instanceof DiggerItem;
     }
 
     // Use this instead of player.getLookAngle() in any build-modes code.
