@@ -16,6 +16,7 @@ import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.network.UndoPacket;
 import nl.requios.effortlessbuilding.network.RedoPacket;
+import nl.requios.effortlessbuilding.mixin.LevelRendererAccessor;
 import nl.requios.effortlessbuilding.render.RenderHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
@@ -47,7 +48,7 @@ public class NeoForgeClientSetup {
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
             if (KeyBindings.openModifiersScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new ModifiersScreen());
+                Minecraft.getInstance().gui.setScreen(new ModifiersScreen());
             }
             // Undo/redo keybindings — require Ctrl held
             Minecraft mc = Minecraft.getInstance();
@@ -64,9 +65,9 @@ public class NeoForgeClientSetup {
                 }
             }
 
-            if (mc.screen == null) {
+            if (mc.gui.screen() == null) {
                 if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
-                    mc.setScreen(RadialMenu.instance);
+                    mc.gui.setScreen(RadialMenu.instance);
                 }
 
                 if (mc.player != null && mc.level != null && BuildPipelineClient.shouldInterceptPlacing()) {
@@ -109,8 +110,8 @@ public class NeoForgeClientSetup {
         @SubscribeEvent
         public static void onRenderLevel(RenderLevelStageEvent.AfterTranslucentFeatures event) {
             var camPos = event.getLevelRenderState().cameraRenderState.pos;
-            var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-            RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,
+            var nodeCollector = ((LevelRendererAccessor) event.getLevelRenderer()).getSubmitNodeStorage();
+            RenderHandler.onRenderLevel(event.getPoseStack(), nodeCollector,
                     camPos.x, camPos.y, camPos.z);
         }
 
