@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockQuadOutput;
 import net.minecraft.client.renderer.block.BlockStateModelSet;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
@@ -58,7 +58,7 @@ public class BlockPreviewRenderer {
     // when the player is already within normal interaction range.
     private static final double VANILLA_REACH_SQ = 4.5 * 4.5;
 
-    public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    public static void render(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                double camX, double camY, double camZ) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
@@ -123,14 +123,15 @@ public class BlockPreviewRenderer {
                 }
             }
             if (baseState != null) {
-                var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
-                var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                 Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
 
                 // Set up ModelBlockRenderer for the new tesselateBlock API
                 BlockColors blockColors = mc.getBlockColors();
                 BlockStateModelSet modelSet = mc.getModelManager().getBlockStateModelSet();
                 ModelBlockRenderer blockRenderer = new ModelBlockRenderer(false, false, blockColors);
+
+                // Buffer quads for submission via submitCustomGeometry
+                var quadBuffer = new VertexConsumerProvider(nodeCollector, poseStack);
 
                 int rendered = 0;
                 for (BlockPos pos : positions) {
@@ -142,7 +143,6 @@ public class BlockPreviewRenderer {
                         state = entry.applyTransforms(state);
                     }
                     boolean isMissing = missingPositions.contains(pos);
-                    MultiBufferSource source = isMissing ? missingSource : wrappedSource;
                     poseStack.pushPose();
                     try {
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
@@ -159,7 +159,7 @@ public class BlockPreviewRenderer {
                                 case CUTOUT -> RenderTypes.cutoutMovingBlock();
                                 case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
                             };
-                            VertexConsumer consumer = source.getBuffer(renderType);
+                            VertexConsumer consumer = quadBuffer.getBuffer(renderType, isMissing);
                             poseStack.pushPose();
                             poseStack.translate(qx, qy, qz);
                             consumer.putBakedQuad(poseStack.last(), quad, instance);
@@ -173,18 +173,17 @@ public class BlockPreviewRenderer {
                     }
                     rendered++;
                 }
-                // Flush all render types — entity-rendered blocks (beds, chests)
-                // may use types other than translucent().
-                bufferSource.endBatch();
+
+                // Submit all buffered block model quads
+                quadBuffer.submitAll(blockAlpha, 255, 80, 80, 200);
             }
         }
 
         // Pass 2: bounding box faces with checkerboard texture.
-        renderBoundingBoxFaces(poseStack, bufferSource, breakablePositions, camX, camY, camZ, isBreaking, false);
+        renderBoundingBoxFaces(poseStack, nodeCollector, breakablePositions, camX, camY, camZ, isBreaking, false);
         if (!unbreakablePositions.isEmpty()) {
-            renderBoundingBoxFaces(poseStack, bufferSource, unbreakablePositions, camX, camY, camZ, isBreaking, true);
+            renderBoundingBoxFaces(poseStack, nodeCollector, unbreakablePositions, camX, camY, camZ, isBreaking, true);
         }
-        bufferSource.endBatch(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units
@@ -203,29 +202,24 @@ public class BlockPreviewRenderer {
         }
 
         if (!validPositions.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(validPositions),
+            renderEdgeQuads(poseStack, nodeCollector, computeBorderEdges(validPositions),
                     camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
         if (!missingPositionsList.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositionsList),
+            renderEdgeQuads(poseStack, nodeCollector, computeBorderEdges(missingPositionsList),
                     camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
         if (!unbreakablePositions.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
+            renderEdgeQuads(poseStack, nodeCollector, computeBorderEdges(unbreakablePositions),
                     camX, camY, camZ, outlineWidth, 100, 100, 100, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
         }
     }
 
-    private static void renderBoundingBoxFaces(PoseStack poseStack, MultiBufferSource bufferSource,
+    private static void renderBoundingBoxFaces(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                                 List<BlockPos> positions, double camX, double camY, double camZ,
                                                 boolean isBreaking, boolean isUnbreakable) {
         Set<BlockPos> posSet = new HashSet<>(positions);
 
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
-        var pose = poseStack.last();
         int r, g, b;
         if (isUnbreakable) {
             r = 255; g = 80; b = 80;
@@ -237,24 +231,28 @@ public class BlockPreviewRenderer {
         int a = isUnbreakable ? 100 : 150;
         final float eps = 0.002f;
 
-        for (BlockPos pos : positions) {
-            float x0 = (float)(pos.getX() - camX) - eps, x1 = x0 + 1 + eps * 2;
-            float y0 = (float)(pos.getY() - camY) - eps, y1 = y0 + 1 + eps * 2;
-            float z0 = (float)(pos.getZ() - camZ) - eps, z1 = z0 + 1 + eps * 2;
+        var renderType = RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE);
 
-            if (!posSet.contains(pos.below()))
-                addFace(consumer, pose, x0,y0,z0, x1,y0,z0, x1,y0,z1, x0,y0,z1, 0,-1,0, r,g,b,a);
-            if (!posSet.contains(pos.above()))
-                addFace(consumer, pose, x0,y1,z0, x0,y1,z1, x1,y1,z1, x1,y1,z0, 0,1,0, r,g,b,a);
-            if (!posSet.contains(pos.north()))
-                addFace(consumer, pose, x0,y0,z0, x0,y1,z0, x1,y1,z0, x1,y0,z0, 0,0,-1, r,g,b,a);
-            if (!posSet.contains(pos.south()))
-                addFace(consumer, pose, x1,y0,z1, x1,y1,z1, x0,y1,z1, x0,y0,z1, 0,0,1, r,g,b,a);
-            if (!posSet.contains(pos.west()))
-                addFace(consumer, pose, x0,y0,z1, x0,y1,z1, x0,y1,z0, x0,y0,z0, -1,0,0, r,g,b,a);
-            if (!posSet.contains(pos.east()))
-                addFace(consumer, pose, x1,y0,z0, x1,y1,z0, x1,y1,z1, x1,y0,z1, 1,0,0, r,g,b,a);
-        }
+        nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+            for (BlockPos pos : positions) {
+                float x0 = (float)(pos.getX() - camX) - eps, x1 = x0 + 1 + eps * 2;
+                float y0 = (float)(pos.getY() - camY) - eps, y1 = y0 + 1 + eps * 2;
+                float z0 = (float)(pos.getZ() - camZ) - eps, z1 = z0 + 1 + eps * 2;
+
+                if (!posSet.contains(pos.below()))
+                    addFace(consumer, pose, x0,y0,z0, x1,y0,z0, x1,y0,z1, x0,y0,z1, 0,-1,0, r,g,b,a);
+                if (!posSet.contains(pos.above()))
+                    addFace(consumer, pose, x0,y1,z0, x0,y1,z1, x1,y1,z1, x1,y1,z0, 0,1,0, r,g,b,a);
+                if (!posSet.contains(pos.north()))
+                    addFace(consumer, pose, x0,y0,z0, x0,y1,z0, x1,y1,z0, x1,y0,z0, 0,0,-1, r,g,b,a);
+                if (!posSet.contains(pos.south()))
+                    addFace(consumer, pose, x1,y0,z1, x1,y1,z1, x0,y1,z1, x0,y0,z1, 0,0,1, r,g,b,a);
+                if (!posSet.contains(pos.west()))
+                    addFace(consumer, pose, x0,y0,z1, x0,y1,z1, x0,y1,z0, x0,y0,z0, -1,0,0, r,g,b,a);
+                if (!posSet.contains(pos.east()))
+                    addFace(consumer, pose, x1,y0,z0, x1,y1,z0, x1,y1,z1, x1,y0,z1, 1,0,0, r,g,b,a);
+            }
+        });
     }
 
     private static void addFace(VertexConsumer consumer, PoseStack.Pose pose,
@@ -274,51 +272,52 @@ public class BlockPreviewRenderer {
      * world-space thickness, since {@code RenderSystem.lineWidth()} is clamped
      * to 1 on most OpenGL core-profile drivers.
      */
-    private static void renderEdgeQuads(PoseStack poseStack, MultiBufferSource bufferSource,
+    private static void renderEdgeQuads(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                          Set<EdgeKey> edges, double camX, double camY, double camZ,
                                          float halfWidth, int r, int g, int b, int a) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
-        var pose = poseStack.last();
+        var renderType = RenderTypes.entityTranslucent(OUTLINE_TEXTURE);
 
-        for (EdgeKey edge : edges) {
-            float x0 = (float)(edge.x() - camX);
-            float y0 = (float)(edge.y() - camY);
-            float z0 = (float)(edge.z() - camZ);
-            float x1 = x0 + (edge.axis() == 0 ? 1 : 0);
-            float y1 = y0 + (edge.axis() == 1 ? 1 : 0);
-            float z1 = z0 + (edge.axis() == 2 ? 1 : 0);
+        nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+            for (EdgeKey edge : edges) {
+                float x0 = (float)(edge.x() - camX);
+                float y0 = (float)(edge.y() - camY);
+                float z0 = (float)(edge.z() - camZ);
+                float x1 = x0 + (edge.axis() == 0 ? 1 : 0);
+                float y1 = y0 + (edge.axis() == 1 ? 1 : 0);
+                float z1 = z0 + (edge.axis() == 2 ? 1 : 0);
 
-            // Edge direction (unit length, axis-aligned).
-            float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+                // Edge direction (unit length, axis-aligned).
+                float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
 
-            // Extend both endpoints by halfWidth so adjacent edges overlap at
-            // corners, producing clean mitered joints instead of gaps.
-            x0 -= dx * halfWidth; y0 -= dy * halfWidth; z0 -= dz * halfWidth;
-            x1 += dx * halfWidth; y1 += dy * halfWidth; z1 += dz * halfWidth;
+                // Extend both endpoints by halfWidth so adjacent edges overlap at
+                // corners, producing clean mitered joints instead of gaps.
+                x0 -= dx * halfWidth; y0 -= dy * halfWidth; z0 -= dz * halfWidth;
+                x1 += dx * halfWidth; y1 += dy * halfWidth; z1 += dz * halfWidth;
 
-            // Midpoint is also the view direction (camera sits at origin in camera-relative space).
-            float mx = (x0 + x1) * 0.5f;
-            float my = (y0 + y1) * 0.5f;
-            float mz = (z0 + z1) * 0.5f;
+                // Midpoint is also the view direction (camera sits at origin in camera-relative space).
+                float mx = (x0 + x1) * 0.5f;
+                float my = (y0 + y1) * 0.5f;
+                float mz = (z0 + z1) * 0.5f;
 
 
-            // Perpendicular = cross(edgeDir, viewDir), normalized & scaled to halfWidth.
-            float cx = dy * mz - dz * my;
-            float cy = dz * mx - dx * mz;
-            float cz = dx * my - dy * mx;
-            float len = (float) Math.sqrt(cx * cx + cy * cy + cz * cz);
-            if (len < 1e-6f) continue; // edge seen head-on — invisible
-            float s = halfWidth / len;
-            cx *= s; cy *= s; cz *= s;
+                // Perpendicular = cross(edgeDir, viewDir), normalized & scaled to halfWidth.
+                float cx = dy * mz - dz * my;
+                float cy = dz * mx - dx * mz;
+                float cz = dx * my - dy * mx;
+                float len = (float) Math.sqrt(cx * cx + cy * cy + cz * cz);
+                if (len < 1e-6f) continue; // edge seen head-on — invisible
+                float s = halfWidth / len;
+                cx *= s; cy *= s; cz *= s;
 
-            addFace(consumer, pose,
-                    x0 - cx, y0 - cy, z0 - cz,
-                    x0 + cx, y0 + cy, z0 + cz,
-                    x1 + cx, y1 + cy, z1 + cz,
-                    x1 - cx, y1 - cy, z1 - cz,
-                    0, 1, 0,
-                    r, g, b, a);
-        }
+                addFace(consumer, pose,
+                        x0 - cx, y0 - cy, z0 - cz,
+                        x0 + cx, y0 + cy, z0 + cz,
+                        x1 + cx, y1 + cy, z1 + cz,
+                        x1 - cx, y1 - cy, z1 - cz,
+                        0, 1, 0,
+                        r, g, b, a);
+            }
+        });
     }
 
     /**
@@ -388,26 +387,7 @@ public class BlockPreviewRenderer {
         if (!edges.remove(key)) edges.add(key);
     }
 
-    /**
-     * Routes all render type requests and overrides the alpha channel on every vertex
-     * so the block preview appears semi-transparent.
-     */
-    private static class AlphaMultiBufferSource implements MultiBufferSource {
-        private final MultiBufferSource.BufferSource delegate;
-        private final int alpha;
-
-        AlphaMultiBufferSource(MultiBufferSource.BufferSource delegate, int alpha) {
-            this.delegate = delegate;
-            this.alpha = alpha;
-        }
-
-        @Override
-        public VertexConsumer getBuffer(RenderType renderType) {
-            return new AlphaVertexConsumer(delegate.getBuffer(renderType), alpha);
-        }
-    }
-
-    private static class AlphaVertexConsumer implements VertexConsumer {
+    static class AlphaVertexConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final int alpha;
 
@@ -461,6 +441,12 @@ public class BlockPreviewRenderer {
         }
 
         @Override
+        public VertexConsumer setNormal(PoseStack.Pose pose, float nx, float ny, float nz) {
+            delegate.setNormal(pose, nx, ny, nz);
+            return this;
+        }
+
+        @Override
         public VertexConsumer setLineWidth(float width) {
             delegate.setLineWidth(width);
             return this;
@@ -476,26 +462,7 @@ public class BlockPreviewRenderer {
         }
     }
 
-    /**
-     * Like {@link AlphaMultiBufferSource} but also forces a specific RGB tint on every vertex,
-     * used to mark missing-block positions red in the preview.
-     */
-    private static class TintedMultiBufferSource implements MultiBufferSource {
-        private final MultiBufferSource.BufferSource delegate;
-        private final int r, g, b, a;
-
-        TintedMultiBufferSource(MultiBufferSource.BufferSource delegate, int r, int g, int b, int a) {
-            this.delegate = delegate;
-            this.r = r; this.g = g; this.b = b; this.a = a;
-        }
-
-        @Override
-        public VertexConsumer getBuffer(RenderType renderType) {
-            return new TintedVertexConsumer(delegate.getBuffer(renderType), r, g, b, a);
-        }
-    }
-
-    private static class TintedVertexConsumer implements VertexConsumer {
+    static class TintedVertexConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final int r, g, b, a;
 
@@ -511,6 +478,7 @@ public class BlockPreviewRenderer {
         @Override public VertexConsumer setUv1(int u, int v) { delegate.setUv1(u, v); return this; }
         @Override public VertexConsumer setUv2(int u, int v) { delegate.setUv2(u, v); return this; }
         @Override public VertexConsumer setNormal(float nx, float ny, float nz) { delegate.setNormal(nx, ny, nz); return this; }
+        @Override public VertexConsumer setNormal(PoseStack.Pose pose, float nx, float ny, float nz) { delegate.setNormal(pose, nx, ny, nz); return this; }
         @Override public VertexConsumer setLineWidth(float width) { delegate.setLineWidth(width); return this; }
     }
 }

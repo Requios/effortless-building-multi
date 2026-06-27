@@ -3,12 +3,12 @@ package nl.requios.effortlessbuilding;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
+import nl.requios.effortlessbuilding.render.VertexConsumerProvider;
 import org.joml.Matrix4f;
 
 import java.awt.Color;
@@ -109,7 +109,7 @@ public class AllIcons {
         graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_ATLAS, x, y, (float) iconX, (float) iconY, 16, 16, 256, 256);
     }
 
-    public void render(PoseStack ms, MultiBufferSource buffer, int color) {
+    public void render(PoseStack ms, VertexConsumerProvider buffer, int color) {
         VertexConsumer builder = buffer.getBuffer(RenderTypes.textSeeThrough(ICON_ATLAS));
         Matrix4f matrix = ms.last().pose();
         Color rgb = new Color(color);

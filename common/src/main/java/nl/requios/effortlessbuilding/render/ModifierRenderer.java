@@ -3,8 +3,7 @@ package nl.requios.effortlessbuilding.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -27,7 +26,7 @@ public class ModifierRenderer {
     /** Number of line segments used to approximate a radial circle. */
     private static final int CIRCLE_SEGMENTS = 64;
 
-    public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    public static void render(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                double camX, double camY, double camZ) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -36,24 +35,19 @@ public class ModifierRenderer {
             if (!modifier.isEnabled()) continue;
 
             if (modifier instanceof MirrorModifier mirror) {
-                renderMirrorPlanes(poseStack, bufferSource, mirror, camX, camY, camZ);
+                renderMirrorPlanes(poseStack, nodeCollector, mirror, camX, camY, camZ);
             } else if (modifier instanceof RadialMirrorModifier radial) {
-                renderRadialBoundary(poseStack, bufferSource, radial, camX, camY, camZ);
+                renderRadialBoundary(poseStack, nodeCollector, radial, camX, camY, camZ);
             }
         }
-
-        // Flush all modifier visuals.
-        bufferSource.endBatch(RenderTypes.entityTranslucent(BLANK_TEXTURE));
     }
 
     // =========================================================================
     // Mirror planes
     // =========================================================================
 
-    private static void renderMirrorPlanes(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    private static void renderMirrorPlanes(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                             MirrorModifier mirror, double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
-        var pose = poseStack.last();
         int radius = mirror.size / 2;
 
         float ox = (float)(mirror.originX - camX);
@@ -63,37 +57,45 @@ public class ModifierRenderer {
         // Small offset along the plane normal to avoid z-fighting with block faces.
         float e = 0.005f;
 
+        var renderType = RenderTypes.entityTranslucent(BLANK_TEXTURE);
+
         // X plane (red) — YZ rectangle at originX
         if (mirror.mirrorX) {
-            addFace(consumer, pose,
-                    ox + e, oy - radius, oz - radius,
-                    ox + e, oy - radius, oz + radius,
-                    ox + e, oy + radius, oz + radius,
-                    ox + e, oy + radius, oz - radius,
-                    1, 0, 0,
-                    255, 80, 80, 50);
+            nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+                addFace(consumer, pose,
+                        ox + e, oy - radius, oz - radius,
+                        ox + e, oy - radius, oz + radius,
+                        ox + e, oy + radius, oz + radius,
+                        ox + e, oy + radius, oz - radius,
+                        1, 0, 0,
+                        255, 80, 80, 50);
+            });
         }
 
         // Y plane (green) — XZ rectangle at originY
         if (mirror.mirrorY) {
-            addFace(consumer, pose,
-                    ox - radius, oy + e, oz - radius,
-                    ox + radius, oy + e, oz - radius,
-                    ox + radius, oy + e, oz + radius,
-                    ox - radius, oy + e, oz + radius,
-                    0, 1, 0,
-                    80, 255, 80, 50);
+            nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+                addFace(consumer, pose,
+                        ox - radius, oy + e, oz - radius,
+                        ox + radius, oy + e, oz - radius,
+                        ox + radius, oy + e, oz + radius,
+                        ox - radius, oy + e, oz + radius,
+                        0, 1, 0,
+                        80, 255, 80, 50);
+            });
         }
 
         // Z plane (blue) — XY rectangle at originZ
         if (mirror.mirrorZ) {
-            addFace(consumer, pose,
-                    ox - radius, oy - radius, oz + e,
-                    ox + radius, oy - radius, oz + e,
-                    ox + radius, oy + radius, oz + e,
-                    ox - radius, oy + radius, oz + e,
-                    0, 0, 1,
-                    80, 80, 255, 50);
+            nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+                addFace(consumer, pose,
+                        ox - radius, oy - radius, oz + e,
+                        ox + radius, oy - radius, oz + e,
+                        ox + radius, oy + radius, oz + e,
+                        ox - radius, oy + radius, oz + e,
+                        0, 0, 1,
+                        80, 80, 255, 50);
+            });
         }
     }
 
@@ -101,54 +103,51 @@ public class ModifierRenderer {
     // Radial boundary
     // =========================================================================
 
-    private static void renderRadialBoundary(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    private static void renderRadialBoundary(PoseStack poseStack, SubmitNodeCollector nodeCollector,
                                               RadialMirrorModifier radial,
                                               double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
-        var pose = poseStack.last();
-
         float ox = (float)(radial.originX - camX);
         float oy = (float)(radial.originY - camY);
         float oz = (float)(radial.originZ - camZ);
         float r = radial.size / 2.0f;
         float halfWidth = 0.04f;
 
-        // Radial slice lines from center out to radius.
-        for (int i = 0; i < radial.slices; i++) {
-            double angle = (2 * Math.PI * i) / radial.slices;
-            float dx = (float) Math.cos(angle) * r;
-            float dz = (float) Math.sin(angle) * r;
+        var renderType = RenderTypes.entityTranslucent(BLANK_TEXTURE);
 
-            // Billboard quad for each slice line.
-            // The line goes from (ox, oy, oz) to (ox+dx, oy, oz+dz) — horizontal.
-            // Perpendicular in Y gives thickness.
-            addFace(consumer, pose,
-                    ox,      oy - halfWidth, oz,
-                    ox,      oy + halfWidth, oz,
-                    ox + dx, oy + halfWidth, oz + dz,
-                    ox + dx, oy - halfWidth, oz + dz,
-                    0, 1, 0,
-                    200, 100, 255, 80);
-        }
+        nodeCollector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+            // Radial slice lines from center out to radius.
+            for (int i = 0; i < radial.slices; i++) {
+                double angle = (2 * Math.PI * i) / radial.slices;
+                float dx = (float) Math.cos(angle) * r;
+                float dz = (float) Math.sin(angle) * r;
 
-        // Circle outline at radius distance (polygon approximation).
-        for (int i = 0; i < CIRCLE_SEGMENTS; i++) {
-            double a0 = (2 * Math.PI * i) / CIRCLE_SEGMENTS;
-            double a1 = (2 * Math.PI * (i + 1)) / CIRCLE_SEGMENTS;
-            float x0 = ox + (float) Math.cos(a0) * r;
-            float z0 = oz + (float) Math.sin(a0) * r;
-            float x1 = ox + (float) Math.cos(a1) * r;
-            float z1 = oz + (float) Math.sin(a1) * r;
+                addFace(consumer, pose,
+                        ox,      oy - halfWidth, oz,
+                        ox,      oy + halfWidth, oz,
+                        ox + dx, oy + halfWidth, oz + dz,
+                        ox + dx, oy - halfWidth, oz + dz,
+                        0, 1, 0,
+                        200, 100, 255, 80);
+            }
 
-            // Thin horizontal quad from (x0, oy, z0) to (x1, oy, z1), thickness in Y.
-            addFace(consumer, pose,
-                    x0, oy - halfWidth, z0,
-                    x0, oy + halfWidth, z0,
-                    x1, oy + halfWidth, z1,
-                    x1, oy - halfWidth, z1,
-                    0, 1, 0,
-                    200, 100, 255, 80);
-        }
+            // Circle outline at radius distance (polygon approximation).
+            for (int i = 0; i < CIRCLE_SEGMENTS; i++) {
+                double a0 = (2 * Math.PI * i) / CIRCLE_SEGMENTS;
+                double a1 = (2 * Math.PI * (i + 1)) / CIRCLE_SEGMENTS;
+                float x0 = ox + (float) Math.cos(a0) * r;
+                float z0 = oz + (float) Math.sin(a0) * r;
+                float x1 = ox + (float) Math.cos(a1) * r;
+                float z1 = oz + (float) Math.sin(a1) * r;
+
+                addFace(consumer, pose,
+                        x0, oy - halfWidth, z0,
+                        x0, oy + halfWidth, z0,
+                        x1, oy + halfWidth, z1,
+                        x1, oy - halfWidth, z1,
+                        0, 1, 0,
+                        200, 100, 255, 80);
+            }
+        });
     }
 
     // =========================================================================
