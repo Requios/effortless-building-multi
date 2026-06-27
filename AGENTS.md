@@ -1,9 +1,10 @@
 # AGENTS.md
 
 ## Quick Orientation
-- Target: Minecraft `26.1.2`, Java `25`, primary loaders are `fabric` and `neoforge`.
+- Target: Minecraft `26.2`, Java `25`, primary loaders are `fabric` and `neoforge`.
 - Put shared gameplay logic in `common/`; loader projects should only contain bootstrap/events/platform glue.
 - Read first: `BuildPipeline.java`, `BuildPipelineClient.java`, `PacketHandler.java`.
+- Rendering entry points: `RenderHandler.java`, `BlockPreviewRenderer.java`, `ModifierRenderer.java`, `VertexConsumerProvider.java`.
 
 ## Project Structure
 - `common/` — shared code compiled into all loaders
@@ -35,6 +36,26 @@ While the player is mid-sequence (between clicks), `BuildPipelineClient.getPrevi
 - `ModifierSystem` / `ModifierSystemServer` — mirrors/arrays/radials the block set
 - `ConstraintSystem` — marks entries with `BlockStatus` rejection reasons (not removal). Checks: max blocks, only-placed-blocks, max-hardness, require-tools, breaking-disabled. Runs for both breaking and replacing existing blocks during placement.
 
+## Minecraft 26.2 Migration Notes
+
+### Rendering (Vibrant Visual)
+Minecraft 26.2 removed `MultiBufferSource` and migrated to a feature-based rendering system. All custom rendering must use `SubmitNodeCollector.submitCustomGeometry()`:
+
+- **`VertexConsumerProvider`** — Replacement for `MultiBufferSource`. Buffers `BakedQuad` calls per `RenderType`, then submits them via `submitCustomGeometry()` with alpha/tint wrappers. Never uses `StagedVertexBuffer` directly.
+- **`BlockPreviewRenderer`** — All three passes (block models, bounding box faces, edge quads) use `submitCustomGeometry()`.
+- **`ModifierRenderer`** — Mirror planes and radial boundaries use `submitCustomGeometry()`.
+- **`RenderHandler.onRenderLevel()`** — Signature accepts `SubmitNodeCollector` instead of `VertexConsumerProvider`.
+
+### Loader-specific render hooks
+- **Fabric**: `EffortlessBuildingClient` uses `LevelRenderEvents.COLLECT_SUBMITS` (accesses `SubmitNodeCollector` from the event context).
+- **NeoForge**: `NeoForgeClientSetup` uses `RenderLevelStageEvent.AfterTranslucentFeatures` + `LevelRendererAccessor` mixin to expose `LevelRenderer.submitNodeStorage`.
+
+### Deprecated API removals
+- `ChatFormatting.getColor()` → hardcoded hex values (e.g. `ChatFormatting.RED` → `0xFFFF5555`)
+- `I18n.exists()` → `I18n.get(key)` + key comparison
+- `Minecraft.getInstance().setScreen()` → `Minecraft.getInstance().gui.setScreen()`
+- `Minecraft.getInstance().screen` → `Minecraft.getInstance().gui.screen()`
+
 ## BlockEntry Status
 - `BlockEntry.status` (default `VALID`) carries rejection reasons from `ConstraintSystem`.
 - `BlockSet.validEntries()` / `validPositions()` filter to valid entries.
@@ -44,6 +65,7 @@ While the player is mid-sequence (between clicks), `BuildPipelineClient.getPrevi
 ```powershell
 .\gradlew.bat :common:compileJava
 .\gradlew.bat :fabric:compileJava :neoforge:compileJava
+.\gradlew.bat :fabric:build :neoforge:build -x javadoc -x test
 .\gradlew.bat :fabric:runClient
 .\gradlew.bat :neoforge:runClient
 ```
