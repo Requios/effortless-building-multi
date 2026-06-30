@@ -63,7 +63,7 @@ public class RadialMenu extends Screen {
 	}
 
 	public boolean isVisible() {
-		return Minecraft.getInstance().screen instanceof RadialMenu;
+		return KeyBindings.isKeyDown(KeyBindings.openRadialMenu);
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class RadialMenu extends Screen {
 		replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
 		// Subtitle: current mode name (rendered white), Description: its description
 		replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
-		replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
+		replaceBtn.description = translationExists(currentReplaceAction.getDescriptionKey())
 				? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
 		buttons.add(replaceBtn);
 
@@ -435,19 +435,19 @@ public class RadialMenu extends Screen {
 				// Set the flag before calling setScreen so the onClose triggered by
 				// setScreen doesn't re-enter performAction a second time.
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ModifiersScreen());
+				minecraft.setScreenAndShow(new ModifiersScreen());
 				return;
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ServerConfigScreen());
+				minecraft.setScreenAndShow(new ServerConfigScreen());
 				return;
 			}
 
 			if (action == ActionEnum.OPEN_CLIENT_CONFIG) {
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ClientConfigScreen());
+				minecraft.setScreenAndShow(new ClientConfigScreen());
 				return;
 			}
 
@@ -462,6 +462,10 @@ public class RadialMenu extends Screen {
 		if (volume >= 0.0001f) {
 			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, volume));
 		}
+	}
+
+	private static boolean translationExists(String key) {
+		return !I18n.get(key).equals(key);
 	}
 
 	private static class MenuButton {
@@ -489,7 +493,7 @@ public class RadialMenu extends Screen {
 				this.description += "[" + KeyBindings.openModifiersScreen.getTranslatedKeyMessage().getString() + "]";
 			}
 
-			if (I18n.exists(action.getDescriptionKey())) {
+			if (translationExists(action.getDescriptionKey())) {
 				this.description = I18n.get(action.getDescriptionKey());
 			}
 
@@ -521,4 +525,3 @@ public class RadialMenu extends Screen {
 	}
 
 }
-

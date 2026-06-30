@@ -9,7 +9,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
@@ -33,6 +32,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
 
     private static boolean prevRightDown = false;
     private static boolean prevLeftDown = false;
+    private static boolean radialMenuShown = false;
 
     @Override
     public void onInitializeClient() {
@@ -54,11 +54,11 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 (graphics, deltaTracker) -> RenderHandler.onRenderGui(graphics));
 
         LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
-            if (context.bufferSource() == null || context.poseStack() == null) return;
+            if (context.submitNodeCollector() == null || context.poseStack() == null) return;
             var camPos = context.levelState().cameraRenderState.pos;
             RenderHandler.onRenderLevel(
                     context.poseStack(),
-                    context.bufferSource(),
+                    context.submitNodeCollector(),
                     camPos.x, camPos.y, camPos.z);
         });
 
@@ -76,7 +76,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (KeyBindings.openModifiersScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new ModifiersScreen());
+                Minecraft.getInstance().setScreenAndShow(new ModifiersScreen());
             }
             // Undo/redo keybindings — require Ctrl held
             while (KeyBindings.undo.consumeClick()) {
@@ -92,9 +92,14 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 }
             }
 
-            if (client.screen == null) {
+            if (client.canInterruptScreen()) {
                 if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
-                    Minecraft.getInstance().setScreen(RadialMenu.instance);
+                    if (!radialMenuShown) {
+                        Minecraft.getInstance().setScreenAndShow(RadialMenu.instance);
+                        radialMenuShown = true;
+                    }
+                } else {
+                    radialMenuShown = false;
                 }
 
                 if (client.player != null && client.level != null && BuildPipelineClient.shouldInterceptPlacing()) {
@@ -124,6 +129,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     prevLeftDown = leftDown;
                 }
             } else {
+                radialMenuShown = false;
                 prevRightDown = false;
                 prevLeftDown = false;
             }

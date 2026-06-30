@@ -5,7 +5,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
@@ -46,13 +46,13 @@ public class RenderHandler {
     // World rendering entry point (called from loader hooks)
     // =========================================================================
 
-    public static void onRenderLevel(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    public static void onRenderLevel(PoseStack poseStack, SubmitNodeCollector submitter,
                                       double camX, double camY, double camZ) {
         // Always render modifier overlays (mirrors, radial boundaries).
-        ModifierRenderer.render(poseStack, bufferSource, camX, camY, camZ);
+        ModifierRenderer.render(poseStack, submitter, camX, camY, camZ);
 
         // Block preview + feedback
-        BlockPreviewRenderer.render(poseStack, bufferSource, camX, camY, camZ);
+        BlockPreviewRenderer.render(poseStack, submitter, camX, camY, camZ);
     }
 
     // =========================================================================
@@ -219,7 +219,7 @@ public class RenderHandler {
         // Draw count text, red if missing
         Font font = Minecraft.getInstance().font;
         String text = String.valueOf(stack.getCount());
-        int color = missing ? ChatFormatting.RED.getColor() : ChatFormatting.WHITE.getColor();
+        int color = missing ? 0xFF5555 : 0xFFFFFF;
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
@@ -249,4 +249,3 @@ public class RenderHandler {
         graphics.text(font, text, drawX, drawY, 0xffffffff, true);
     }
 }
-
