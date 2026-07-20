@@ -9,7 +9,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
@@ -53,12 +52,11 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, HUD_ELEMENT_ID,
                 (graphics, deltaTracker) -> RenderHandler.onRenderGui(graphics));
 
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
-            if (context.bufferSource() == null || context.poseStack() == null) return;
+        LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
             var camPos = context.levelState().cameraRenderState.pos;
             RenderHandler.onRenderLevel(
                     context.poseStack(),
-                    context.bufferSource(),
+                    context.submitNodeCollector(),
                     camPos.x, camPos.y, camPos.z);
         });
 
@@ -76,7 +74,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (KeyBindings.openModifiersScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new ModifiersScreen());
+                Minecraft.getInstance().gui.setScreen(new ModifiersScreen());
             }
             // Undo/redo keybindings — require Ctrl held
             while (KeyBindings.undo.consumeClick()) {
@@ -92,9 +90,9 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                 }
             }
 
-            if (client.screen == null) {
+            if (client.gui.screen() == null) {
                 if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
-                    Minecraft.getInstance().setScreen(RadialMenu.instance);
+                    Minecraft.getInstance().gui.setScreen(RadialMenu.instance);
                 }
 
                 if (client.player != null && client.level != null && BuildPipelineClient.shouldInterceptPlacing()) {

@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockQuadOutput;
 import net.minecraft.client.renderer.block.BlockStateModelSet;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
@@ -40,7 +40,9 @@ import nl.requios.effortlessbuilding.utilities.BlockSet;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class BlockPreviewRenderer {
@@ -58,7 +60,7 @@ public class BlockPreviewRenderer {
     // when the player is already within normal interaction range.
     private static final double VANILLA_REACH_SQ = 4.5 * 4.5;
 
-    public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    public static void render(PoseStack poseStack, SubmitNodeCollector collector,
                                double camX, double camY, double camZ) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
@@ -123,14 +125,17 @@ public class BlockPreviewRenderer {
                 }
             }
             if (baseState != null) {
-                var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
-                var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                 Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
 
                 // Set up ModelBlockRenderer for the new tesselateBlock API
                 BlockColors blockColors = mc.getBlockColors();
                 BlockStateModelSet modelSet = mc.getModelManager().getBlockStateModelSet();
                 ModelBlockRenderer blockRenderer = new ModelBlockRenderer(false, false, blockColors);
+
+                // Quads are gathered here at submit time, grouped by render type, and
+                // replayed later inside submitCustomGeometry when the feature dispatcher
+                // hands us a real vertex buffer (MultiBufferSource is gone in 26.2).
+                Map<RenderType, List<QuadSubmit>> quadsByType = new LinkedHashMap<>();
 
                 int rendered = 0;
                 for (BlockPos pos : positions) {
@@ -142,7 +147,6 @@ public class BlockPreviewRenderer {
                         state = entry.applyTransforms(state);
                     }
                     boolean isMissing = missingPositions.contains(pos);
-                    MultiBufferSource source = isMissing ? missingSource : wrappedSource;
                     poseStack.pushPose();
                     try {
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
@@ -159,10 +163,10 @@ public class BlockPreviewRenderer {
                                 case CUTOUT -> RenderTypes.cutoutMovingBlock();
                                 case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
                             };
-                            VertexConsumer consumer = source.getBuffer(renderType);
                             poseStack.pushPose();
                             poseStack.translate(qx, qy, qz);
-                            consumer.putBakedQuad(poseStack.last(), quad, instance);
+                            quadsByType.computeIfAbsent(renderType, k -> new ArrayList<>())
+                                    .add(new QuadSubmit(poseStack.last().copy(), quad, instance, isMissing));
                             poseStack.popPose();
                         };
                         blockRenderer.tesselateBlock(output, 0f, 0f, 0f, mc.level, pos, state, model, seed);
@@ -173,18 +177,30 @@ public class BlockPreviewRenderer {
                     }
                     rendered++;
                 }
-                // Flush all render types — entity-rendered blocks (beds, chests)
-                // may use types other than translucent().
-                bufferSource.endBatch();
+
+                int alpha = blockAlpha;
+                for (Map.Entry<RenderType, List<QuadSubmit>> typeEntry : quadsByType.entrySet()) {
+                    List<QuadSubmit> quads = typeEntry.getValue();
+                    collector.submitCustomGeometry(poseStack, typeEntry.getKey(), (pose, buffer) -> {
+                        VertexConsumer normal = new AlphaVertexConsumer(buffer, alpha);
+                        VertexConsumer missing = new TintedVertexConsumer(buffer, 255, 80, 80, 200);
+                        for (QuadSubmit qs : quads) {
+                            (qs.missing() ? missing : normal).putBakedQuad(qs.pose(), qs.quad(), qs.instance());
+                        }
+                    });
+                }
             }
         }
 
         // Pass 2: bounding box faces with checkerboard texture.
-        renderBoundingBoxFaces(poseStack, bufferSource, breakablePositions, camX, camY, camZ, isBreaking, false);
-        if (!unbreakablePositions.isEmpty()) {
-            renderBoundingBoxFaces(poseStack, bufferSource, unbreakablePositions, camX, camY, camZ, isBreaking, true);
-        }
-        bufferSource.endBatch(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
+        List<BlockPos> boxBreakable = breakablePositions;
+        List<BlockPos> boxUnbreakable = unbreakablePositions;
+        collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE), (pose, consumer) -> {
+            renderBoundingBoxFaces(pose, consumer, boxBreakable, camX, camY, camZ, isBreaking, false);
+            if (!boxUnbreakable.isEmpty()) {
+                renderBoundingBoxFaces(pose, consumer, boxUnbreakable, camX, camY, camZ, isBreaking, true);
+            }
+        });
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units
@@ -202,30 +218,32 @@ public class BlockPreviewRenderer {
             }
         }
 
-        if (!validPositions.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(validPositions),
-                    camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
-        }
-        if (!missingPositionsList.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(missingPositionsList),
-                    camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
-        }
-        if (!unbreakablePositions.isEmpty()) {
-            renderEdgeQuads(poseStack, bufferSource, computeBorderEdges(unbreakablePositions),
-                    camX, camY, camZ, outlineWidth, 100, 100, 100, 255);
-            bufferSource.endBatch(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
+        if (!validPositions.isEmpty() || !missingPositionsList.isEmpty() || !unbreakablePositions.isEmpty()) {
+            List<BlockPos> edgeUnbreakable = unbreakablePositions;
+            collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(OUTLINE_TEXTURE), (pose, consumer) -> {
+                if (!validPositions.isEmpty()) {
+                    renderEdgeQuads(pose, consumer, computeBorderEdges(validPositions),
+                            camX, camY, camZ, outlineWidth, oR, oG, oB, 255);
+                }
+                if (!missingPositionsList.isEmpty()) {
+                    renderEdgeQuads(pose, consumer, computeBorderEdges(missingPositionsList),
+                            camX, camY, camZ, outlineWidth, 255, 0, 0, 255);
+                }
+                if (!edgeUnbreakable.isEmpty()) {
+                    renderEdgeQuads(pose, consumer, computeBorderEdges(edgeUnbreakable),
+                            camX, camY, camZ, outlineWidth, 100, 100, 100, 255);
+                }
+            });
         }
     }
 
-    private static void renderBoundingBoxFaces(PoseStack poseStack, MultiBufferSource bufferSource,
+    /** One baked quad captured at submit time for replay inside the feature renderer. */
+    private record QuadSubmit(PoseStack.Pose pose, BakedQuad quad, QuadInstance instance, boolean missing) {}
+
+    private static void renderBoundingBoxFaces(PoseStack.Pose pose, VertexConsumer consumer,
                                                 List<BlockPos> positions, double camX, double camY, double camZ,
                                                 boolean isBreaking, boolean isUnbreakable) {
         Set<BlockPos> posSet = new HashSet<>(positions);
-
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(CHECKERBOARD_TEXTURE));
-        var pose = poseStack.last();
         int r, g, b;
         if (isUnbreakable) {
             r = 255; g = 80; b = 80;
@@ -274,12 +292,9 @@ public class BlockPreviewRenderer {
      * world-space thickness, since {@code RenderSystem.lineWidth()} is clamped
      * to 1 on most OpenGL core-profile drivers.
      */
-    private static void renderEdgeQuads(PoseStack poseStack, MultiBufferSource bufferSource,
+    private static void renderEdgeQuads(PoseStack.Pose pose, VertexConsumer consumer,
                                          Set<EdgeKey> edges, double camX, double camY, double camZ,
                                          float halfWidth, int r, int g, int b, int a) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(OUTLINE_TEXTURE));
-        var pose = poseStack.last();
-
         for (EdgeKey edge : edges) {
             float x0 = (float)(edge.x() - camX);
             float y0 = (float)(edge.y() - camY);
@@ -389,24 +404,9 @@ public class BlockPreviewRenderer {
     }
 
     /**
-     * Routes all render type requests and overrides the alpha channel on every vertex
-     * so the block preview appears semi-transparent.
+     * Overrides the alpha channel on every vertex so the block preview
+     * appears semi-transparent.
      */
-    private static class AlphaMultiBufferSource implements MultiBufferSource {
-        private final MultiBufferSource.BufferSource delegate;
-        private final int alpha;
-
-        AlphaMultiBufferSource(MultiBufferSource.BufferSource delegate, int alpha) {
-            this.delegate = delegate;
-            this.alpha = alpha;
-        }
-
-        @Override
-        public VertexConsumer getBuffer(RenderType renderType) {
-            return new AlphaVertexConsumer(delegate.getBuffer(renderType), alpha);
-        }
-    }
-
     private static class AlphaVertexConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final int alpha;
@@ -477,24 +477,9 @@ public class BlockPreviewRenderer {
     }
 
     /**
-     * Like {@link AlphaMultiBufferSource} but also forces a specific RGB tint on every vertex,
+     * Like {@link AlphaVertexConsumer} but also forces a specific RGB tint on every vertex,
      * used to mark missing-block positions red in the preview.
      */
-    private static class TintedMultiBufferSource implements MultiBufferSource {
-        private final MultiBufferSource.BufferSource delegate;
-        private final int r, g, b, a;
-
-        TintedMultiBufferSource(MultiBufferSource.BufferSource delegate, int r, int g, int b, int a) {
-            this.delegate = delegate;
-            this.r = r; this.g = g; this.b = b; this.a = a;
-        }
-
-        @Override
-        public VertexConsumer getBuffer(RenderType renderType) {
-            return new TintedVertexConsumer(delegate.getBuffer(renderType), r, g, b, a);
-        }
-    }
-
     private static class TintedVertexConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final int r, g, b, a;

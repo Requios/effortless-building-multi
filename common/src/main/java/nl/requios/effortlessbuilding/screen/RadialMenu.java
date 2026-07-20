@@ -63,7 +63,7 @@ public class RadialMenu extends Screen {
 	}
 
 	public boolean isVisible() {
-		return Minecraft.getInstance().screen instanceof RadialMenu;
+		return Minecraft.getInstance().gui.screen() instanceof RadialMenu;
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class RadialMenu extends Screen {
 		replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
 		// Subtitle: current mode name (rendered white), Description: its description
 		replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
-		replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
+		replaceBtn.description = net.minecraft.locale.Language.getInstance().has(currentReplaceAction.getDescriptionKey())
 				? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
 		buttons.add(replaceBtn);
 
@@ -435,19 +435,19 @@ public class RadialMenu extends Screen {
 				// Set the flag before calling setScreen so the onClose triggered by
 				// setScreen doesn't re-enter performAction a second time.
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ModifiersScreen());
+				minecraft.gui.setScreen(new ModifiersScreen());
 				return;
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ServerConfigScreen());
+				minecraft.gui.setScreen(new ServerConfigScreen());
 				return;
 			}
 
 			if (action == ActionEnum.OPEN_CLIENT_CONFIG) {
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ClientConfigScreen());
+				minecraft.gui.setScreen(new ClientConfigScreen());
 				return;
 			}
 
@@ -489,7 +489,7 @@ public class RadialMenu extends Screen {
 				this.description += "[" + KeyBindings.openModifiersScreen.getTranslatedKeyMessage().getString() + "]";
 			}
 
-			if (I18n.exists(action.getDescriptionKey())) {
+			if (net.minecraft.locale.Language.getInstance().has(action.getDescriptionKey())) {
 				this.description = I18n.get(action.getDescriptionKey());
 			}
 

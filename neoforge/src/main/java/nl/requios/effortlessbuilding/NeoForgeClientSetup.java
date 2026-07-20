@@ -8,7 +8,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import nl.requios.effortlessbuilding.config.ClientConfig;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
@@ -47,7 +47,7 @@ public class NeoForgeClientSetup {
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
             if (KeyBindings.openModifiersScreen.consumeClick()) {
-                Minecraft.getInstance().setScreen(new ModifiersScreen());
+                Minecraft.getInstance().gui.setScreen(new ModifiersScreen());
             }
             // Undo/redo keybindings — require Ctrl held
             Minecraft mc = Minecraft.getInstance();
@@ -64,9 +64,9 @@ public class NeoForgeClientSetup {
                 }
             }
 
-            if (mc.screen == null) {
+            if (mc.gui.screen() == null) {
                 if (KeyBindings.isKeyDown(KeyBindings.openRadialMenu)) {
-                    mc.setScreen(RadialMenu.instance);
+                    mc.gui.setScreen(RadialMenu.instance);
                 }
 
                 if (mc.player != null && mc.level != null && BuildPipelineClient.shouldInterceptPlacing()) {
@@ -107,10 +107,9 @@ public class NeoForgeClientSetup {
         }
 
         @SubscribeEvent
-        public static void onRenderLevel(RenderLevelStageEvent.AfterTranslucentFeatures event) {
+        public static void onSubmitCustomGeometry(SubmitCustomGeometryEvent event) {
             var camPos = event.getLevelRenderState().cameraRenderState.pos;
-            var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-            RenderHandler.onRenderLevel(event.getPoseStack(), bufferSource,
+            RenderHandler.onRenderLevel(event.getPoseStack(), event.getSubmitNodeCollector(),
                     camPos.x, camPos.y, camPos.z);
         }
 

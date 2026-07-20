@@ -3,8 +3,7 @@ package nl.requios.effortlessbuilding.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -12,6 +11,9 @@ import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.MirrorModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSystem;
 import nl.requios.effortlessbuilding.modifier.RadialMirrorModifier;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Renders in-world visualizations for active modifiers:
@@ -27,33 +29,34 @@ public class ModifierRenderer {
     /** Number of line segments used to approximate a radial circle. */
     private static final int CIRCLE_SEGMENTS = 64;
 
-    public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    public static void render(PoseStack poseStack, SubmitNodeCollector collector,
                                double camX, double camY, double camZ) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
+        List<IModifier> enabled = new ArrayList<>();
         for (IModifier modifier : ModifierSystem.CLIENT.getModifiers()) {
-            if (!modifier.isEnabled()) continue;
-
-            if (modifier instanceof MirrorModifier mirror) {
-                renderMirrorPlanes(poseStack, bufferSource, mirror, camX, camY, camZ);
-            } else if (modifier instanceof RadialMirrorModifier radial) {
-                renderRadialBoundary(poseStack, bufferSource, radial, camX, camY, camZ);
-            }
+            if (modifier.isEnabled()) enabled.add(modifier);
         }
+        if (enabled.isEmpty()) return;
 
-        // Flush all modifier visuals.
-        bufferSource.endBatch(RenderTypes.entityTranslucent(BLANK_TEXTURE));
+        collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(BLANK_TEXTURE), (pose, consumer) -> {
+            for (IModifier modifier : enabled) {
+                if (modifier instanceof MirrorModifier mirror) {
+                    renderMirrorPlanes(pose, consumer, mirror, camX, camY, camZ);
+                } else if (modifier instanceof RadialMirrorModifier radial) {
+                    renderRadialBoundary(pose, consumer, radial, camX, camY, camZ);
+                }
+            }
+        });
     }
 
     // =========================================================================
     // Mirror planes
     // =========================================================================
 
-    private static void renderMirrorPlanes(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    private static void renderMirrorPlanes(PoseStack.Pose pose, VertexConsumer consumer,
                                             MirrorModifier mirror, double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
-        var pose = poseStack.last();
         int radius = mirror.size / 2;
 
         float ox = (float)(mirror.originX - camX);
@@ -101,12 +104,9 @@ public class ModifierRenderer {
     // Radial boundary
     // =========================================================================
 
-    private static void renderRadialBoundary(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+    private static void renderRadialBoundary(PoseStack.Pose pose, VertexConsumer consumer,
                                               RadialMirrorModifier radial,
                                               double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
-        var pose = poseStack.last();
-
         float ox = (float)(radial.originX - camX);
         float oy = (float)(radial.originY - camY);
         float oz = (float)(radial.originZ - camZ);
