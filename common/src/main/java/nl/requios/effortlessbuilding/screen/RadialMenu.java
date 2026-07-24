@@ -145,9 +145,11 @@ public class RadialMenu extends Screen {
 		buttons.add(new MenuButton(ActionEnum.UNDO, -buttonDistance - 26, -13, Direction.UP));
 		buttons.add(new MenuButton(ActionEnum.REDO, -buttonDistance, -13, Direction.UP));
 
-		// Server config button is always visible, but disabled for non-operators
+		// Server config button: enabled in singleplayer or for operators on multiplayer
 		MenuButton serverConfigButton = new MenuButton(ActionEnum.OPEN_SERVER_CONFIG, -buttonDistance - 52, 13, Direction.DOWN);
-		serverConfigButton.enabled = minecraft.player != null && minecraft.player.hasPermissions(2);
+		boolean isSingleplayer = minecraft.isSingleplayer();
+		boolean isOp = minecraft.player != null && minecraft.player.hasPermissions(2);
+		serverConfigButton.enabled = isSingleplayer || isOp;
 		buttons.add(serverConfigButton);
 
 		buttons.add(new MenuButton(ActionEnum.OPEN_CLIENT_CONFIG, -buttonDistance - 26, 13, Direction.DOWN));
@@ -473,7 +475,7 @@ public class RadialMenu extends Screen {
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
-				if (minecraft.player != null && minecraft.player.hasPermissions(2)) {
+				if (minecraft.isSingleplayer() || (minecraft.player != null && minecraft.player.hasPermissions(2))) {
 					performedActionUsingMouse = true;
 					minecraft.setScreen(new ServerConfigScreen());
 				} else if (minecraft.player != null) {
