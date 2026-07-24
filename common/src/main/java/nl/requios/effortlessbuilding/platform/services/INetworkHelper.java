@@ -11,7 +11,6 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
-import nl.requios.effortlessbuilding.network.UpdateRandomizerC2SPacket;
 
 public interface INetworkHelper {
 
@@ -35,5 +34,4 @@ public interface INetworkHelper {
 
     void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet);
 
-    void sendToServer(UpdateRandomizerC2SPacket packet);
 }

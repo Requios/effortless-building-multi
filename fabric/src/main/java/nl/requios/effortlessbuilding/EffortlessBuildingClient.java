@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.world.InteractionResult;
@@ -26,6 +27,7 @@ import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.RandomizerScreen;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import org.lwjgl.glfw.GLFW;
 
 public class EffortlessBuildingClient implements ClientModInitializer {
@@ -36,6 +38,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientConfig.INSTANCE.load();
+        MenuScreens.register(ModMenus.RANDOMIZER, RandomizerScreen::new);
 
         KeyBindingHelper.registerKeyBinding(KeyBindings.openRadialMenu);
         KeyBindingHelper.registerKeyBinding(KeyBindings.openModifiersScreen);
@@ -111,7 +114,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     if (rightJustPressed) {
                         if (client.player.isShiftKeyDown()
                                 && client.player.getMainHandItem().getItem() instanceof RandomizerToolItem) {
-                            client.setScreen(new RandomizerScreen(client.player.getMainHandItem()));
+                            // Vanilla item use opens the server-backed randomizer menu.
                         } else if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (BuildPipeline.isBuildTriggerItem(client.player.getMainHandItem())

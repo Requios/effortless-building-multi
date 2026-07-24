@@ -10,7 +10,6 @@
   "effortlessbuilding.screen.server_config": "Functional Settings",
   "effortlessbuilding.screen.client_config": "Visual Settings",
   "effortlessbuilding.screen.randomizer": "Randomizer Tool",
-  "effortlessbuilding.screen.randomizer.hint": "Select an inventory block, then click a fake slot. Right-click to clear.",
 
   "item.effortlessbuilding.randomizer_tool": "Randomizer Tool",
   "item.effortlessbuilding.randomizer_tool.hint": "Shift-right-click to configure",

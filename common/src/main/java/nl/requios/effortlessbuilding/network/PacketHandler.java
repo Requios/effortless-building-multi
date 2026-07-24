@@ -36,7 +36,6 @@ import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
-import nl.requios.effortlessbuilding.item.RandomizerToolData;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 import java.util.LinkedHashMap;
@@ -84,22 +83,6 @@ public class PacketHandler {
 
     public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
-    }
-
-    public static void sendToServer(UpdateRandomizerC2SPacket packet) {
-        Services.NETWORK.sendToServer(packet);
-    }
-
-    public static void handleUpdateRandomizer(UpdateRandomizerC2SPacket packet, ServerPlayer player) {
-        ItemStack held = player.getMainHandItem();
-        if (!(held.getItem() instanceof RandomizerToolItem)) return;
-
-        List<Item> sanitized = packet.items().stream()
-                .map(item -> item instanceof BlockItem ? item : net.minecraft.world.item.Items.AIR)
-                .limit(RandomizerToolData.SLOT_COUNT)
-                .toList();
-        RandomizerToolData.setItems(held, sanitized);
-        player.getInventory().setChanged();
     }
 
     /**

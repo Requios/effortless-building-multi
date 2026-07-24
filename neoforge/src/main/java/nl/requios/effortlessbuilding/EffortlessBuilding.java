@@ -15,6 +15,9 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
@@ -32,7 +35,6 @@ import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
-import nl.requios.effortlessbuilding.network.UpdateRandomizerC2SPacket;
 
 @Mod(Constants.MOD_ID)
 public class EffortlessBuilding {
@@ -40,10 +42,17 @@ public class EffortlessBuilding {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Constants.MOD_ID);
     private static final DeferredItem<Item> RANDOMIZER_TOOL = ITEMS.register(
             "randomizer_tool", () -> new RandomizerToolItem(new Item.Properties().stacksTo(1)));
+    private static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, Constants.MOD_ID);
+
+    static {
+        MENUS.register("randomizer", () -> ModMenus.RANDOMIZER);
+    }
 
     public EffortlessBuilding(IEventBus eventBus, ModContainer modContainer) {
 
         ITEMS.register(eventBus);
+        MENUS.register(eventBus);
         eventBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
             if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) event.accept(RANDOMIZER_TOOL);
         });
@@ -105,11 +114,6 @@ public class EffortlessBuilding {
                     SyncAE2CountS2CPacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleSyncAE2Count(payload)));
-            registrar.playToServer(
-                    UpdateRandomizerC2SPacket.TYPE,
-                    UpdateRandomizerC2SPacket.STREAM_CODEC,
-                    (payload, context) -> context.enqueueWork(() ->
-                            PacketHandler.handleUpdateRandomizer(payload, (ServerPlayer) context.player())));
         });
 
         // Load + send modifiers and config on player join

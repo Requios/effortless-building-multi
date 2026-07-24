@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -22,6 +23,7 @@ import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.RandomizerScreen;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import org.lwjgl.glfw.GLFW;
 
 public class NeoForgeClientSetup {
@@ -37,6 +39,11 @@ public class NeoForgeClientSetup {
             event.register(KeyBindings.openModifiersScreen);
             event.register(KeyBindings.undo);
             event.register(KeyBindings.redo);
+        }
+
+        @SubscribeEvent
+        public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
+            event.register(ModMenus.RANDOMIZER, RandomizerScreen::new);
         }
     }
 
@@ -80,7 +87,7 @@ public class NeoForgeClientSetup {
                     if (rightJustPressed) {
                         if (mc.player.isShiftKeyDown()
                                 && mc.player.getMainHandItem().getItem() instanceof RandomizerToolItem) {
-                            mc.setScreen(new RandomizerScreen(mc.player.getMainHandItem()));
+                            // Vanilla item use opens the server-backed randomizer menu.
                         } else if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())

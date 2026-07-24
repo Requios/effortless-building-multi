@@ -11,6 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import net.minecraft.server.level.ServerPlayer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
@@ -29,7 +30,6 @@ import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
-import nl.requios.effortlessbuilding.network.UpdateRandomizerC2SPacket;
 
 public class EffortlessBuilding implements ModInitializer {
 
@@ -42,6 +42,8 @@ public class EffortlessBuilding implements ModInitializer {
                 new RandomizerToolItem(new Item.Properties().stacksTo(1)));
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
                 .register(entries -> entries.accept(randomizerTool));
+        Registry.register(BuiltInRegistries.MENU,
+                ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer"), ModMenus.RANDOMIZER);
 
         // Register C2S packets
         PayloadTypeRegistry.playC2S().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);
@@ -51,7 +53,6 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(UpdateRandomizerC2SPacket.TYPE, UpdateRandomizerC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
@@ -73,8 +74,6 @@ public class EffortlessBuilding implements ModInitializer {
                 context.server().execute(() -> PacketHandler.handleUpdateServerConfig(payload, context.player())));
         ServerPlayNetworking.registerGlobalReceiver(QueryAE2CountC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handleQueryAE2Count(payload, context.player())));
-        ServerPlayNetworking.registerGlobalReceiver(UpdateRandomizerC2SPacket.TYPE, (payload, context) ->
-                context.server().execute(() -> PacketHandler.handleUpdateRandomizer(payload, context.player())));
 
         // Load + send modifiers and config on player join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
