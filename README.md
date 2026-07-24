@@ -67,7 +67,7 @@ Here's a small sample of what you can configure:
 * The maximum size of the mirror and array
 * Whether you can break and replace multiple blocks at once, including if tools are required, if they should use durability, etc. By default, you can break and replace blocks that you placed in the same play session.
 
-The functional settings can be found in the radial menu. You can only edit functional settings if you are an admin.
+The functional settings can be found in the radial menu. On a server, you can only edit functional settings if you are an admin.
 
 ![Functional Settings](https://media.forgecdn.net/attachments/1718/579/2026-06-05_15-46-00-png.png)
 
