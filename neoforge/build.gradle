@@ -43,7 +43,8 @@ neoForge {
 
 dependencies {
     // Required for compilation because common module source files are compiled here too.
-    compileOnly("org.appliedenergistics:appliedenergistics2:19.2.17")
+    compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
+//    runtimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }

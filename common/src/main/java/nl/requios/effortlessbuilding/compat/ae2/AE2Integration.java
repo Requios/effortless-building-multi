@@ -37,7 +37,7 @@ public class AE2Integration {
         initialized = true;
 
         if (!Services.PLATFORM.isModLoaded(AE2_MOD_ID)) {
-            Constants.LOG.info("[AE2] Applied Energistics 2 not detected — AE2 integration disabled.");
+//            Constants.LOG.info("[AE2] Applied Energistics 2 not detected — AE2 integration disabled.");
             return;
         }
 

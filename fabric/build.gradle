@@ -26,7 +26,9 @@ dependencies {
 
     // Required for compilation because common module source files are compiled here too.
     // Only needed during compilation — the mod gracefully handles AE2 absence at runtime.
-    modCompileOnly("org.appliedenergistics:appliedenergistics2:19.2.17")
+//    modCompileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
+//    modRuntimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
+    // Note: AE2 does not have a 1.21.1 fabric release yet
 }
 
 loom {

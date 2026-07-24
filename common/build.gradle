@@ -26,9 +26,7 @@ dependencies {
     // This is compileOnly so the JAR does not depend on AE2 at runtime.
     // Adjust the version to match the AE2 release for your target Minecraft version.
     // Available on Maven Central: https://central.sonatype.com/artifact/org.appliedenergistics/appliedenergistics2
-    // For 1.21.1 NeoForge: 19.2.x
-    // For 1.21.1 Fabric: use fabric classifier
-    compileOnly("org.appliedenergistics:appliedenergistics2:19.2.17")
+    compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 }
 
 configurations {
