@@ -24,6 +24,8 @@ import nl.requios.effortlessbuilding.render.RenderHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
+import nl.requios.effortlessbuilding.screen.RandomizerScreen;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 import org.lwjgl.glfw.GLFW;
 
 public class EffortlessBuildingClient implements ClientModInitializer {
@@ -107,7 +109,10 @@ public class EffortlessBuildingClient implements ClientModInitializer {
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
+                        if (client.player.isShiftKeyDown()
+                                && client.player.getMainHandItem().getItem() instanceof RandomizerToolItem) {
+                            client.setScreen(new RandomizerScreen(client.player.getMainHandItem()));
+                        } else if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (BuildPipeline.isBuildTriggerItem(client.player.getMainHandItem())
                                 || BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {

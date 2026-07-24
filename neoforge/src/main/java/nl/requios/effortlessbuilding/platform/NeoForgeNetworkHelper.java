@@ -12,6 +12,7 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.UpdateRandomizerC2SPacket;
 import nl.requios.effortlessbuilding.platform.services.INetworkHelper;
 
 public class NeoForgeNetworkHelper implements INetworkHelper {
@@ -64,5 +65,10 @@ public class NeoForgeNetworkHelper implements INetworkHelper {
     @Override
     public void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    @Override
+    public void sendToServer(UpdateRandomizerC2SPacket packet) {
+        PacketDistributor.sendToServer(packet);
     }
 }

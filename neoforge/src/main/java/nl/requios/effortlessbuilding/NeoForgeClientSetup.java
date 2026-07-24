@@ -20,6 +20,8 @@ import nl.requios.effortlessbuilding.render.RenderHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
+import nl.requios.effortlessbuilding.screen.RandomizerScreen;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 import org.lwjgl.glfw.GLFW;
 
 public class NeoForgeClientSetup {
@@ -76,7 +78,10 @@ public class NeoForgeClientSetup {
                     boolean leftJustPressed = leftDown && !prevLeftDown;
 
                     if (rightJustPressed) {
-                        if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
+                        if (mc.player.isShiftKeyDown()
+                                && mc.player.getMainHandItem().getItem() instanceof RandomizerToolItem) {
+                            mc.setScreen(new RandomizerScreen(mc.player.getMainHandItem()));
+                        } else if (BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.BREAKING) {
                             BuildPipelineClient.cancelCurrentSequence();
                         } else if (BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem())
                                 || BuildPipelineClient.getBuildState() == BuildPipeline.BuildState.PLACING) {

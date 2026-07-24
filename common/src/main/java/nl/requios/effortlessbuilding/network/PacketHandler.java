@@ -36,8 +36,11 @@ import nl.requios.effortlessbuilding.utilities.InventoryHelper;
 import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
+import nl.requios.effortlessbuilding.item.RandomizerToolData;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,6 +84,22 @@ public class PacketHandler {
 
     public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
+    }
+
+    public static void sendToServer(UpdateRandomizerC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void handleUpdateRandomizer(UpdateRandomizerC2SPacket packet, ServerPlayer player) {
+        ItemStack held = player.getMainHandItem();
+        if (!(held.getItem() instanceof RandomizerToolItem)) return;
+
+        List<Item> sanitized = packet.items().stream()
+                .map(item -> item instanceof BlockItem ? item : net.minecraft.world.item.Items.AIR)
+                .limit(RandomizerToolData.SLOT_COUNT)
+                .toList();
+        RandomizerToolData.setItems(held, sanitized);
+        player.getInventory().setChanged();
     }
 
     /**
@@ -130,7 +149,70 @@ public class PacketHandler {
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
 
         int placed = 0;
-        if (held.getItem() instanceof BlockItem blockItem) {
+        if (held.getItem() instanceof RandomizerToolItem) {
+            Map<Item, Integer> required = new LinkedHashMap<>();
+            for (var mapEntry : blockSet.validEntries()) {
+                if (!BuildSettings.canPlaceAt(level, mapEntry.getKey(), replaceMode, offHand)) continue;
+                Item item = mapEntry.getValue().item;
+                if (item instanceof BlockItem) required.merge(item, 1, Integer::sum);
+            }
+
+            Map<Item, Integer> available = new HashMap<>();
+            for (var requirement : required.entrySet()) {
+                if (creative) {
+                    available.put(requirement.getKey(), Integer.MAX_VALUE);
+                } else {
+                    int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, requirement.getKey());
+                    int networkNeeded = Math.max(0, requirement.getValue() - inventoryCount);
+                    int fromNetwork = InventoryHelper.supplementFromNetwork(
+                            player, requirement.getKey(), networkNeeded);
+                    available.put(requirement.getKey(), inventoryCount + fromNetwork);
+                }
+            }
+
+            Map<Item, Integer> used = new HashMap<>();
+            double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
+            for (var mapEntry : blockSet.validEntries()) {
+                BlockPos pos = mapEntry.getKey();
+                BlockEntry entry = mapEntry.getValue();
+                if (!(entry.item instanceof BlockItem blockItem)) continue;
+                if (!creative && used.getOrDefault(entry.item, 0) >= available.getOrDefault(entry.item, 0)) continue;
+                if (!BuildSettings.canPlaceAt(level, pos, replaceMode, offHand)) continue;
+
+                BlockState oldState = level.getBlockState(pos);
+                if (!creative && !oldState.canBeReplaced()) {
+                    ItemStack toolForDrops = ServerConfig.INSTANCE.survivalRequireTools
+                            ? InventoryHelper.findCorrectTool(player, oldState)
+                            : player.getMainHandItem();
+                    var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos), player, toolForDrops);
+                    for (ItemStack drop : drops) {
+                        InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                    }
+                    if (ServerConfig.INSTANCE.survivalUseDurability) {
+                        InventoryHelper.damageCorrectTool(player, oldState);
+                    }
+                }
+
+                ItemStack placementStack = new ItemStack(entry.item);
+                Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
+                BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
+                BlockPlaceContext ctx = new OpenBlockPlaceContext(
+                        level, player, InteractionHand.MAIN_HAND, placementStack, serverHit);
+                BlockState state = blockItem.getBlock().getStateForPlacement(ctx);
+                if (state == null) state = blockItem.getBlock().defaultBlockState();
+                state = entry.applyTransforms(state);
+                level.setBlock(pos, state, 3);
+                undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, state));
+                used.merge(entry.item, 1, Integer::sum);
+                placed++;
+            }
+
+            if (!creative) {
+                for (var usage : used.entrySet()) {
+                    InventoryHelper.consumeItems(player, usage.getKey(), usage.getValue());
+                }
+            }
+        } else if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
 
             // Determine how many blocks we can afford BEFORE placing any
