@@ -33,6 +33,7 @@ import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 
@@ -74,6 +75,31 @@ public class PacketHandler {
         Services.NETWORK.sendToClient(player, packet);
     }
 
+    public static void sendToServer(QueryAE2CountC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
+    /**
+     * Called on the server when a {@link QueryAE2CountC2SPacket} is received.
+     * Queries the AE2 network and sends the count back to the client.
+     */
+    public static void handleQueryAE2Count(QueryAE2CountC2SPacket packet, ServerPlayer player) {
+        int count = AE2Integration.countOnNetwork(player, packet.item());
+        sendToClient(player, new SyncAE2CountS2CPacket(packet.item(), count));
+    }
+
+    /**
+     * Called on the client when a {@link SyncAE2CountS2CPacket} is received.
+     * Stores the count for the HUD preview.
+     */
+    public static void handleSyncAE2Count(SyncAE2CountS2CPacket packet) {
+        AE2Integration.setCachedCount(packet.item(), packet.count());
+    }
+
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      */
@@ -107,8 +133,22 @@ public class PacketHandler {
         if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
 
-            int available = creative ? Integer.MAX_VALUE
-                    : InventoryHelper.findTotalItemsInInventory(player, heldItem);
+            // Determine how many blocks we can afford BEFORE placing any
+            int available;
+            if (creative) {
+                available = Integer.MAX_VALUE;
+            } else {
+                int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, heldItem);
+                int validCount = blockSet.validEntries().size();
+
+                // Pre-extract from AE2 what exceeds inventory (digital — no ItemStack created)
+                int neededFromNetwork = Math.max(0, validCount - inventoryCount);
+                int ae2Extracted = 0;
+                if (neededFromNetwork > 0) {
+                    ae2Extracted = InventoryHelper.supplementFromNetwork(player, heldItem, neededFromNetwork);
+                }
+                available = inventoryCount + ae2Extracted;
+            }
 
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
             for (var mapEntry : blockSet.validEntries()) {
@@ -149,7 +189,10 @@ public class PacketHandler {
             }
 
             if (!creative && placed > 0) {
+                // Consume from player inventory (AE2 was already debited before placement)
                 InventoryHelper.consumeItems(player, heldItem, placed);
+                // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
+                InventoryHelper.restockFromNetwork(player);
             }
         } else if (held.getItem() instanceof BucketItem bucketItem) {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();

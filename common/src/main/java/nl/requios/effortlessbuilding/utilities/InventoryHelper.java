@@ -8,9 +8,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 
 /**
  * Server-safe inventory helpers for counting, consuming, and giving items.
+ *
+ * <p>Methods suffixed with {@code WithNetwork} also consult the player's
+ * AE2 ME network (via a wireless terminal) as a supplemental item source.
  */
 public class InventoryHelper {
 
@@ -138,5 +142,44 @@ public class InventoryHelper {
         if (!mainHand.isEmpty() && mainHand.isDamageableItem()) {
             mainHand.hurtAndBreak(1, serverLevel, serverPlayer, item -> {});
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // AE2 network-aware inventory helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Counts total items available, including both the player's physical inventory
+     * and any items on the AE2 ME network reachable via a wireless terminal.
+     *
+     * @return inventory count + AE2 network count
+     */
+    public static int findTotalItemsWithNetwork(Player player, Item item) {
+        int inventoryCount = findTotalItemsInInventory(player, item);
+        int networkCount = AE2Integration.countOnNetwork(player, item);
+        return inventoryCount + networkCount;
+    }
+
+    /**
+     * If the player has an AE2 wireless terminal linked to an ME network, extracts
+     * up to {@code needed} items from that network. The items are removed from
+     * digital storage — no physical ItemStack is created (they are consumed as
+     * building material).
+     *
+     * @return number of items actually extracted from the network
+     */
+    public static int supplementFromNetwork(Player player, Item item, int needed) {
+        if (needed <= 0) return 0;
+        return AE2Integration.extractFromNetwork(player, item, needed);
+    }
+
+    /**
+     * Attempts to refill the player's main-hand stack from the AE2 network.
+     * Only works if the held item is a block/item that exists on the network.
+     *
+     * @return number of items restocked
+     */
+    public static int restockFromNetwork(Player player) {
+        return AE2Integration.restockMainHand(player);
     }
 }

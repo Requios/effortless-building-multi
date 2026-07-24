@@ -340,6 +340,15 @@ public class RadialMenu extends Screen {
 		String credits = "Effortless Building";
 		graphics.drawString(font, credits, width - font.width(credits) - 4, height - 10, watermarkTextColor, true);
 
+		// AE2 integration status (sanity check for the player)
+		if (minecraft.player != null) {
+			String ae2Status = nl.requios.effortlessbuilding.compat.ae2.AE2Integration.getStatusString(minecraft.player);
+			if (!ae2Status.isEmpty()) {
+				int ae2Color = ae2Status.contains("\u2713") ? 0xff44dd44 : 0xffaaaaaa; // green if connected, gray if not
+				graphics.drawString(font, ae2Status, 4, height - 10, ae2Color, true);
+			}
+		}
+
 
 
 		//Draw buildmode text

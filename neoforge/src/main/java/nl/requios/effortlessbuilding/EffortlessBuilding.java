@@ -20,6 +20,8 @@ import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
@@ -76,6 +78,17 @@ public class EffortlessBuilding {
                     SyncServerConfigS2CPacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleSyncServerConfig(payload)));
+            // AE2 count query — client requests item count from ME network
+            registrar.playToServer(
+                    QueryAE2CountC2SPacket.TYPE,
+                    QueryAE2CountC2SPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleQueryAE2Count(payload, (ServerPlayer) context.player())));
+            registrar.playToClient(
+                    SyncAE2CountS2CPacket.TYPE,
+                    SyncAE2CountS2CPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleSyncAE2Count(payload)));
         });
 
         // Load + send modifiers and config on player join
