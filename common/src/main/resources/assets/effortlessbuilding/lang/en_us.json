@@ -13,10 +13,11 @@
   "effortlessbuilding.screen.randomizer.ratio.tooltip": "Ratio. Scroll to change.",
 
   "item.effortlessbuilding.randomizer_tool": "Randomizer Tool",
+  "item.effortlessbuilding.randomizer_tool.when_in_hand": "When in Hand:",
   "item.effortlessbuilding.randomizer_tool.right_click": "Rightclick",
   "item.effortlessbuilding.randomizer_tool.place_hint": "%s to place a random block",
   "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + rightclick",
-  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s while in hand to configure",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s to configure",
 
   "effortlessbuilding.mode.normal": "Disable",
   "effortlessbuilding.mode.normal_plus": "Single",
@@ -101,6 +102,7 @@
   "effortlessbuilding.message.protected_tile_entity": "Some blocks were protected (tile entities)",
   "effortlessbuilding.message.world_border": "Some blocks are outside the world border or build height",
   "effortlessbuilding.message.not_operator": "Only admins can edit functional settings.",
+  "effortlessbuilding.message.welcome_message": "[Effortless Building] Hold %s to open the build menu",
 
   "effortlessbuilding.config.section_survival": "Survival",
   "effortlessbuilding.config.section_creative": "Creative",
@@ -126,6 +128,8 @@
   "effortlessbuilding.config.require_tools.tooltip": "If on, you must have the correct tools in your inventory to break blocks.",
   "effortlessbuilding.config.use_durability": "Use Durability",
   "effortlessbuilding.config.use_durability.tooltip": "If on, breaking blocks will consume durability from the appropriate tool in your inventory.",
+  "effortlessbuilding.config.show_welcome_message": "Welcome Message",
+  "effortlessbuilding.config.show_welcome_message.tooltip": "If on, each player receives the welcome message once per world.",
   "effortlessbuilding.config.preview_block_size": "Preview Block Size",
   "effortlessbuilding.config.preview_block_size.tooltip": "Size of block previews as a percentage of a full block.",
   "effortlessbuilding.config.preview_block_transparency": "Preview Transparency",

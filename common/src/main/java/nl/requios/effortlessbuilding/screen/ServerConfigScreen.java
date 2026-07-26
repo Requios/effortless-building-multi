@@ -35,6 +35,7 @@ public class ServerConfigScreen extends Screen {
         "effortlessbuilding.config.max_hardness.tooltip",
         "effortlessbuilding.config.require_tools.tooltip",
         "effortlessbuilding.config.use_durability.tooltip",
+        "effortlessbuilding.config.show_welcome_message.tooltip",
     };
 
     /** Tooltip keys for creative rows (in order). */
@@ -61,6 +62,7 @@ public class ServerConfigScreen extends Screen {
     private EditBox survMaxHardnessField;
     private boolean survRequireTools;
     private boolean survUseDurability;
+    private boolean showWelcomeMessage;
 
     // Creative
     private EditBox creReachField;
@@ -97,6 +99,7 @@ public class ServerConfigScreen extends Screen {
         survOnlyPlacedBlocks = scratch.survivalOnlyPlacedBlocks;
         survRequireTools = scratch.survivalRequireTools;
         survUseDurability = scratch.survivalUseDurability;
+        showWelcomeMessage = scratch.showWelcomeMessage;
 
         int left = (width - PANEL_W) / 2;
         int fieldX = left + 220;
@@ -151,6 +154,13 @@ public class ServerConfigScreen extends Screen {
         widgetOrder.add(btnUseDurability);
         y += ROW_H;
 
+        var btnWelcomeMessage = addRenderableWidget(Button.builder(
+                Component.literal(onOff(showWelcomeMessage)),
+                btn -> { showWelcomeMessage = !showWelcomeMessage; btn.setMessage(Component.literal(onOff(showWelcomeMessage))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnWelcomeMessage);
+        y += ROW_H;
+
         y += SECTION_GAP;
 
         // -- Creative section header --
@@ -197,8 +207,8 @@ public class ServerConfigScreen extends Screen {
         // Survival header
         y += ROW_H;
 
-        // 6 int fields + 3 toggles + 1 float field + 1 toggle = 11 widgets
-        for (int n = 0; n < 11; n++) { setPos(i++, fieldX, y); y += ROW_H; }
+        // 6 int fields + 5 toggles + 1 float field = 12 widgets
+        for (int n = 0; n < 12; n++) { setPos(i++, fieldX, y); y += ROW_H; }
 
         y += SECTION_GAP;
 
@@ -228,6 +238,7 @@ public class ServerConfigScreen extends Screen {
         scratch.survivalMaxHardness = parseFloatOrDefault(survMaxHardnessField.getValue(), -1f);
         scratch.survivalRequireTools = survRequireTools;
         scratch.survivalUseDurability = survUseDurability;
+        scratch.showWelcomeMessage = showWelcomeMessage;
 
         scratch.creativeReach = parseOrDefault(creReachField.getValue(), 64);
         scratch.creativeMaxBlocksPlaced = parseOrDefault(creMaxPlacedField.getValue(), 10000);
@@ -284,6 +295,7 @@ public class ServerConfigScreen extends Screen {
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_hardness"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.require_tools"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.use_durability"); y += ROW_H;
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_welcome_message"); y += ROW_H;
 
         y += SECTION_GAP;
 

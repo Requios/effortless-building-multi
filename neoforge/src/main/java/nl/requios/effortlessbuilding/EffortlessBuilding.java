@@ -32,6 +32,7 @@ import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
@@ -124,6 +125,7 @@ public class EffortlessBuilding {
                         ModifierServerStorage.serializePlayer(serverPlayer.getUUID())));
                 PacketHandler.sendToClient(serverPlayer, new SyncServerConfigS2CPacket(
                         ServerConfig.INSTANCE.toJson()));
+                WelcomeMessageStorage.showIfNeeded(serverPlayer);
             }
         });
 
@@ -141,11 +143,13 @@ public class EffortlessBuilding {
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
+            WelcomeMessageStorage.clear();
         });
 
         // Load server config on server start
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
             ServerConfigStorage.load(event.getServer());
+            WelcomeMessageStorage.load(event.getServer());
         });
 
         CommonClass.init();

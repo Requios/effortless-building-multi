@@ -29,6 +29,10 @@ public class ServerConfig {
     public boolean survivalRequireTools = false;
     public boolean survivalUseDurability = false;
 
+    // --- General settings ---
+    /** Show each player the welcome message once for this world. */
+    public boolean showWelcomeMessage = true;
+
     // --- Creative settings ---
     public int creativeReach = 200;
     public int creativeMaxBlocksPlaced = 50000;
@@ -93,6 +97,7 @@ public class ServerConfig {
         this.survivalMaxHardness = other.survivalMaxHardness;
         this.survivalRequireTools = other.survivalRequireTools;
         this.survivalUseDurability = other.survivalUseDurability;
+        this.showWelcomeMessage = other.showWelcomeMessage;
 
         this.creativeReach = other.creativeReach;
         this.creativeMaxBlocksPlaced = other.creativeMaxBlocksPlaced;
@@ -121,6 +126,7 @@ public class ServerConfig {
         obj.addProperty("survivalMaxHardness", survivalMaxHardness);
         obj.addProperty("survivalRequireTools", survivalRequireTools);
         obj.addProperty("survivalUseDurability", survivalUseDurability);
+        obj.addProperty("showWelcomeMessage", showWelcomeMessage);
 
         obj.addProperty("creativeReach", creativeReach);
         obj.addProperty("creativeMaxBlocksPlaced", creativeMaxBlocksPlaced);
@@ -146,6 +152,7 @@ public class ServerConfig {
             if (obj.has("survivalMaxHardness")) config.survivalMaxHardness = obj.get("survivalMaxHardness").getAsFloat();
             if (obj.has("survivalRequireTools")) config.survivalRequireTools = obj.get("survivalRequireTools").getAsBoolean();
             if (obj.has("survivalUseDurability")) config.survivalUseDurability = obj.get("survivalUseDurability").getAsBoolean();
+            if (obj.has("showWelcomeMessage")) config.showWelcomeMessage = obj.get("showWelcomeMessage").getAsBoolean();
 
             if (obj.has("creativeReach")) config.creativeReach = obj.get("creativeReach").getAsInt();
             if (obj.has("creativeMaxBlocksPlaced")) config.creativeMaxBlocksPlaced = obj.get("creativeMaxBlocksPlaced").getAsInt();

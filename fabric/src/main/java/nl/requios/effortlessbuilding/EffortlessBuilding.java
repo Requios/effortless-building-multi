@@ -27,6 +27,7 @@ import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
@@ -83,6 +84,7 @@ public class EffortlessBuilding implements ModInitializer {
                     ModifierServerStorage.serializePlayer(player.getUUID())));
             PacketHandler.sendToClient(player, new SyncServerConfigS2CPacket(
                     ServerConfig.INSTANCE.toJson()));
+            WelcomeMessageStorage.showIfNeeded(player);
         });
 
         // Save + clean up on player disconnect
@@ -98,11 +100,13 @@ public class EffortlessBuilding implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
+            WelcomeMessageStorage.clear();
         });
 
         // Load server config on server start
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ServerConfigStorage.load(server);
+            WelcomeMessageStorage.load(server);
         });
 
         CommonClass.init();
