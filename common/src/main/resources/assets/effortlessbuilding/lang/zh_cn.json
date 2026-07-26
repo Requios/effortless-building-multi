@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "修饰器设置",
   "effortlessbuilding.screen.server_config": "服务端配置",
   "effortlessbuilding.screen.client_config": "客户端配置",
+  "effortlessbuilding.screen.randomizer": "随机工具",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "权重：滚动鼠标滚轮可更改选中此槽位的概率。",
+
+  "item.effortlessbuilding.randomizer_tool": "随机工具",
+  "item.effortlessbuilding.randomizer_tool.right_click": "右键单击",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s以放置随机方块",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + 右键单击",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "手持时按%s进行配置",
 
   "effortlessbuilding.mode.normal": "禁用",
   "effortlessbuilding.mode.normal_plus": "单块",

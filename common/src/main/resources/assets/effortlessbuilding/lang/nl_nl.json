@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "Modificatorinstellingen",
   "effortlessbuilding.screen.server_config": "Serverconfiguratie",
   "effortlessbuilding.screen.client_config": "Clientconfiguratie",
+  "effortlessbuilding.screen.randomizer": "Randomizer-gereedschap",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Verhouding: scroll om de kans te wijzigen dat dit vak wordt gekozen.",
+
+  "item.effortlessbuilding.randomizer_tool": "Randomizer-gereedschap",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Rechtermuisknop",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s om een willekeurig blok te plaatsen",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift-rechtermuisknop",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s in je hand om te configureren",
 
   "effortlessbuilding.mode.normal": "Uitgeschakeld",
   "effortlessbuilding.mode.normal_plus": "Enkelvoudig",

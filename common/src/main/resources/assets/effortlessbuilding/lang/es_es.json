@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "Configuración de modificadores",
   "effortlessbuilding.screen.server_config": "Configuración del servidor",
   "effortlessbuilding.screen.client_config": "Configuración del cliente",
+  "effortlessbuilding.screen.randomizer": "Herramienta aleatorizadora",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Proporción: desplázate para cambiar la probabilidad de seleccionar esta ranura.",
+
+  "item.effortlessbuilding.randomizer_tool": "Herramienta aleatorizadora",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Clic derecho",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s para colocar un bloque aleatorio",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Mayús + clic derecho",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s mientras lo sostienes para configurar",
 
   "effortlessbuilding.mode.normal": "Desactivado",
   "effortlessbuilding.mode.normal_plus": "Individual",

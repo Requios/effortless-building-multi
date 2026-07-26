@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 /**
  * Client-side controller for the unified build pipeline.
@@ -60,6 +61,7 @@ public class BuildPipelineClient {
     private static BuildPipeline createClientPipeline() {
         BuildPipeline pipeline = new BuildPipeline();
         pipeline.addSystem(ModifierSystem.CLIENT);
+        pipeline.addSystem(RandomizerSystem.INSTANCE);
         pipeline.addSystem(ConstraintSystem.INSTANCE);
         return pipeline;
     }
@@ -88,8 +90,9 @@ public class BuildPipelineClient {
      * Returns {@code true} if the mod should intercept vanilla click handling.
      */
     public static boolean shouldInterceptPlacing() {
-        if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return false;
-        return true;
+        Minecraft mc = Minecraft.getInstance();
+        return BuildModes.CLIENT.getBuildMode() != BuildModeEnum.DISABLED
+                || mc.player != null && mc.player.getMainHandItem().getItem() instanceof RandomizerToolItem;
     }
     
     /**
@@ -147,9 +150,14 @@ public class BuildPipelineClient {
                 SoundType soundType;
                 if (action == BuildPipeline.BuildState.PLACING) {
                     var held = player.getMainHandItem();
-                    soundType = held.getItem() instanceof BlockItem blockItem
-                            ? blockItem.getBlock().defaultBlockState().getSoundType()
-                            : SoundType.STONE;
+                    BlockEntry firstEntry = blocks.get(blocks.firstPos);
+                    if (firstEntry != null && firstEntry.blockState != null) {
+                        soundType = firstEntry.blockState.getSoundType();
+                    } else {
+                        soundType = held.getItem() instanceof BlockItem blockItem
+                                ? blockItem.getBlock().defaultBlockState().getSoundType()
+                                : SoundType.STONE;
+                    }
                     mc.level.playLocalSound(blocks.firstPos, soundType.getPlaceSound(), SoundSource.BLOCKS,
                             soundType.getVolume(), soundType.getPitch(), false);
                 } else {
@@ -295,7 +303,9 @@ public class BuildPipelineClient {
                 }
             }
 
-            if (heldItem != null) {
+            if (held.getItem() instanceof RandomizerToolItem) {
+                ITEM_USAGE.compute(player, blockSet, player.getAbilities().instabuild);
+            } else if (heldItem != null) {
                 ITEM_USAGE.compute(player, blockSet.validPositions(), heldItem, player.getAbilities().instabuild);
             } else {
                 ITEM_USAGE.initialize();

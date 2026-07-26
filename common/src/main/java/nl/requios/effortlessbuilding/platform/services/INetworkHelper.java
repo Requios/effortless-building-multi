@@ -33,4 +33,5 @@ public interface INetworkHelper {
     void sendToServer(QueryAE2CountC2SPacket packet);
 
     void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet);
+
 }

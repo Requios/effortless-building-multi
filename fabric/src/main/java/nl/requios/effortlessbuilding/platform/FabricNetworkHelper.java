@@ -66,4 +66,5 @@ public class FabricNetworkHelper implements INetworkHelper {
     public void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         ServerPlayNetworking.send(player, packet);
     }
+
 }

@@ -65,4 +65,5 @@ public class NeoForgeNetworkHelper implements INetworkHelper {
     public void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
     }
+
 }

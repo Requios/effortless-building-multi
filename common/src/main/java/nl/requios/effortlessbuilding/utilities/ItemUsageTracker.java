@@ -63,6 +63,33 @@ public class ItemUsageTracker {
 
         if (heldItem == null || positions.isEmpty()) return;
 
+        Map<Item, List<BlockPos>> requirements = new LinkedHashMap<>();
+        requirements.put(heldItem, new ArrayList<>(positions));
+        computeRequirements(player, requirements, isCreative);
+    }
+
+    /** Computes per-item availability for block sets populated by the randomizer pipeline stage. */
+    public void compute(Player player, BlockSet blocks, boolean isCreative) {
+        initialize();
+        Map<Item, List<BlockPos>> requirements = new LinkedHashMap<>();
+        for (var mapEntry : blocks.validEntries()) {
+            Item item = mapEntry.getValue().item;
+            if (item != null) {
+                requirements.computeIfAbsent(item, ignored -> new ArrayList<>()).add(mapEntry.getKey());
+            }
+        }
+        computeRequirements(player, requirements, isCreative);
+    }
+
+    private void computeRequirements(Player player, Map<Item, List<BlockPos>> requirements, boolean isCreative) {
+        for (var requirement : requirements.entrySet()) {
+            computeItem(player, requirement.getKey(), requirement.getValue(), isCreative);
+        }
+    }
+
+    private void computeItem(Player player, Item heldItem, List<BlockPos> positions, boolean isCreative) {
+        if (heldItem == null || positions.isEmpty()) return;
+
         int count = positions.size();
         total.put(heldItem, count);
 
@@ -134,4 +161,3 @@ public class ItemUsageTracker {
         return !missing.isEmpty();
     }
 }
-
