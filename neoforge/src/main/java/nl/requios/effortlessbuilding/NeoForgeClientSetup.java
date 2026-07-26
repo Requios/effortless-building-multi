@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -22,7 +23,9 @@ import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.RandomizerScreen;
+import nl.requios.effortlessbuilding.screen.RandomizerTooltipComponent;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
+import nl.requios.effortlessbuilding.item.RandomizerTooltipData;
 import nl.requios.effortlessbuilding.menu.ModMenus;
 import org.lwjgl.glfw.GLFW;
 
@@ -44,6 +47,11 @@ public class NeoForgeClientSetup {
         @SubscribeEvent
         public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
             event.register(ModMenus.RANDOMIZER, RandomizerScreen::new);
+        }
+
+        @SubscribeEvent
+        public static void onRegisterTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+            event.register(RandomizerTooltipData.class, RandomizerTooltipComponent::new);
         }
     }
 

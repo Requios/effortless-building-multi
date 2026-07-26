@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "Настройки модификаторов",
   "effortlessbuilding.screen.server_config": "Настройки сервера",
   "effortlessbuilding.screen.client_config": "Настройки клиента",
+  "effortlessbuilding.screen.randomizer": "Инструмент случайного выбора",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Соотношение: прокрутите, чтобы изменить вероятность выбора этого слота.",
+
+  "item.effortlessbuilding.randomizer_tool": "Инструмент случайного выбора",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Щелчок правой кнопкой",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s, чтобы поставить случайный блок",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + щелчок правой кнопкой",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s в руке для настройки",
 
   "effortlessbuilding.mode.normal": "Отключено",
   "effortlessbuilding.mode.normal_plus": "Одиночный",

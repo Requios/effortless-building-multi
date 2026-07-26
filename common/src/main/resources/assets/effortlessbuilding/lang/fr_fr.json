@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "Paramètres des modificateurs",
   "effortlessbuilding.screen.server_config": "Configuration du serveur",
   "effortlessbuilding.screen.client_config": "Configuration du client",
+  "effortlessbuilding.screen.randomizer": "Outil aléatoire",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Ratio : faites défiler pour modifier la probabilité de sélection de cet emplacement.",
+
+  "item.effortlessbuilding.randomizer_tool": "Outil aléatoire",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Clic droit",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s pour placer un bloc aléatoire",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Maj-clic droit",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s en main pour configurer",
 
   "effortlessbuilding.mode.normal": "Désactivé",
   "effortlessbuilding.mode.normal_plus": "Simple",

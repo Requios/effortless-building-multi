@@ -9,6 +9,14 @@
   "effortlessbuilding.screen.modifier_settings": "Modifikator-Einstellungen",
   "effortlessbuilding.screen.server_config": "Server-Konfiguration",
   "effortlessbuilding.screen.client_config": "Client-Konfiguration",
+  "effortlessbuilding.screen.randomizer": "Zufallsgenerator-Werkzeug",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Verhältnis: Scrolle, um die Auswahlchance dieses Feldes zu ändern.",
+
+  "item.effortlessbuilding.randomizer_tool": "Zufallsgenerator-Werkzeug",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Rechtsklick",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s, um einen zufälligen Block zu platzieren",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Umschalt-Rechtsklick",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s in der Hand zum Konfigurieren",
 
   "effortlessbuilding.mode.normal": "Deaktiviert",
   "effortlessbuilding.mode.normal_plus": "Einzeln",

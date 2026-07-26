@@ -21,7 +21,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
     public RandomizerScreen(RandomizerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         imageWidth = 176;
-        imageHeight = 148;
+        imageHeight = 150;
         inventoryLabelY = 56;
     }
 

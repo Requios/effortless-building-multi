@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.TooltipComponentCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
@@ -26,7 +27,9 @@ import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import nl.requios.effortlessbuilding.screen.ModifiersScreen;
 import nl.requios.effortlessbuilding.screen.RadialMenu;
 import nl.requios.effortlessbuilding.screen.RandomizerScreen;
+import nl.requios.effortlessbuilding.screen.RandomizerTooltipComponent;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
+import nl.requios.effortlessbuilding.item.RandomizerTooltipData;
 import nl.requios.effortlessbuilding.menu.ModMenus;
 import org.lwjgl.glfw.GLFW;
 
@@ -39,6 +42,8 @@ public class EffortlessBuildingClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientConfig.INSTANCE.load();
         MenuScreens.register(ModMenus.RANDOMIZER, RandomizerScreen::new);
+        TooltipComponentCallback.EVENT.register(data -> data instanceof RandomizerTooltipData randomizerData
+                ? new RandomizerTooltipComponent(randomizerData) : null);
 
         KeyBindingHelper.registerKeyBinding(KeyBindings.openRadialMenu);
         KeyBindingHelper.registerKeyBinding(KeyBindings.openModifiersScreen);

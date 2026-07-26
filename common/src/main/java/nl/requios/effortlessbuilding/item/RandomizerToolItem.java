@@ -9,10 +9,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.level.Level;
 import nl.requios.effortlessbuilding.menu.RandomizerMenu;
 
 import java.util.List;
+import java.util.Optional;
 
 /** Marker item whose configured block palette is applied by RandomizerSystem. */
 public class RandomizerToolItem extends Item {
@@ -43,5 +45,13 @@ public class RandomizerToolItem extends Item {
         tooltipComponents.add(Component.translatable("item.effortlessbuilding.randomizer_tool.configure_hint",
                         Component.translatable("item.effortlessbuilding.randomizer_tool.shift_right_click").withStyle(ChatFormatting.BLUE))
                 .withStyle(ChatFormatting.GRAY));
+    }
+
+    @Override
+    public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
+        List<ItemStack> palette = RandomizerToolData.getStacks(stack);
+        return palette.stream().anyMatch(item -> !item.isEmpty())
+                ? Optional.of(new RandomizerTooltipData(palette))
+                : Optional.empty();
     }
 }

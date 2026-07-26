@@ -16,7 +16,7 @@
   "item.effortlessbuilding.randomizer_tool.right_click": "Rightclick",
   "item.effortlessbuilding.randomizer_tool.place_hint": "%s to place a random block",
   "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + rightclick",
-  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s to configure",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s while in hand to configure",
 
   "effortlessbuilding.mode.normal": "Disable",
   "effortlessbuilding.mode.normal_plus": "Single",
