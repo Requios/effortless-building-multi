@@ -26,6 +26,7 @@ import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -82,6 +83,10 @@ public class PacketHandler {
         Services.NETWORK.sendToServer(packet);
     }
 
+    public static void sendToServer(BuildModeHintC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
     public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
         Services.NETWORK.sendToClient(player, packet);
     }
@@ -101,6 +106,11 @@ public class PacketHandler {
      */
     public static void handleSyncAE2Count(SyncAE2CountS2CPacket packet) {
         AE2Integration.setCachedCount(packet.item(), packet.count());
+    }
+
+    /** Called after the client selects a non-disabled build mode. */
+    public static void handleBuildModeHint(ServerPlayer player) {
+        BuildModeHintStorage.showIfNeeded(player);
     }
 
     /**

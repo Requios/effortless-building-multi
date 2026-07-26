@@ -11,6 +11,7 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 
 public interface INetworkHelper {
 
@@ -31,6 +32,8 @@ public interface INetworkHelper {
     void sendToClient(ServerPlayer player, SyncServerConfigS2CPacket packet);
 
     void sendToServer(QueryAE2CountC2SPacket packet);
+
+    void sendToServer(BuildModeHintC2SPacket packet);
 
     void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet);
 

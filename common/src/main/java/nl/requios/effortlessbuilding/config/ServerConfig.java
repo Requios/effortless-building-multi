@@ -32,6 +32,8 @@ public class ServerConfig {
     // --- General settings ---
     /** Show each player the welcome message once for this world. */
     public boolean showWelcomeMessage = true;
+    /** Show each player the build-mode usage hint once for this world. */
+    public boolean showBuildModeHint = true;
 
     // --- Creative settings ---
     public int creativeReach = 200;
@@ -98,6 +100,7 @@ public class ServerConfig {
         this.survivalRequireTools = other.survivalRequireTools;
         this.survivalUseDurability = other.survivalUseDurability;
         this.showWelcomeMessage = other.showWelcomeMessage;
+        this.showBuildModeHint = other.showBuildModeHint;
 
         this.creativeReach = other.creativeReach;
         this.creativeMaxBlocksPlaced = other.creativeMaxBlocksPlaced;
@@ -127,6 +130,7 @@ public class ServerConfig {
         obj.addProperty("survivalRequireTools", survivalRequireTools);
         obj.addProperty("survivalUseDurability", survivalUseDurability);
         obj.addProperty("showWelcomeMessage", showWelcomeMessage);
+        obj.addProperty("showBuildModeHint", showBuildModeHint);
 
         obj.addProperty("creativeReach", creativeReach);
         obj.addProperty("creativeMaxBlocksPlaced", creativeMaxBlocksPlaced);
@@ -153,6 +157,7 @@ public class ServerConfig {
             if (obj.has("survivalRequireTools")) config.survivalRequireTools = obj.get("survivalRequireTools").getAsBoolean();
             if (obj.has("survivalUseDurability")) config.survivalUseDurability = obj.get("survivalUseDurability").getAsBoolean();
             if (obj.has("showWelcomeMessage")) config.showWelcomeMessage = obj.get("showWelcomeMessage").getAsBoolean();
+            if (obj.has("showBuildModeHint")) config.showBuildModeHint = obj.get("showBuildModeHint").getAsBoolean();
 
             if (obj.has("creativeReach")) config.creativeReach = obj.get("creativeReach").getAsInt();
             if (obj.has("creativeMaxBlocksPlaced")) config.creativeMaxBlocksPlaced = obj.get("creativeMaxBlocksPlaced").getAsInt();

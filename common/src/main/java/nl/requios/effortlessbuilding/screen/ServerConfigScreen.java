@@ -35,7 +35,6 @@ public class ServerConfigScreen extends Screen {
         "effortlessbuilding.config.max_hardness.tooltip",
         "effortlessbuilding.config.require_tools.tooltip",
         "effortlessbuilding.config.use_durability.tooltip",
-        "effortlessbuilding.config.show_welcome_message.tooltip",
     };
 
     /** Tooltip keys for creative rows (in order). */
@@ -46,6 +45,11 @@ public class ServerConfigScreen extends Screen {
         "effortlessbuilding.config.max_mirror_size.tooltip",
         "effortlessbuilding.config.max_array_count.tooltip",
         "effortlessbuilding.config.max_array_offset.tooltip",
+    };
+
+    private static final String[] GENERAL_TOOLTIP_KEYS = {
+        "effortlessbuilding.config.show_welcome_message.tooltip",
+        "effortlessbuilding.config.show_build_mode_hint.tooltip",
     };
 
     private final ServerConfig scratch;
@@ -62,7 +66,6 @@ public class ServerConfigScreen extends Screen {
     private EditBox survMaxHardnessField;
     private boolean survRequireTools;
     private boolean survUseDurability;
-    private boolean showWelcomeMessage;
 
     // Creative
     private EditBox creReachField;
@@ -71,6 +74,9 @@ public class ServerConfigScreen extends Screen {
     private EditBox creMirrorSizeField;
     private EditBox creArrayCountField;
     private EditBox creArrayOffsetField;
+
+    private boolean showWelcomeMessage;
+    private boolean showBuildModeHint;
 
     // Scrollable widgets in order for repositioning
     private final List<Object> widgetOrder = new ArrayList<>();
@@ -100,6 +106,7 @@ public class ServerConfigScreen extends Screen {
         survRequireTools = scratch.survivalRequireTools;
         survUseDurability = scratch.survivalUseDurability;
         showWelcomeMessage = scratch.showWelcomeMessage;
+        showBuildModeHint = scratch.showBuildModeHint;
 
         int left = (width - PANEL_W) / 2;
         int fieldX = left + 220;
@@ -154,13 +161,6 @@ public class ServerConfigScreen extends Screen {
         widgetOrder.add(btnUseDurability);
         y += ROW_H;
 
-        var btnWelcomeMessage = addRenderableWidget(Button.builder(
-                Component.literal(onOff(showWelcomeMessage)),
-                btn -> { showWelcomeMessage = !showWelcomeMessage; btn.setMessage(Component.literal(onOff(showWelcomeMessage))); })
-                .bounds(fieldX, 0, fieldW, 18).build());
-        widgetOrder.add(btnWelcomeMessage);
-        y += ROW_H;
-
         y += SECTION_GAP;
 
         // -- Creative section header --
@@ -172,6 +172,22 @@ public class ServerConfigScreen extends Screen {
         creMirrorSizeField = addIntField(fieldX, fieldW, scratch.creativeMaxMirrorSize); y += ROW_H;
         creArrayCountField = addIntField(fieldX, fieldW, scratch.creativeMaxArrayCount); y += ROW_H;
         creArrayOffsetField = addIntField(fieldX, fieldW, scratch.creativeMaxArrayOffset); y += ROW_H;
+
+        y += SECTION_GAP;
+
+        var btnWelcomeMessage = addRenderableWidget(Button.builder(
+                        Component.literal(onOff(showWelcomeMessage)),
+                        btn -> { showWelcomeMessage = !showWelcomeMessage; btn.setMessage(Component.literal(onOff(showWelcomeMessage))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnWelcomeMessage);
+        y += ROW_H;
+
+        var btnBuildModeHint = addRenderableWidget(Button.builder(
+                        Component.literal(onOff(showBuildModeHint)),
+                        btn -> { showBuildModeHint = !showBuildModeHint; btn.setMessage(Component.literal(onOff(showBuildModeHint))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnBuildModeHint);
+        y += ROW_H;
 
         y += SECTION_GAP;
         contentHeight = y;
@@ -207,8 +223,8 @@ public class ServerConfigScreen extends Screen {
         // Survival header
         y += ROW_H;
 
-        // 6 int fields + 5 toggles + 1 float field = 12 widgets
-        for (int n = 0; n < 12; n++) { setPos(i++, fieldX, y); y += ROW_H; }
+        // 6 int fields + 4 toggles + 1 float field = 11 widgets
+        for (int n = 0; n < 11; n++) { setPos(i++, fieldX, y); y += ROW_H; }
 
         y += SECTION_GAP;
 
@@ -217,6 +233,11 @@ public class ServerConfigScreen extends Screen {
 
         // 6 int fields
         for (int n = 0; n < 6; n++) { setPos(i++, fieldX, y); y += ROW_H; }
+
+        y += SECTION_GAP;
+
+        // 2 general toggles
+        for (int n = 0; n < 2; n++) { setPos(i++, fieldX, y); y += ROW_H; }
     }
 
     private void setPos(int index, int x, int y) {
@@ -238,7 +259,6 @@ public class ServerConfigScreen extends Screen {
         scratch.survivalMaxHardness = parseFloatOrDefault(survMaxHardnessField.getValue(), -1f);
         scratch.survivalRequireTools = survRequireTools;
         scratch.survivalUseDurability = survUseDurability;
-        scratch.showWelcomeMessage = showWelcomeMessage;
 
         scratch.creativeReach = parseOrDefault(creReachField.getValue(), 64);
         scratch.creativeMaxBlocksPlaced = parseOrDefault(creMaxPlacedField.getValue(), 10000);
@@ -246,6 +266,9 @@ public class ServerConfigScreen extends Screen {
         scratch.creativeMaxMirrorSize = parseOrDefault(creMirrorSizeField.getValue(), 128);
         scratch.creativeMaxArrayCount = parseOrDefault(creArrayCountField.getValue(), 64);
         scratch.creativeMaxArrayOffset = parseOrDefault(creArrayOffsetField.getValue(), 128);
+
+        scratch.showWelcomeMessage = showWelcomeMessage;
+        scratch.showBuildModeHint = showBuildModeHint;
 
         scratch.clampAll();
         PacketHandler.sendToServer(new UpdateServerConfigC2SPacket(scratch.toJson()));
@@ -295,7 +318,6 @@ public class ServerConfigScreen extends Screen {
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_hardness"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.require_tools"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.use_durability"); y += ROW_H;
-        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_welcome_message"); y += ROW_H;
 
         y += SECTION_GAP;
 
@@ -308,6 +330,11 @@ public class ServerConfigScreen extends Screen {
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_mirror_size"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_array_count"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_array_offset"); y += ROW_H;
+
+        y += SECTION_GAP;
+
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_welcome_message"); y += ROW_H;
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_build_mode_hint"); y += ROW_H;
 
         graphics.disableScissor();
 
@@ -352,6 +379,17 @@ public class ServerConfigScreen extends Screen {
 
         // Creative data rows
         for (String key : CREATIVE_TOOLTIP_KEYS) {
+            if (mouseY >= y && mouseY < y + ROW_H) {
+                renderMultiLineTooltip(graphics, key, mouseX, mouseY);
+                return;
+            }
+            y += ROW_H;
+        }
+
+        y += SECTION_GAP;
+
+        // General data rows
+        for (String key : GENERAL_TOOLTIP_KEYS) {
             if (mouseY >= y && mouseY < y + ROW_H) {
                 renderMultiLineTooltip(graphics, key, mouseX, mouseY);
                 return;

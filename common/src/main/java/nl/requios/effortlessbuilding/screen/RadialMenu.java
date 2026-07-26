@@ -23,6 +23,8 @@ import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
+import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
@@ -453,6 +455,9 @@ public class RadialMenu extends Screen {
 			playRadialMenuSound();
 
 			BuildModes.CLIENT.setBuildMode(switchTo);
+			if (switchTo != BuildModeEnum.DISABLED) {
+				PacketHandler.sendToServer(new BuildModeHintC2SPacket());
+			}
 			if (minecraft.player != null) {
 				minecraft.player.displayClientMessage(
 						Component.translatable(switchTo.getNameKey()), true);
@@ -562,4 +567,3 @@ public class RadialMenu extends Screen {
 	}
 
 }
-

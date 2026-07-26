@@ -30,9 +30,11 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
@@ -110,6 +112,11 @@ public class EffortlessBuilding {
                     QueryAE2CountC2SPacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleQueryAE2Count(payload, (ServerPlayer) context.player())));
+            registrar.playToServer(
+                    BuildModeHintC2SPacket.TYPE,
+                    BuildModeHintC2SPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleBuildModeHint((ServerPlayer) context.player())));
             registrar.playToClient(
                     SyncAE2CountS2CPacket.TYPE,
                     SyncAE2CountS2CPacket.STREAM_CODEC,
@@ -144,12 +151,14 @@ public class EffortlessBuilding {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
             WelcomeMessageStorage.clear();
+            BuildModeHintStorage.clear();
         });
 
         // Load server config on server start
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
             ServerConfigStorage.load(event.getServer());
             WelcomeMessageStorage.load(event.getServer());
+            BuildModeHintStorage.load(event.getServer());
         });
 
         CommonClass.init();

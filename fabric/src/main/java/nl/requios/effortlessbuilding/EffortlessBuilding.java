@@ -25,9 +25,11 @@ import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
 import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
 import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
 import nl.requios.effortlessbuilding.item.RandomizerToolItem;
@@ -54,6 +56,7 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(BuildModeHintC2SPacket.TYPE, BuildModeHintC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
@@ -75,6 +78,8 @@ public class EffortlessBuilding implements ModInitializer {
                 context.server().execute(() -> PacketHandler.handleUpdateServerConfig(payload, context.player())));
         ServerPlayNetworking.registerGlobalReceiver(QueryAE2CountC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handleQueryAE2Count(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(BuildModeHintC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleBuildModeHint(context.player())));
 
         // Load + send modifiers and config on player join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -101,12 +106,14 @@ public class EffortlessBuilding implements ModInitializer {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
             WelcomeMessageStorage.clear();
+            BuildModeHintStorage.clear();
         });
 
         // Load server config on server start
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ServerConfigStorage.load(server);
             WelcomeMessageStorage.load(server);
+            BuildModeHintStorage.load(server);
         });
 
         CommonClass.init();

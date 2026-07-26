@@ -102,7 +102,8 @@
   "effortlessbuilding.message.protected_tile_entity": "Some blocks were protected (tile entities)",
   "effortlessbuilding.message.world_border": "Some blocks are outside the world border or build height",
   "effortlessbuilding.message.not_operator": "Only admins can edit functional settings.",
-  "effortlessbuilding.message.welcome_message": "[Effortless Building] Hold %s to open the build menu",
+  "effortlessbuilding.message.welcome_message": "Thank you for using Effortless Building! To get started, hold %s to open the build menu.",
+  "effortlessbuilding.message.build_mode_hint": "You have activated a build mode! With a block in hand, right-click to pick the starting position. Aim somewhere else, then right-click again to build the shape. To deactivate, hold %s and select Disable.",
 
   "effortlessbuilding.config.section_survival": "Survival",
   "effortlessbuilding.config.section_creative": "Creative",
@@ -130,6 +131,8 @@
   "effortlessbuilding.config.use_durability.tooltip": "If on, breaking blocks will consume durability from the appropriate tool in your inventory.",
   "effortlessbuilding.config.show_welcome_message": "Welcome Message",
   "effortlessbuilding.config.show_welcome_message.tooltip": "If on, each player receives the welcome message once per world.",
+  "effortlessbuilding.config.show_build_mode_hint": "Build Mode Hint",
+  "effortlessbuilding.config.show_build_mode_hint.tooltip": "If on, each player receives the build-mode usage hint once per world.",
   "effortlessbuilding.config.preview_block_size": "Preview Block Size",
   "effortlessbuilding.config.preview_block_size.tooltip": "Size of block previews as a percentage of a full block.",
   "effortlessbuilding.config.preview_block_transparency": "Preview Transparency",
