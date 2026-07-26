@@ -101,9 +101,23 @@ public class BuildPipelineClient {
     public static boolean shouldInterceptBreaking() {
         if (BuildModes.CLIENT.getBuildMode() == BuildModeEnum.DISABLED) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && !mc.player.getAbilities().instabuild
-                && !ServerConfig.INSTANCE.survivalAllowBreaking) {
+        Player player = mc.player;
+        if (player == null) return false;
+        if (!player.getAbilities().instabuild && !ServerConfig.INSTANCE.survivalAllowBreaking) {
             return false;
+        }
+        // A left-click during an existing sequence cancels that sequence, rather than mining.
+        if (buildState != null || player.getAbilities().instabuild) return true;
+
+        // Do not take over vanilla mining for a target that this mod would reject. This lets
+        // survival players hold attack to break that single block with vanilla behaviour.
+        if (mc.level != null && mc.hitResult instanceof BlockHitResult hit) {
+            BlockPos target = hit.getBlockPos();
+            BlockSet singleTarget = new BlockSet();
+            singleTarget.add(new BlockEntry(target));
+            ConstraintSystem.INSTANCE.processBlocks(singleTarget, player, BuildPipeline.BuildState.BREAKING);
+            BlockEntry entry = singleTarget.get(target);
+            if (entry != null && !entry.isValid()) return false;
         }
         return true;
     }
