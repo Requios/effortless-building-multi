@@ -13,10 +13,11 @@
   "effortlessbuilding.screen.randomizer.ratio.tooltip": "权重：滚动鼠标滚轮可更改选中此槽位的概率。",
 
   "item.effortlessbuilding.randomizer_tool": "随机工具",
+  "item.effortlessbuilding.randomizer_tool.when_in_hand": "手持时：",
   "item.effortlessbuilding.randomizer_tool.right_click": "右键单击",
   "item.effortlessbuilding.randomizer_tool.place_hint": "%s以放置随机方块",
   "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + 右键单击",
-  "item.effortlessbuilding.randomizer_tool.configure_hint": "手持时按%s进行配置",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "使用 %s 进行配置",
 
   "effortlessbuilding.mode.normal": "禁用",
   "effortlessbuilding.mode.normal_plus": "单块",
@@ -101,6 +102,8 @@
   "effortlessbuilding.message.protected_tile_entity": "部分方块受到保护（方块实体）",
   "effortlessbuilding.message.world_border": "部分方块超出了世界边界或建造高度",
   "effortlessbuilding.message.not_operator": "你必须是管理员才能修改服务器配置",
+  "effortlessbuilding.message.welcome_message": "感谢使用 Effortless Building！要开始，请按住 %s 打开建造菜单。",
+  "effortlessbuilding.message.build_mode_hint": "你已启用一种建造模式！手持方块时，右键单击以选择起始位置。瞄准其他位置后，再次右键单击以建造形状。要停用它，请按住 %s 并选择“禁用”。",
 
   "effortlessbuilding.config.section_survival": "生存模式",
   "effortlessbuilding.config.section_creative": "创造模式",
@@ -126,6 +129,10 @@
   "effortlessbuilding.config.require_tools.tooltip": "开启后，必须在背包中携带合适的工具才能破坏方块。",
   "effortlessbuilding.config.use_durability": "消耗耐久",
   "effortlessbuilding.config.use_durability.tooltip": "开启后，破坏方块会消耗背包中相应工具的耐久度。",
+  "effortlessbuilding.config.show_welcome_message": "欢迎消息",
+  "effortlessbuilding.config.show_welcome_message.tooltip": "如果开启，每位玩家在每个世界中只会收到一次欢迎消息。",
+  "effortlessbuilding.config.show_build_mode_hint": "建造模式提示",
+  "effortlessbuilding.config.show_build_mode_hint.tooltip": "如果开启，每位玩家在每个世界中只会收到一次建造模式使用提示。",
   "effortlessbuilding.config.preview_block_size": "预览方块大小",
   "effortlessbuilding.config.preview_block_size.tooltip": "方块预览的大小，以完整方块的百分比表示。",
   "effortlessbuilding.config.preview_block_transparency": "预览透明度",

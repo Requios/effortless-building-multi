@@ -13,10 +13,11 @@
   "effortlessbuilding.screen.randomizer.ratio.tooltip": "Соотношение: прокрутите, чтобы изменить вероятность выбора этого слота.",
 
   "item.effortlessbuilding.randomizer_tool": "Инструмент случайного выбора",
+  "item.effortlessbuilding.randomizer_tool.when_in_hand": "В руке:",
   "item.effortlessbuilding.randomizer_tool.right_click": "Щелчок правой кнопкой",
   "item.effortlessbuilding.randomizer_tool.place_hint": "%s, чтобы поставить случайный блок",
   "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + щелчок правой кнопкой",
-  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s в руке для настройки",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s для настройки",
 
   "effortlessbuilding.mode.normal": "Отключено",
   "effortlessbuilding.mode.normal_plus": "Одиночный",
@@ -101,6 +102,8 @@
   "effortlessbuilding.message.protected_tile_entity": "Некоторые блоки были защищены (блочные сущности)",
   "effortlessbuilding.message.world_border": "Некоторые блоки находятся за пределами границы мира или высоты строительства",
   "effortlessbuilding.message.not_operator": "Вы должны быть оператором, чтобы изменить настройки сервера",
+  "effortlessbuilding.message.welcome_message": "Спасибо, что используете Effortless Building! Чтобы начать, удерживайте %s, чтобы открыть меню строительства.",
+  "effortlessbuilding.message.build_mode_hint": "Вы активировали режим строительства! Держа блок в руке, щёлкните правой кнопкой мыши, чтобы выбрать начальную позицию. Наведитесь на другое место и снова щёлкните правой кнопкой мыши, чтобы построить форму. Чтобы отключить режим, удерживайте %s и выберите Отключено.",
 
   "effortlessbuilding.config.section_survival": "Выживание",
   "effortlessbuilding.config.section_creative": "Творческий режим",
@@ -126,6 +129,10 @@
   "effortlessbuilding.config.require_tools.tooltip": "Если включено, для ломания блоков необходимо иметь подходящие инструменты в инвентаре.",
   "effortlessbuilding.config.use_durability": "Использовать прочность",
   "effortlessbuilding.config.use_durability.tooltip": "Если включено, ломание блоков будет расходовать прочность подходящего инструмента в инвентаре.",
+  "effortlessbuilding.config.show_welcome_message": "Приветственное сообщение",
+  "effortlessbuilding.config.show_welcome_message.tooltip": "Если включено, каждый игрок получает приветственное сообщение один раз для каждого мира.",
+  "effortlessbuilding.config.show_build_mode_hint": "Подсказка режима строительства",
+  "effortlessbuilding.config.show_build_mode_hint.tooltip": "Если включено, каждый игрок получает подсказку по использованию режимов строительства один раз для каждого мира.",
   "effortlessbuilding.config.preview_block_size": "Размер предпросмотра блока",
   "effortlessbuilding.config.preview_block_size.tooltip": "Размер предпросмотра блоков в процентах от полного блока.",
   "effortlessbuilding.config.preview_block_transparency": "Прозрачность предпросмотра",

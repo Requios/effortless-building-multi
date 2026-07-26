@@ -13,10 +13,11 @@
   "effortlessbuilding.screen.randomizer.ratio.tooltip": "Verhouding: scroll om de kans te wijzigen dat dit vak wordt gekozen.",
 
   "item.effortlessbuilding.randomizer_tool": "Randomizer-gereedschap",
+  "item.effortlessbuilding.randomizer_tool.when_in_hand": "In de hand:",
   "item.effortlessbuilding.randomizer_tool.right_click": "Rechtermuisknop",
   "item.effortlessbuilding.randomizer_tool.place_hint": "%s om een willekeurig blok te plaatsen",
   "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift-rechtermuisknop",
-  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s in je hand om te configureren",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s om te configureren",
 
   "effortlessbuilding.mode.normal": "Uitgeschakeld",
   "effortlessbuilding.mode.normal_plus": "Enkelvoudig",
@@ -101,6 +102,8 @@
   "effortlessbuilding.message.protected_tile_entity": "Sommige blokken waren beschermd (blokentiteiten)",
   "effortlessbuilding.message.world_border": "Sommige blokken bevinden zich buiten de wereldgrens of bouwdhoogte",
   "effortlessbuilding.message.not_operator": "Je moet operator zijn om de serverconfiguratie te wijzigen",
+  "effortlessbuilding.message.welcome_message": "Bedankt voor het gebruiken van Effortless Building! Houd %s ingedrukt om het bouwmenu te openen.",
+  "effortlessbuilding.message.build_mode_hint": "Je hebt een bouwmodus geactiveerd! Houd een blok in je hand en klik met de rechtermuisknop om de beginpositie te kiezen. Richt op een andere plek en klik opnieuw met de rechtermuisknop om de vorm te bouwen. Houd %s ingedrukt en selecteer Uitgeschakeld om de bouwmodus uit te schakelen.",
 
   "effortlessbuilding.config.section_survival": "Overleven",
   "effortlessbuilding.config.section_creative": "Creatief",
@@ -126,6 +129,10 @@
   "effortlessbuilding.config.require_tools.tooltip": "Indien ingeschakeld, moet je het juiste gereedschap in je inventaris hebben om blokken te breken.",
   "effortlessbuilding.config.use_durability": "Duurzaamheid gebruiken",
   "effortlessbuilding.config.use_durability.tooltip": "Indien ingeschakeld, verbruikt het breken van blokken de duurzaamheid van het juiste gereedschap in je inventaris.",
+  "effortlessbuilding.config.show_welcome_message": "Welkomstbericht",
+  "effortlessbuilding.config.show_welcome_message.tooltip": "Als dit aan staat, ontvangt elke speler het welkomstbericht één keer per wereld.",
+  "effortlessbuilding.config.show_build_mode_hint": "Bouwmodus-hint",
+  "effortlessbuilding.config.show_build_mode_hint.tooltip": "Als dit aan staat, ontvangt elke speler de gebruikshint voor bouwmodi één keer per wereld.",
   "effortlessbuilding.config.preview_block_size": "Voorbeeldblokgrootte",
   "effortlessbuilding.config.preview_block_size.tooltip": "Grootte van blokvoorbeelden als percentage van een volledig blok.",
   "effortlessbuilding.config.preview_block_transparency": "Voorbeeldtransparantie",
