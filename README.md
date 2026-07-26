@@ -47,6 +47,17 @@ Modifiers can place additional blocks for each block you placed. You can enable 
 
 ![Modifier Settings](https://media.forgecdn.net/attachments/1718/585/2026-06-05_15-47-27_gemiddeld-png.png)
 
+## Randomizer Tool
+This item allows you to place random blocks. Configure the tool by shift-rightclicking when in hand. 
+
+* Use it in combination with build modes and build modifiers.
+* While placing a shape, you can open the randomizer tool and change its settings. You can preview those settings in realtime!
+* Setting the ratio of an empty slot will cause air gaps to appear in your shape.
+
+![Randomizer Tool recipe](https://media.forgecdn.net/attachments/1821/607/minecraft_1-21-1_-_singleplayer_2026-07-26_19h-33m.png)
+
+Crafting recipe: 3 iron ingots, 1 redstone dust, 1 any flower. 
+
 ## Replace Options
 Use the button to the left of the radial menu to cycle through replace options.
 
