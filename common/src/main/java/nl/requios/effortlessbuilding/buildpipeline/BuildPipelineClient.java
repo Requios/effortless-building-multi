@@ -79,6 +79,11 @@ public class BuildPipelineClient {
     @Nullable private static BuildPipeline.BuildState buildState = null;
     @Nullable private static BlockHitResult firstClickHit = null;
 
+    static {
+        // Run while the old mode is still active, so its multi-click state is reset.
+        BuildModes.CLIENT.setBeforeDisable(BuildPipelineClient::cancelCurrentSequence);
+    }
+
     public static @Nullable BuildPipeline.BuildState getBuildState() { return buildState; }
     public static @Nullable BlockHitResult getFirstClickHit() { return firstClickHit; }
 
