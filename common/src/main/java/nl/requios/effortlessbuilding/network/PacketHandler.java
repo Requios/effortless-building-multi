@@ -14,6 +14,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
@@ -197,11 +198,17 @@ public class PacketHandler {
             }
         } else if (held.getItem() instanceof BlockItem blockItem) {
             Item heldItem = held.getItem();
+            // Components belong to this exact stack. Do not let a filled or otherwise
+            // customised block borrow plain copies from the inventory/AE2 network,
+            // because that would duplicate its data onto those copies.
+            boolean hasStackData = !held.getComponentsPatch().isEmpty();
 
             // Determine how many blocks we can afford BEFORE placing any
             int available;
             if (creative) {
                 available = Integer.MAX_VALUE;
+            } else if (hasStackData) {
+                available = held.getCount();
             } else {
                 int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, heldItem);
                 int validCount = blockSet.validEntries().size();
@@ -248,16 +255,21 @@ public class PacketHandler {
                         state = entry.applyTransforms(state);
                     }
                     level.setBlock(pos, state, 3);
+                    transferBlockItemData(level, player, pos, held);
                     undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, state));
                     placed++;
                 }
             }
 
             if (!creative && placed > 0) {
-                // Consume from player inventory (AE2 was already debited before placement)
-                InventoryHelper.consumeItems(player, heldItem, placed);
-                // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
-                InventoryHelper.restockFromNetwork(player);
+                if (hasStackData) {
+                    held.shrink(placed);
+                } else {
+                    // Consume from player inventory (AE2 was already debited before placement)
+                    InventoryHelper.consumeItems(player, heldItem, placed);
+                    // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
+                    InventoryHelper.restockFromNetwork(player);
+                }
             }
         } else if (held.getItem() instanceof BucketItem bucketItem) {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
@@ -325,6 +337,30 @@ public class PacketHandler {
             UndoManager.recordOperation(player, level.dimension(), undoChanges);
             PlacedBlockTracker.trackAll(player.getUUID(), level.dimension(), undoChanges.keySet());
         }
+    }
+
+    /**
+     * Mirrors the block-entity part of {@link BlockItem#place(BlockPlaceContext)}.
+     *
+     * <p>The build pipeline intentionally sets the block directly so a modifier can
+     * control the exact target position and transformed state. Direct placement skips
+     * vanilla's item-to-block-entity transfer, however, which would otherwise erase
+     * contents such as a filled shulker box or data stored by another mod.</p>
+     */
+    private static void transferBlockItemData(ServerLevel level, ServerPlayer player,
+                                              BlockPos pos, ItemStack stack) {
+        if (!(stack.getItem() instanceof BlockItem blockItem)) return;
+
+        BlockState placedState = level.getBlockState(pos);
+        if (!placedState.is(blockItem.getBlock())) return;
+
+        BlockItem.updateCustomBlockEntityTag(level, player, pos, stack);
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity != null) {
+            blockEntity.applyComponentsFromItemStack(stack);
+            blockEntity.setChanged();
+        }
+        placedState.getBlock().setPlacedBy(level, pos, placedState, player, stack);
     }
 
     /**

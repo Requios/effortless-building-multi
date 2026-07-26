@@ -73,7 +73,7 @@ public class RandomizerMenu extends AbstractContainerMenu {
             ItemStack source = clickType == ClickType.SWAP && button >= 0 && button < 9
                     ? player.getInventory().getItem(button)
                     : getCarried();
-            if (source.getItem() instanceof BlockItem && BuildPipeline.isBuildTriggerItem(source)) {
+            if (isSafePaletteBlock(source)) {
                 ghostSlots.setItem(slotId, source.copyWithCount(1));
                 if (ratios[slotId] == 0) ratios[slotId] = 1;
             } else if (clickType == ClickType.PICKUP && source.isEmpty()) {
@@ -94,8 +94,7 @@ public class RandomizerMenu extends AbstractContainerMenu {
 
         ItemStack stack = slot.getItem();
         if (index >= GHOST_SLOT_END
-                && stack.getItem() instanceof BlockItem
-                && BuildPipeline.isBuildTriggerItem(stack)) {
+                && isSafePaletteBlock(stack)) {
             for (int i = 0; i < GHOST_SLOT_END; i++) {
                 if (ghostSlots.getItem(i).isEmpty()) {
                     ghostSlots.setItem(i, stack.copyWithCount(1));
@@ -158,6 +157,17 @@ public class RandomizerMenu extends AbstractContainerMenu {
         RandomizerToolData.setConfiguration(tool, items, configuredRatios);
         player.getInventory().setChanged();
         broadcastChanges();
+    }
+
+    /**
+     * The randomizer persists item identifiers, rather than complete item stacks.
+     * Reject component-bearing stacks so their contents or mod data cannot silently
+     * disappear when they are used as a palette entry.
+     */
+    private static boolean isSafePaletteBlock(ItemStack stack) {
+        return stack.getItem() instanceof BlockItem
+                && BuildPipeline.isBuildTriggerItem(stack)
+                && stack.getComponentsPatch().isEmpty();
     }
 
     @Override
