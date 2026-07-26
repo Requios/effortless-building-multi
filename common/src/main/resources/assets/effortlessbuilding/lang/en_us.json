@@ -10,9 +10,13 @@
   "effortlessbuilding.screen.server_config": "Functional Settings",
   "effortlessbuilding.screen.client_config": "Visual Settings",
   "effortlessbuilding.screen.randomizer": "Randomizer Tool",
+  "effortlessbuilding.screen.randomizer.ratio.tooltip": "Ratio. Scroll to change.",
 
   "item.effortlessbuilding.randomizer_tool": "Randomizer Tool",
-  "item.effortlessbuilding.randomizer_tool.hint": "Shift-right-click to configure",
+  "item.effortlessbuilding.randomizer_tool.right_click": "Rightclick",
+  "item.effortlessbuilding.randomizer_tool.place_hint": "%s to place a random block",
+  "item.effortlessbuilding.randomizer_tool.shift_right_click": "Shift + rightclick",
+  "item.effortlessbuilding.randomizer_tool.configure_hint": "%s to configure",
 
   "effortlessbuilding.mode.normal": "Disable",
   "effortlessbuilding.mode.normal_plus": "Single",

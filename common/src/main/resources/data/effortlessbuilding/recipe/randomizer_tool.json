@@ -7,8 +7,8 @@
     " R "
   ],
   "key": {
-    "L": { "item": "minecraft:leather" },
-    "C": { "item": "minecraft:crafting_table" },
+    "L": { "item": "minecraft:iron_ingot" },
+    "C": { "tag": "minecraft:flowers" },
     "R": { "item": "minecraft:redstone" }
   },
   "result": {

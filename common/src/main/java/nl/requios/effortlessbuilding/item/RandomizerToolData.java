@@ -3,6 +3,7 @@ package nl.requios.effortlessbuilding.item;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +19,7 @@ import java.util.List;
 public final class RandomizerToolData {
     public static final int SLOT_COUNT = 9;
     private static final String BLOCKS_TAG = "RandomizerBlocks";
+    private static final String RATIOS_TAG = "RandomizerRatios";
 
     private RandomizerToolData() {}
 
@@ -42,17 +44,45 @@ public final class RandomizerToolData {
                 .toList();
     }
 
+    /** Returns the selection weight of every palette slot. */
+    public static List<Integer> getRatios(ItemStack tool) {
+        var root = tool.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        ListTag tag = root.getList(RATIOS_TAG, Tag.TAG_INT);
+        List<Integer> result = new ArrayList<>(SLOT_COUNT);
+        List<Item> items = getItems(tool);
+        boolean hasStoredRatios = root.contains(RATIOS_TAG, Tag.TAG_LIST);
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            // Existing configured tools predate ratios, so retain their previous equal odds.
+            int ratio = hasStoredRatios && i < tag.size() ? tag.getInt(i)
+                    : (items.get(i) == Items.AIR ? 0 : 1);
+            result.add(Math.max(0, ratio));
+        }
+        return result;
+    }
+
     public static void setItems(ItemStack tool, List<Item> items) {
+        setConfiguration(tool, items, getRatios(tool));
+    }
+
+    /** Writes the complete palette configuration in one item-data update. */
+    public static void setConfiguration(ItemStack tool, List<Item> items, List<Integer> ratios) {
         CustomData.update(DataComponents.CUSTOM_DATA, tool, root -> {
-            ListTag list = new ListTag();
+            ListTag blocks = new ListTag();
             for (int i = 0; i < SLOT_COUNT; i++) {
                 Item item = i < items.size() ? items.get(i) : Items.AIR;
                 String id = item == null || item == Items.AIR
                         ? ""
                         : BuiltInRegistries.ITEM.getKey(item).toString();
-                list.add(StringTag.valueOf(id));
+                blocks.add(StringTag.valueOf(id));
             }
-            root.put(BLOCKS_TAG, list);
+            root.put(BLOCKS_TAG, blocks);
+
+            ListTag storedRatios = new ListTag();
+            for (int i = 0; i < SLOT_COUNT; i++) {
+                int ratio = i < ratios.size() ? ratios.get(i) : 0;
+                storedRatios.add(IntTag.valueOf(Math.max(0, ratio)));
+            }
+            root.put(RATIOS_TAG, storedRatios);
         });
     }
 }

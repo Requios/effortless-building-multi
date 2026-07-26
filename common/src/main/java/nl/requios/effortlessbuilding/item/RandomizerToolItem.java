@@ -37,7 +37,11 @@ public class RandomizerToolItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable("item.effortlessbuilding.randomizer_tool.hint")
+        tooltipComponents.add(Component.translatable("item.effortlessbuilding.randomizer_tool.place_hint",
+                        Component.translatable("item.effortlessbuilding.randomizer_tool.right_click").withStyle(ChatFormatting.BLUE))
+                .withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("item.effortlessbuilding.randomizer_tool.configure_hint",
+                        Component.translatable("item.effortlessbuilding.randomizer_tool.shift_right_click").withStyle(ChatFormatting.BLUE))
                 .withStyle(ChatFormatting.GRAY));
     }
 }

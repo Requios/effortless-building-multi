@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -25,6 +26,7 @@ public class RandomizerMenu extends AbstractContainerMenu {
 
     private final Container ghostSlots = new SimpleContainer(RandomizerToolData.SLOT_COUNT);
     private final ItemStack tool;
+    private final int[] ratios = new int[RandomizerToolData.SLOT_COUNT];
 
     public RandomizerMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, playerInventory.player.getMainHandItem());
@@ -35,19 +37,33 @@ public class RandomizerMenu extends AbstractContainerMenu {
         this.tool = tool;
 
         List<ItemStack> configured = RandomizerToolData.getStacks(tool);
+        List<Integer> configuredRatios = RandomizerToolData.getRatios(tool);
         for (int i = 0; i < RandomizerToolData.SLOT_COUNT; i++) {
             ghostSlots.setItem(i, configured.get(i));
-            addSlot(new GhostSlot(ghostSlots, i, 8 + i * 18, 20));
+            ratios[i] = configuredRatios.get(i);
+            addSlot(new GhostSlot(ghostSlots, i, 8 + i * 18, 36));
+            final int slot = i;
+            addDataSlot(new DataSlot() {
+                @Override
+                public int get() {
+                    return ratios[slot];
+                }
+
+                @Override
+                public void set(int value) {
+                    ratios[slot] = Math.max(0, value);
+                }
+            });
         }
 
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
                 addSlot(new Slot(playerInventory, column + row * 9 + 9,
-                        8 + column * 18, 51 + row * 18));
+                        8 + column * 18, 68 + row * 18));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new Slot(playerInventory, column, 8 + column * 18, 109));
+            addSlot(new Slot(playerInventory, column, 8 + column * 18, 126));
         }
     }
 
@@ -59,8 +75,10 @@ public class RandomizerMenu extends AbstractContainerMenu {
                     : getCarried();
             if (source.getItem() instanceof BlockItem && BuildPipeline.isBuildTriggerItem(source)) {
                 ghostSlots.setItem(slotId, source.copyWithCount(1));
+                if (ratios[slotId] == 0) ratios[slotId] = 1;
             } else if (clickType == ClickType.PICKUP && source.isEmpty()) {
                 ghostSlots.setItem(slotId, ItemStack.EMPTY);
+                if (ratios[slotId] == 1) ratios[slotId] = 0;
             }
             savePalette(player);
             return;
@@ -81,6 +99,7 @@ public class RandomizerMenu extends AbstractContainerMenu {
             for (int i = 0; i < GHOST_SLOT_END; i++) {
                 if (ghostSlots.getItem(i).isEmpty()) {
                     ghostSlots.setItem(i, stack.copyWithCount(1));
+                    ratios[i] = 1;
                     savePalette(player);
                     return ItemStack.EMPTY;
                 }
@@ -101,13 +120,42 @@ public class RandomizerMenu extends AbstractContainerMenu {
         return original;
     }
 
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id < 0 || id >= GHOST_SLOT_END * 2) return false;
+
+        int slot = id % GHOST_SLOT_END;
+        int delta = id < GHOST_SLOT_END ? 1 : -1;
+        if (delta < 0 && ratios[slot] == 0) return false;
+        if (delta > 0 && ratios[slot] == Integer.MAX_VALUE) return false;
+
+        ratios[slot] += delta;
+        savePalette(player);
+        return true;
+    }
+
+    public int getRatio(int slot) {
+        return slot >= 0 && slot < GHOST_SLOT_END ? ratios[slot] : 0;
+    }
+
+    /** Updates the client display immediately while the server menu action is in flight. */
+    public boolean adjustRatioClient(int slot, int delta) {
+        if (slot < 0 || slot >= GHOST_SLOT_END || delta == 0) return false;
+        if (delta < 0 && ratios[slot] == 0) return false;
+        if (delta > 0 && ratios[slot] == Integer.MAX_VALUE) return false;
+        ratios[slot] += delta > 0 ? 1 : -1;
+        return true;
+    }
+
     private void savePalette(Player player) {
         List<Item> items = new ArrayList<>(RandomizerToolData.SLOT_COUNT);
         for (int i = 0; i < RandomizerToolData.SLOT_COUNT; i++) {
             ItemStack stack = ghostSlots.getItem(i);
             items.add(stack.isEmpty() ? Items.AIR : stack.getItem());
         }
-        RandomizerToolData.setItems(tool, items);
+        List<Integer> configuredRatios = new ArrayList<>(RandomizerToolData.SLOT_COUNT);
+        for (int ratio : ratios) configuredRatios.add(ratio);
+        RandomizerToolData.setConfiguration(tool, items, configuredRatios);
         player.getInventory().setChanged();
         broadcastChanges();
     }
