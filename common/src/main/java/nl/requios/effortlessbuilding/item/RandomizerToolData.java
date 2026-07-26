@@ -3,7 +3,7 @@ package nl.requios.effortlessbuilding.item;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -47,13 +47,16 @@ public final class RandomizerToolData {
     /** Returns the selection weight of every palette slot. */
     public static List<Integer> getRatios(ItemStack tool) {
         var root = tool.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        ListTag tag = root.getList(RATIOS_TAG, Tag.TAG_INT);
+        Tag storedRatios = root.get(RATIOS_TAG);
+        ListTag tag = storedRatios instanceof ListTag list ? list : new ListTag();
+        int[] ratioArray = storedRatios instanceof IntArrayTag ? root.getIntArray(RATIOS_TAG) : null;
         List<Integer> result = new ArrayList<>(SLOT_COUNT);
         List<Item> items = getItems(tool);
-        boolean hasStoredRatios = root.contains(RATIOS_TAG, Tag.TAG_LIST);
+        boolean hasStoredRatios = ratioArray != null || storedRatios instanceof ListTag;
         for (int i = 0; i < SLOT_COUNT; i++) {
             // Existing configured tools predate ratios, so retain their previous equal odds.
-            int ratio = hasStoredRatios && i < tag.size() ? tag.getInt(i)
+            int ratio = ratioArray != null && i < ratioArray.length ? ratioArray[i]
+                    : hasStoredRatios && i < tag.size() ? tag.getInt(i)
                     : (items.get(i) == Items.AIR ? 0 : 1);
             result.add(Math.max(0, ratio));
         }
@@ -77,12 +80,12 @@ public final class RandomizerToolData {
             }
             root.put(BLOCKS_TAG, blocks);
 
-            ListTag storedRatios = new ListTag();
+            int[] storedRatios = new int[SLOT_COUNT];
             for (int i = 0; i < SLOT_COUNT; i++) {
                 int ratio = i < ratios.size() ? ratios.get(i) : 0;
-                storedRatios.add(IntTag.valueOf(Math.max(0, ratio)));
+                storedRatios[i] = Math.max(0, ratio);
             }
-            root.put(RATIOS_TAG, storedRatios);
+            root.putIntArray(RATIOS_TAG, storedRatios);
         });
     }
 }
