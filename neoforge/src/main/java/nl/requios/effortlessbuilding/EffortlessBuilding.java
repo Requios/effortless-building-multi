@@ -10,6 +10,16 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.inventory.MenuType;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
@@ -20,15 +30,40 @@ import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 @Mod(Constants.MOD_ID)
 public class EffortlessBuilding {
 
+    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Constants.MOD_ID);
+    private static final DeferredItem<Item> RANDOMIZER_TOOL = ITEMS.register(
+            "randomizer_tool", () -> new RandomizerToolItem(new Item.Properties()
+                    .setId(ResourceKey.create(Registries.ITEM,
+                            Identifier.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool")))
+                    .stacksTo(1)));
+    private static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, Constants.MOD_ID);
+
+    static {
+        MENUS.register("randomizer", () -> ModMenus.RANDOMIZER);
+    }
+
     public EffortlessBuilding(IEventBus eventBus, ModContainer modContainer) {
+
+        ITEMS.register(eventBus);
+        MENUS.register(eventBus);
+        eventBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
+            if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) event.accept(RANDOMIZER_TOOL);
+        });
 
         if (FMLEnvironment.getDist().isClient()) {
             NeoForgeConfigScreenRegistrar.register(modContainer);
@@ -76,6 +111,22 @@ public class EffortlessBuilding {
                     SyncServerConfigS2CPacket.STREAM_CODEC,
                     (payload, context) -> context.enqueueWork(() ->
                             PacketHandler.handleSyncServerConfig(payload)));
+            // AE2 count query — client requests item count from ME network
+            registrar.playToServer(
+                    QueryAE2CountC2SPacket.TYPE,
+                    QueryAE2CountC2SPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleQueryAE2Count(payload, (ServerPlayer) context.player())));
+            registrar.playToServer(
+                    BuildModeHintC2SPacket.TYPE,
+                    BuildModeHintC2SPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleBuildModeHint((ServerPlayer) context.player())));
+            registrar.playToClient(
+                    SyncAE2CountS2CPacket.TYPE,
+                    SyncAE2CountS2CPacket.STREAM_CODEC,
+                    (payload, context) -> context.enqueueWork(() ->
+                            PacketHandler.handleSyncAE2Count(payload)));
         });
 
         // Load + send modifiers and config on player join
@@ -86,6 +137,7 @@ public class EffortlessBuilding {
                         ModifierServerStorage.serializePlayer(serverPlayer.getUUID())));
                 PacketHandler.sendToClient(serverPlayer, new SyncServerConfigS2CPacket(
                         ServerConfig.INSTANCE.toJson()));
+                WelcomeMessageStorage.showIfNeeded(serverPlayer);
             }
         });
 
@@ -103,11 +155,15 @@ public class EffortlessBuilding {
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
+            WelcomeMessageStorage.clear();
+            BuildModeHintStorage.clear();
         });
 
         // Load server config on server start
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
             ServerConfigStorage.load(event.getServer());
+            WelcomeMessageStorage.load(event.getServer());
+            BuildModeHintStorage.load(event.getServer());
         });
 
         CommonClass.init();

@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(grep -E \"\\\\.java$\")",
-      "WebSearch"
+      "Bash(./gradlew.bat :common:compileJava)"
     ]
   }
 }

@@ -20,6 +20,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
@@ -37,10 +38,13 @@ import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.buildmode.BuildModes;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class BlockPreviewRenderer {
@@ -122,7 +126,8 @@ public class BlockPreviewRenderer {
                     baseState = fluid.defaultFluidState().createLegacyBlock();
                 }
             }
-            if (baseState != null) {
+            boolean randomized = held.getItem() instanceof RandomizerToolItem;
+            if (baseState != null || randomized) {
                 var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                 var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                 Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
@@ -138,6 +143,11 @@ public class BlockPreviewRenderer {
                     // Apply per-block mirror/rotation transforms from the modifier pipeline.
                     BlockState state = baseState;
                     BlockEntry entry = blockSet.get(pos);
+                    if (randomized && entry != null && entry.item instanceof BlockItem randomBlock) {
+                        state = randomStates.computeIfAbsent(entry.item,
+                                item -> getPlacementState(randomBlock, mc, new ItemStack(item)));
+                    }
+                    if (state == null) continue;
                     if (entry != null) {
                         state = entry.applyTransforms(state);
                     }
@@ -328,6 +338,10 @@ public class BlockPreviewRenderer {
      * Falls back to {@code defaultBlockState()} on miss or null result.
      */
     private static BlockState getPlacementState(BlockItem blockItem, Minecraft mc) {
+        return getPlacementState(blockItem, mc, mc.player.getMainHandItem());
+    }
+
+    private static BlockState getPlacementState(BlockItem blockItem, Minecraft mc, ItemStack placementStack) {
         Player player = mc.player;
 
         // Mid-sequence: use the first click's hit result so that face-dependent properties
@@ -348,7 +362,7 @@ public class BlockPreviewRenderer {
         }
 
         BlockPlaceContext placeCtx = new OpenBlockPlaceContext(
-                mc.level, player, InteractionHand.MAIN_HAND, player.getMainHandItem(), hit);
+                mc.level, player, InteractionHand.MAIN_HAND, placementStack, hit);
         BlockState state = blockItem.getBlock().getStateForPlacement(placeCtx);
         return state != null ? state : blockItem.getBlock().defaultBlockState();
     }

@@ -16,6 +16,7 @@ public class BuildModes {
     private BuildModeEnum buildMode = BuildModeEnum.DISABLED;
     private BuildModeEnum previousBuildMode = BuildModeEnum.DISABLED;
     private BuildModeEnum beforeDisabledBuildMode = BuildModeEnum.SINGLE;
+    private Runnable beforeDisable = () -> {};
 
 	public void findCoordinates(BlockSet blocks, Player player) {
         buildMode.instance.findCoordinates(blocks, player);
@@ -26,7 +27,15 @@ public class BuildModes {
     }
 
     public void setBuildMode(BuildModeEnum buildMode) {
+        if (this.buildMode != BuildModeEnum.DISABLED && buildMode == BuildModeEnum.DISABLED) {
+            beforeDisable.run();
+        }
         this.buildMode = buildMode;
+    }
+
+    /** Registers client sequence cleanup to run before this mode is disabled. */
+    public void setBeforeDisable(Runnable beforeDisable) {
+        this.beforeDisable = beforeDisable;
     }
 
     public void activatePreviousBuildMode() {

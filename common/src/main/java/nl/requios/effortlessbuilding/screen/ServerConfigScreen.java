@@ -47,6 +47,11 @@ public class ServerConfigScreen extends Screen {
         "effortlessbuilding.config.max_array_offset.tooltip",
     };
 
+    private static final String[] GENERAL_TOOLTIP_KEYS = {
+        "effortlessbuilding.config.show_welcome_message.tooltip",
+        "effortlessbuilding.config.show_build_mode_hint.tooltip",
+    };
+
     private final ServerConfig scratch;
 
     // Survival
@@ -69,6 +74,9 @@ public class ServerConfigScreen extends Screen {
     private EditBox creMirrorSizeField;
     private EditBox creArrayCountField;
     private EditBox creArrayOffsetField;
+
+    private boolean showWelcomeMessage;
+    private boolean showBuildModeHint;
 
     // Scrollable widgets in order for repositioning
     private final List<Object> widgetOrder = new ArrayList<>();
@@ -97,6 +105,8 @@ public class ServerConfigScreen extends Screen {
         survOnlyPlacedBlocks = scratch.survivalOnlyPlacedBlocks;
         survRequireTools = scratch.survivalRequireTools;
         survUseDurability = scratch.survivalUseDurability;
+        showWelcomeMessage = scratch.showWelcomeMessage;
+        showBuildModeHint = scratch.showBuildModeHint;
 
         int left = (width - PANEL_W) / 2;
         int fieldX = left + 220;
@@ -163,6 +173,22 @@ public class ServerConfigScreen extends Screen {
         creArrayOffsetField = addIntField(fieldX, fieldW, scratch.creativeMaxArrayOffset); y += ROW_H;
 
         y += SECTION_GAP;
+
+        var btnWelcomeMessage = addRenderableWidget(Button.builder(
+                        Component.literal(onOff(showWelcomeMessage)),
+                        btn -> { showWelcomeMessage = !showWelcomeMessage; btn.setMessage(Component.literal(onOff(showWelcomeMessage))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnWelcomeMessage);
+        y += ROW_H;
+
+        var btnBuildModeHint = addRenderableWidget(Button.builder(
+                        Component.literal(onOff(showBuildModeHint)),
+                        btn -> { showBuildModeHint = !showBuildModeHint; btn.setMessage(Component.literal(onOff(showBuildModeHint))); })
+                .bounds(fieldX, 0, fieldW, 18).build());
+        widgetOrder.add(btnBuildModeHint);
+        y += ROW_H;
+
+        y += SECTION_GAP;
         contentHeight = y;
 
         // Save / Cancel — fixed at bottom, not part of scrollable content
@@ -195,7 +221,7 @@ public class ServerConfigScreen extends Screen {
         // Survival header
         y += ROW_H;
 
-        // 6 int fields + 3 toggles + 1 float field + 1 toggle = 11 widgets
+        // 6 int fields + 4 toggles + 1 float field = 11 widgets
         for (int n = 0; n < 11; n++) { setPos(i++, fieldX, y); y += ROW_H; }
 
         y += SECTION_GAP;
@@ -205,6 +231,11 @@ public class ServerConfigScreen extends Screen {
 
         // 6 int fields
         for (int n = 0; n < 6; n++) { setPos(i++, fieldX, y); y += ROW_H; }
+
+        y += SECTION_GAP;
+
+        // 2 general toggles
+        for (int n = 0; n < 2; n++) { setPos(i++, fieldX, y); y += ROW_H; }
     }
 
     private void setPos(int index, int x, int y) {
@@ -233,6 +264,9 @@ public class ServerConfigScreen extends Screen {
         scratch.creativeMaxMirrorSize = parseOrDefault(creMirrorSizeField.getValue(), 128);
         scratch.creativeMaxArrayCount = parseOrDefault(creArrayCountField.getValue(), 64);
         scratch.creativeMaxArrayOffset = parseOrDefault(creArrayOffsetField.getValue(), 128);
+
+        scratch.showWelcomeMessage = showWelcomeMessage;
+        scratch.showBuildModeHint = showBuildModeHint;
 
         scratch.clampAll();
         PacketHandler.sendToServer(new UpdateServerConfigC2SPacket(scratch.toJson()));
@@ -295,6 +329,11 @@ public class ServerConfigScreen extends Screen {
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_array_count"); y += ROW_H;
         drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.max_array_offset"); y += ROW_H;
 
+        y += SECTION_GAP;
+
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_welcome_message"); y += ROW_H;
+        drawLabel(graphics, labelX + 8, y, "effortlessbuilding.config.show_build_mode_hint"); y += ROW_H;
+
         graphics.disableScissor();
 
         // Bottom bar — drawn AFTER scissor is disabled so it's never clipped
@@ -338,6 +377,17 @@ public class ServerConfigScreen extends Screen {
 
         // Creative data rows
         for (String key : CREATIVE_TOOLTIP_KEYS) {
+            if (mouseY >= y && mouseY < y + ROW_H) {
+                renderMultiLineTooltip(graphics, key, mouseX, mouseY);
+                return;
+            }
+            y += ROW_H;
+        }
+
+        y += SECTION_GAP;
+
+        // General data rows
+        for (String key : GENERAL_TOOLTIP_KEYS) {
             if (mouseY >= y && mouseY < y + ROW_H) {
                 renderMultiLineTooltip(graphics, key, mouseX, mouseY);
                 return;

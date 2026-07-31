@@ -18,6 +18,8 @@ import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
 import nl.requios.effortlessbuilding.mixin.GuiGraphicsAccessor;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
+import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
 
@@ -34,6 +36,8 @@ public class RadialMenu extends Screen {
 
 	private final Vector4f radialButtonColor = new Vector4f(0f, 0f, 0f, .5f);
 	private final Vector4f sideButtonColor = new Vector4f(.5f, .5f, .5f, .5f);
+	private final Vector4f disabledSideButtonColor = new Vector4f(.25f, .25f, .25f, .45f);
+	private final Vector4f disabledHighlightColor = new Vector4f(.35f, .35f, .35f, .55f);
 	private final Vector4f highlightColor = new Vector4f(.6f, .8f, 1f, .6f);
 	private final Vector4f selectedColor = new Vector4f(0f, .5f, 1f, .5f);
 	private final Vector4f highlightSelectedColor = new Vector4f(0.2f, .7f, 1f, .7f);
@@ -118,6 +122,7 @@ public class RadialMenu extends Screen {
 		if (mouseRadians < -quarterCircle) {
 			mouseRadians = mouseRadians + Math.PI * 2;
 		}
+		final double adjustedMouseRadians = mouseRadians;
 
 		final ArrayList<MenuRegion> modes = new ArrayList<MenuRegion>();
 		final ArrayList<MenuButton> buttons = new ArrayList<MenuButton>();
@@ -210,7 +215,7 @@ public class RadialMenu extends Screen {
 
 				final boolean isSelected = currentBuildMode.ordinal() == i;
 				final boolean isMouseInQuad = inTriangle(x1m1, y1m1, x2m2, y2m2, x2m1, y2m1, mouseXCenter, mouseYCenter)
-											  || inTriangle(x1m1, y1m1, x1m2, y1m2, x2m2, y2m2, mouseXCenter, mouseYCenter);
+						|| inTriangle(x1m1, y1m1, x1m2, y1m2, x2m2, y2m2, mouseXCenter, mouseYCenter);
 				final boolean isHighlighted = beginRadians <= mouseRadians && mouseRadians <= endRadians && isMouseInQuad;
 
 				Vector4f color = radialButtonColor;
@@ -255,14 +260,14 @@ public class RadialMenu extends Screen {
 			final double bx1 = btn.x1 * scale, bx2 = btn.x2 * scale, by1 = btn.y1 * scale, by2 = btn.y2 * scale;
 			final boolean isHighlighted = bx1 <= mouseXCenter && bx2 >= mouseXCenter && by1 <= mouseYCenter && by2 >= mouseYCenter;
 
-			boolean isSelected =
+			boolean isSelected = btn.enabled && (
 					btn.action == ModeOptions.getBuildSpeed() ||
 					btn.action == ModeOptions.getFill() ||
 					btn.action == ModeOptions.getCubeFill() ||
 					btn.action == ModeOptions.getRaisedEdge() ||
 					btn.action == ModeOptions.getLineThickness() ||
 					btn.action == ModeOptions.getCircleStart() ||
-					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR);
+					(btn.action == ActionEnum.CYCLE_REPLACE_MODE && BuildSettings.CLIENT.getReplaceMode() != BuildSettings.ReplaceMode.ONLY_AIR));
 
 			Vector4f color = sideButtonColor;
 			if (isSelected) color = selectedColor;
@@ -315,6 +320,15 @@ public class RadialMenu extends Screen {
 
 		String credits = "Effortless Building";
 		graphics.text(font, credits, width - font.width(credits) - 4, height - 10, watermarkTextColor, true);
+
+		// AE2 integration status (sanity check for the player)
+		if (minecraft.player != null) {
+			String ae2Status = nl.requios.effortlessbuilding.compat.ae2.AE2Integration.getStatusString(minecraft.player);
+			if (!ae2Status.isEmpty()) {
+				int ae2Color = ae2Status.contains("\u2713") ? 0xff44dd44 : 0xffaaaaaa; // green if connected, gray if not
+				graphics.drawString(font, ae2Status, 4, height - 10, ae2Color, true);
+			}
+		}
 
 
 
@@ -418,6 +432,9 @@ public class RadialMenu extends Screen {
 			playRadialMenuSound();
 
 			BuildModes.CLIENT.setBuildMode(switchTo);
+			if (switchTo != BuildModeEnum.DISABLED) {
+				PacketHandler.sendToServer(new BuildModeHintC2SPacket());
+			}
 			if (minecraft.player != null) {
 				minecraft.player.sendOverlayMessage(
 						Component.translatable(switchTo.getNameKey()));
@@ -440,8 +457,14 @@ public class RadialMenu extends Screen {
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
-				performedActionUsingMouse = true;
-				minecraft.setScreen(new ServerConfigScreen());
+				if (minecraft.isSingleplayer() || (minecraft.player != null
+						&& minecraft.player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))) {
+					performedActionUsingMouse = true;
+					minecraft.setScreen(new ServerConfigScreen());
+				} else if (minecraft.player != null) {
+					minecraft.player.displayClientMessage(Component.translatable("effortlessbuilding.message.not_operator"), true);
+					if (fromMouseClick) performedActionUsingMouse = true;
+				}
 				return;
 			}
 
@@ -471,6 +494,7 @@ public class RadialMenu extends Screen {
 		public double x1, x2;
 		public double y1, y2;
 		public boolean highlighted;
+		public boolean enabled = true;
 		public String name;
 		public String subtitle = "";
 		public String description = "";
@@ -521,4 +545,3 @@ public class RadialMenu extends Screen {
 	}
 
 }
-

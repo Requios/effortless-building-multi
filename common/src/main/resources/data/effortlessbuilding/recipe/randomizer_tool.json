@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " L ",
+    "LCL",
+    " R "
+  ],
+  "key": {
+    "L": "minecraft:iron_ingot",
+    "C": "#minecraft:flowers",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "effortlessbuilding:randomizer_tool",
+    "count": 1
+  }
+}
