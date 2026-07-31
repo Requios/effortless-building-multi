@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -17,6 +16,7 @@ import net.minecraft.world.level.block.SoundType;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
 import nl.requios.effortlessbuilding.utilities.ItemUsageTracker;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +36,12 @@ public class RenderHandler {
             .append(Component.literal("cancel").withStyle(ChatFormatting.DARK_AQUA))
             .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
             .append(Component.literal("place").withStyle(ChatFormatting.DARK_AQUA));
+
+    private static final Component INTERACTING_TEXT = Component.literal("Left-click to ")
+            .withStyle(ChatFormatting.WHITE)
+            .append(Component.literal("cancel").withStyle(ChatFormatting.DARK_AQUA))
+            .append(Component.literal(", Right-click to ").withStyle(ChatFormatting.WHITE))
+            .append(Component.literal("interact").withStyle(ChatFormatting.DARK_AQUA));
 
     private static final Component BREAKING_TEXT = Component.literal("Left-click to ")
             .withStyle(ChatFormatting.WHITE)
@@ -168,18 +174,50 @@ public class RenderHandler {
         int i = 0;
         for (Map.Entry<Item, Integer> entry : stacks.entrySet()) {
             int total = entry.getValue();
+            int have = tracker.inInventory.getOrDefault(entry.getKey(), 0);
+            int networkCount = tracker.fromNetwork.getOrDefault(entry.getKey(), 0);
             int missing = tracker.getMissingCount(entry.getKey());
 
-            if (total - missing > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), total - missing), x + i * 20, y, false);
+            int available = Math.min(total - missing, total);
+            boolean usingAE2 = networkCount > 0 && have < total && missing == 0;
+            if (available > 0) {
+                if (usingAE2) {
+                    // Single icon: combined count, green, with "AE2" suffix
+                    drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
+                            x + i * 20, y, false, ChatFormatting.GREEN.getColor(), "AE2");
+                } else {
+                    // Single icon: plain inventory count, white
+                    drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
+                            x + i * 20, y, false);
+                }
                 i++;
             }
 
+            // Truly missing items (red) — only shown when inventory + AE2 isn't enough
             if (missing > 0) {
-                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing), x + i * 20, y, true);
+                drawItemStack(guiGraphics, new ItemStack(entry.getKey(), missing),
+                        x + i * 20, y, true);
                 i++;
             }
         }
+    }
+
+    // Overload with network indicator
+    private static void drawItemStack(GuiGraphics guiGraphics, ItemStack stack, int x, int y,
+                                       boolean missing, int textColor, @Nullable String suffix) {
+        guiGraphics.renderItem(stack, x, y);
+
+        Font font = Minecraft.getInstance().font;
+        String count = String.valueOf(stack.getCount());
+        String text = suffix != null ? count + suffix : count;
+        int color = missing ? ChatFormatting.RED.getColor() : textColor;
+        int textX = x + 19 - 2 - font.width(text);
+        int textY = y + 6 + 3;
+
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, 200);
+        guiGraphics.drawString(font, text, textX, textY, color, true);
+        guiGraphics.pose().popPose();
     }
 
     private static void drawBreakingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {
@@ -238,7 +276,12 @@ public class RenderHandler {
         if (pendingAction == null) return;
 
         Minecraft mc = Minecraft.getInstance();
-        Component text = pendingAction == BuildPipeline.BuildState.PLACING ? PLACING_TEXT : BREAKING_TEXT;
+        boolean isToolInteraction = pendingAction == BuildPipeline.BuildState.PLACING
+                && mc.player != null
+                && BuildPipeline.isToolInteractionItem(mc.player.getMainHandItem());
+        Component text = pendingAction == BuildPipeline.BuildState.BREAKING
+                ? BREAKING_TEXT
+                : (isToolInteraction ? INTERACTING_TEXT : PLACING_TEXT);
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
@@ -250,4 +293,3 @@ public class RenderHandler {
         graphics.drawString(font, text, drawX, drawY, 0xffffffff, true);
     }
 }
-

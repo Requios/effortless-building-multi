@@ -34,7 +34,7 @@ neoForge {
         client {
             client()
         }
-        clientData {
+        data {
             clientData()
 
             // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
@@ -51,6 +51,13 @@ neoForge {
             sourceSet sourceSets.main
         }
     }
+}
+
+dependencies {
+    // Required for compilation because common module source files are compiled here too.
+    compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
+    // Enable for testing purposes
+//    runtimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }

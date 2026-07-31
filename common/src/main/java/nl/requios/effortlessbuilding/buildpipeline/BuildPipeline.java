@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.requios.effortlessbuilding.buildmode.BuildModeEnum;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +56,7 @@ public class BuildPipeline {
         BuildPipeline pipeline = new BuildPipeline();
         pipeline.addSystem(BuildModeSystem.INSTANCE);
         pipeline.addSystem(ModifierSystemServer.INSTANCE);
+        pipeline.addSystem(RandomizerSystem.INSTANCE);
         pipeline.addSystem(ConstraintSystem.INSTANCE);
         return pipeline;
     }
@@ -66,6 +68,7 @@ public class BuildPipeline {
      * setPlacedBy logic which the mod's batch placement cannot replicate correctly.
      */
     public static boolean isBuildTriggerItem(ItemStack stack) {
+        if (stack.getItem() instanceof RandomizerToolItem) return true;
         if (stack.getItem() instanceof BlockItem blockItem) {
             BlockState defaultState = blockItem.getBlock().defaultBlockState();
             for (var property : defaultState.getProperties()) {
@@ -80,10 +83,13 @@ public class BuildPipeline {
             return !((BucketItemAccessor) stack.getItem()).effortlessbuilding$getFluid().isSame(Fluids.EMPTY);
         }
         // Tools that modify blocks on right-click (axe strips logs, shovel makes paths, hoe tills)
-        if (stack.has(DataComponents.TOOL)) {
-            return true;
-        }
+        if (isToolInteractionItem(stack)) return true;
         return false;
+    }
+
+    /** Returns true for tools that interact with the clicked block on right-click. */
+    public static boolean isToolInteractionItem(ItemStack stack) {
+        return stack.has(DataComponents.TOOL);
     }
 
     // Use this instead of player.getLookAngle() in any build-modes code.

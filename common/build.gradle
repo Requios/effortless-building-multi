@@ -21,6 +21,12 @@ dependencies {
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
+
+    // Applied Energistics 2 — optional integration for pulling building materials from ME network.
+    // This is compileOnly so the JAR does not depend on AE2 at runtime.
+    // Adjust the version to match the AE2 release for your target Minecraft version.
+    // Available on Maven Central: https://central.sonatype.com/artifact/org.appliedenergistics/appliedenergistics2
+    compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 }
 
 configurations {

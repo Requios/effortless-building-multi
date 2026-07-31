@@ -15,6 +15,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import nl.requios.effortlessbuilding.mixin.BucketItemAccessor;
@@ -26,6 +27,7 @@ import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.modifier.IModifier;
 import nl.requios.effortlessbuilding.modifier.ModifierSerializer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -34,10 +36,13 @@ import nl.requios.effortlessbuilding.platform.Services;
 import nl.requios.effortlessbuilding.utilities.BlockEntry;
 import nl.requios.effortlessbuilding.utilities.BlockSet;
 import nl.requios.effortlessbuilding.utilities.InventoryHelper;
+import nl.requios.effortlessbuilding.compat.ae2.AE2Integration;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +80,40 @@ public class PacketHandler {
         Services.NETWORK.sendToClient(player, packet);
     }
 
+    public static void sendToServer(QueryAE2CountC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToServer(BuildModeHintC2SPacket packet) {
+        Services.NETWORK.sendToServer(packet);
+    }
+
+    public static void sendToClient(ServerPlayer player, SyncAE2CountS2CPacket packet) {
+        Services.NETWORK.sendToClient(player, packet);
+    }
+
+    /**
+     * Called on the server when a {@link QueryAE2CountC2SPacket} is received.
+     * Queries the AE2 network and sends the count back to the client.
+     */
+    public static void handleQueryAE2Count(QueryAE2CountC2SPacket packet, ServerPlayer player) {
+        int count = AE2Integration.countOnNetwork(player, packet.item());
+        sendToClient(player, new SyncAE2CountS2CPacket(packet.item(), count));
+    }
+
+    /**
+     * Called on the client when a {@link SyncAE2CountS2CPacket} is received.
+     * Stores the count for the HUD preview.
+     */
+    public static void handleSyncAE2Count(SyncAE2CountS2CPacket packet) {
+        AE2Integration.setCachedCount(packet.item(), packet.count());
+    }
+
+    /** Called after the client selects a non-disabled build mode. */
+    public static void handleBuildModeHint(ServerPlayer player) {
+        BuildModeHintStorage.showIfNeeded(player);
+    }
+
     /**
      * Called on the server when a {@link PlaceBuildModePacket} is received.
      */
@@ -105,11 +144,94 @@ public class PacketHandler {
         Map<BlockPos, UndoManager.BlockChange> undoChanges = new LinkedHashMap<>();
 
         int placed = 0;
-        if (held.getItem() instanceof BlockItem blockItem) {
-            Item heldItem = held.getItem();
+        if (held.getItem() instanceof RandomizerToolItem) {
+            Map<Item, Integer> required = new LinkedHashMap<>();
+            for (var mapEntry : blockSet.validEntries()) {
+                if (!BuildSettings.canPlaceAt(level, mapEntry.getKey(), replaceMode, offHand)) continue;
+                Item item = mapEntry.getValue().item;
+                if (item instanceof BlockItem) required.merge(item, 1, Integer::sum);
+            }
 
-            int available = creative ? Integer.MAX_VALUE
-                    : InventoryHelper.findTotalItemsInInventory(player, heldItem);
+            Map<Item, Integer> available = new HashMap<>();
+            for (var requirement : required.entrySet()) {
+                if (creative) {
+                    available.put(requirement.getKey(), Integer.MAX_VALUE);
+                } else {
+                    int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, requirement.getKey());
+                    int networkNeeded = Math.max(0, requirement.getValue() - inventoryCount);
+                    int fromNetwork = InventoryHelper.supplementFromNetwork(
+                            player, requirement.getKey(), networkNeeded);
+                    available.put(requirement.getKey(), inventoryCount + fromNetwork);
+                }
+            }
+
+            Map<Item, Integer> used = new HashMap<>();
+            double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
+            for (var mapEntry : blockSet.validEntries()) {
+                BlockPos pos = mapEntry.getKey();
+                BlockEntry entry = mapEntry.getValue();
+                if (!(entry.item instanceof BlockItem blockItem)) continue;
+                if (!creative && used.getOrDefault(entry.item, 0) >= available.getOrDefault(entry.item, 0)) continue;
+                if (!BuildSettings.canPlaceAt(level, pos, replaceMode, offHand)) continue;
+
+                BlockState oldState = level.getBlockState(pos);
+                if (!creative && !oldState.canBeReplaced()) {
+                    ItemStack toolForDrops = ServerConfig.INSTANCE.survivalRequireTools
+                            ? InventoryHelper.findCorrectTool(player, oldState)
+                            : player.getMainHandItem();
+                    var drops = Block.getDrops(oldState, level, pos, level.getBlockEntity(pos), player, toolForDrops);
+                    for (ItemStack drop : drops) {
+                        InventoryHelper.giveOrDropItems(player, drop.getItem(), drop.getCount());
+                    }
+                    if (ServerConfig.INSTANCE.survivalUseDurability) {
+                        InventoryHelper.damageCorrectTool(player, oldState);
+                    }
+                }
+
+                ItemStack placementStack = new ItemStack(entry.item);
+                Vec3 localHit = new Vec3(packet.hitLocation().x, pos.getY() + yFrac, packet.hitLocation().z);
+                BlockHitResult serverHit = new BlockHitResult(localHit, packet.hitFace(), pos, false);
+                BlockPlaceContext ctx = new OpenBlockPlaceContext(
+                        level, player, InteractionHand.MAIN_HAND, placementStack, serverHit);
+                BlockState state = blockItem.getBlock().getStateForPlacement(ctx);
+                if (state == null) state = blockItem.getBlock().defaultBlockState();
+                state = entry.applyTransforms(state);
+                level.setBlock(pos, state, 3);
+                undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, state));
+                used.merge(entry.item, 1, Integer::sum);
+                placed++;
+            }
+
+            if (!creative) {
+                for (var usage : used.entrySet()) {
+                    InventoryHelper.consumeItems(player, usage.getKey(), usage.getValue());
+                }
+            }
+        } else if (held.getItem() instanceof BlockItem blockItem) {
+            Item heldItem = held.getItem();
+            // Components belong to this exact stack. Do not let a filled or otherwise
+            // customised block borrow plain copies from the inventory/AE2 network,
+            // because that would duplicate its data onto those copies.
+            boolean hasStackData = !held.getComponentsPatch().isEmpty();
+
+            // Determine how many blocks we can afford BEFORE placing any
+            int available;
+            if (creative) {
+                available = Integer.MAX_VALUE;
+            } else if (hasStackData) {
+                available = held.getCount();
+            } else {
+                int inventoryCount = InventoryHelper.findTotalItemsInInventory(player, heldItem);
+                int validCount = blockSet.validEntries().size();
+
+                // Pre-extract from AE2 what exceeds inventory (digital — no ItemStack created)
+                int neededFromNetwork = Math.max(0, validCount - inventoryCount);
+                int ae2Extracted = 0;
+                if (neededFromNetwork > 0) {
+                    ae2Extracted = InventoryHelper.supplementFromNetwork(player, heldItem, neededFromNetwork);
+                }
+                available = inventoryCount + ae2Extracted;
+            }
 
             double yFrac = packet.hitLocation().y - Math.floor(packet.hitLocation().y);
             for (var mapEntry : blockSet.validEntries()) {
@@ -144,13 +266,21 @@ public class PacketHandler {
                         state = entry.applyTransforms(state);
                     }
                     level.setBlock(pos, state, 3);
+                    transferBlockItemData(level, player, pos, held);
                     undoChanges.put(pos.immutable(), new UndoManager.BlockChange(oldState, state));
                     placed++;
                 }
             }
 
             if (!creative && placed > 0) {
-                InventoryHelper.consumeItems(player, heldItem, placed);
+                if (hasStackData) {
+                    held.shrink(placed);
+                } else {
+                    // Consume from player inventory (AE2 was already debited before placement)
+                    InventoryHelper.consumeItems(player, heldItem, placed);
+                    // Restock held stack from AE2 network (e.g. top-up from 4 → 64)
+                    InventoryHelper.restockFromNetwork(player);
+                }
             }
         } else if (held.getItem() instanceof BucketItem bucketItem) {
             var fluid = ((BucketItemAccessor) bucketItem).effortlessbuilding$getFluid();
@@ -218,6 +348,30 @@ public class PacketHandler {
             UndoManager.recordOperation(player, level.dimension(), undoChanges);
             PlacedBlockTracker.trackAll(player.getUUID(), level.dimension(), undoChanges.keySet());
         }
+    }
+
+    /**
+     * Mirrors the block-entity part of {@link BlockItem#place(BlockPlaceContext)}.
+     *
+     * <p>The build pipeline intentionally sets the block directly so a modifier can
+     * control the exact target position and transformed state. Direct placement skips
+     * vanilla's item-to-block-entity transfer, however, which would otherwise erase
+     * contents such as a filled shulker box or data stored by another mod.</p>
+     */
+    private static void transferBlockItemData(ServerLevel level, ServerPlayer player,
+                                              BlockPos pos, ItemStack stack) {
+        if (!(stack.getItem() instanceof BlockItem blockItem)) return;
+
+        BlockState placedState = level.getBlockState(pos);
+        if (!placedState.is(blockItem.getBlock())) return;
+
+        BlockItem.updateCustomBlockEntityTag(level, player, pos, stack);
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity != null) {
+            blockEntity.applyComponentsFromItemStack(stack);
+            blockEntity.setChanged();
+        }
+        placedState.getBlock().setPlacedBy(level, pos, placedState, player, stack);
     }
 
     /**

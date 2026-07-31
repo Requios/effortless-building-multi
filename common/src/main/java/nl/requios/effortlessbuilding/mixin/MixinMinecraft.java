@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.HitResult;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipeline;
 import nl.requios.effortlessbuilding.buildpipeline.BuildPipelineClient;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,6 +20,8 @@ public class MixinMinecraft {
         Minecraft mc = (Minecraft) (Object) this;
         if (mc.player == null || mc.level == null) return;
         if (!BuildPipelineClient.shouldInterceptPlacing()) return;
+        if (mc.player.isShiftKeyDown()
+                && mc.player.getMainHandItem().getItem() instanceof RandomizerToolItem) return;
         boolean sequenceActive = BuildPipelineClient.getBuildState() != null;
         if (BuildPipeline.isBuildTriggerItem(mc.player.getMainHandItem()) || sequenceActive) ci.cancel();
     }

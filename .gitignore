@@ -24,3 +24,5 @@ run
 runs
 
 *-autosave.kra
+*.kra~
+*.png~

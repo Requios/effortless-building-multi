@@ -5,6 +5,15 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import nl.requios.effortlessbuilding.menu.ModMenus;
 import net.minecraft.server.level.ServerPlayer;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
 import nl.requios.effortlessbuilding.network.BreakBuildModePacket;
@@ -16,16 +25,32 @@ import nl.requios.effortlessbuilding.network.UpdateModifiersC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncModifiersS2CPacket;
 import nl.requios.effortlessbuilding.network.UpdateServerConfigC2SPacket;
 import nl.requios.effortlessbuilding.network.SyncServerConfigS2CPacket;
+import nl.requios.effortlessbuilding.network.QueryAE2CountC2SPacket;
+import nl.requios.effortlessbuilding.network.SyncAE2CountS2CPacket;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 import nl.requios.effortlessbuilding.config.ServerConfig;
 import nl.requios.effortlessbuilding.config.ServerConfigStorage;
+import nl.requios.effortlessbuilding.config.WelcomeMessageStorage;
+import nl.requios.effortlessbuilding.config.BuildModeHintStorage;
 import nl.requios.effortlessbuilding.utilities.PlacedBlockTracker;
 import nl.requios.effortlessbuilding.utilities.UndoManager;
+import nl.requios.effortlessbuilding.item.RandomizerToolItem;
 
 public class EffortlessBuilding implements ModInitializer {
 
     @Override
     public void onInitialize() {
         Constants.LOG.info("Hello Fabric world!");
+
+        ResourceLocation randomizerToolId = ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool");
+        Item randomizerTool = Registry.register(BuiltInRegistries.ITEM, randomizerToolId,
+                new RandomizerToolItem(new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, randomizerToolId))
+                        .stacksTo(1)));
+        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+                .register(entries -> entries.accept(randomizerTool));
+        Registry.register(BuiltInRegistries.MENU,
+                ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer"), ModMenus.RANDOMIZER);
 
         // Register C2S packets
         PayloadTypeRegistry.playC2S().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);
@@ -34,10 +59,13 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(BuildModeHintC2SPacket.TYPE, BuildModeHintC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.playS2C().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(SyncAE2CountS2CPacket.TYPE, SyncAE2CountS2CPacket.STREAM_CODEC);
 
         // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->
@@ -52,6 +80,10 @@ public class EffortlessBuilding implements ModInitializer {
                 context.server().execute(() -> PacketHandler.handleUpdateModifiers(payload, context.player())));
         ServerPlayNetworking.registerGlobalReceiver(UpdateServerConfigC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> PacketHandler.handleUpdateServerConfig(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(QueryAE2CountC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleQueryAE2Count(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(BuildModeHintC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> PacketHandler.handleBuildModeHint(context.player())));
 
         // Load + send modifiers and config on player join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -61,6 +93,7 @@ public class EffortlessBuilding implements ModInitializer {
                     ModifierServerStorage.serializePlayer(player.getUUID())));
             PacketHandler.sendToClient(player, new SyncServerConfigS2CPacket(
                     ServerConfig.INSTANCE.toJson()));
+            WelcomeMessageStorage.showIfNeeded(player);
         });
 
         // Save + clean up on player disconnect
@@ -76,11 +109,15 @@ public class EffortlessBuilding implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ModifierServerStorage.clearAll();
             ServerConfigStorage.clear();
+            WelcomeMessageStorage.clear();
+            BuildModeHintStorage.clear();
         });
 
         // Load server config on server start
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ServerConfigStorage.load(server);
+            WelcomeMessageStorage.load(server);
+            BuildModeHintStorage.load(server);
         });
 
         CommonClass.init();
