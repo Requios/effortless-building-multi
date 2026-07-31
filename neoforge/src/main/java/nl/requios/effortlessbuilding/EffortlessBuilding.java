@@ -16,6 +16,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import nl.requios.effortlessbuilding.menu.ModMenus;
 import nl.requios.effortlessbuilding.modifier.ModifierServerStorage;
@@ -44,7 +46,10 @@ public class EffortlessBuilding {
 
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Constants.MOD_ID);
     private static final DeferredItem<Item> RANDOMIZER_TOOL = ITEMS.register(
-            "randomizer_tool", () -> new RandomizerToolItem(new Item.Properties().stacksTo(1)));
+            "randomizer_tool", () -> new RandomizerToolItem(new Item.Properties()
+                    .setId(ResourceKey.create(Registries.ITEM,
+                            ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool")))
+                    .stacksTo(1)));
     private static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, Constants.MOD_ID);
 

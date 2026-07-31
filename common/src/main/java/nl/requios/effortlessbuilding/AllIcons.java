@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphics;
@@ -99,13 +98,8 @@ public class AllIcons {
         return new AllIcons(x = 0, ++y);
     }
 
-    public void bind() {
-        RenderSystem.setShaderTexture(0, ICON_ATLAS);
-    }
-
     public void render(GuiGraphics graphics, int x, int y) {
-        bind();
-        graphics.blit(ICON_ATLAS, x, y, 0, (float) iconX, (float) iconY, 16, 16, 256, 256);
+        graphics.blit(RenderType::guiTextured, ICON_ATLAS, x, y, (float) iconX, (float) iconY, 16, 16, 256, 256);
     }
 
     public void render(PoseStack ms, MultiBufferSource buffer, int color) {

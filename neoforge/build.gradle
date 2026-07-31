@@ -44,7 +44,7 @@ neoForge {
 dependencies {
     // Required for compilation because common module source files are compiled here too.
     compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
-    // Requires NeoForge 21.1.169
+    // Enable for testing purposes
 //    runtimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 }
 

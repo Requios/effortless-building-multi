@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -162,13 +161,11 @@ public class BlockPreviewRenderer {
         // Pass 2: bounding box faces with checkerboard texture.
         // Disable depth writes so the translucent faces don't occlude the
         // outline edges drawn in Pass 3.
-        RenderSystem.depthMask(false);
         renderBoundingBoxFaces(poseStack, bufferSource, breakablePositions, camX, camY, camZ, isBreaking, false);
         if (!unbreakablePositions.isEmpty()) {
             renderBoundingBoxFaces(poseStack, bufferSource, unbreakablePositions, camX, camY, camZ, isBreaking, true);
         }
-        bufferSource.endBatch(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
-        RenderSystem.depthMask(true);
+        bufferSource.endBatch(RenderType.entityTranslucent(CHECKERBOARD_TEXTURE));
 
         // Pass 3: wireframe as camera-facing quads (GL lineWidth is unreliable on most drivers).
         float outlineWidth = 0.02f; // half-width in world units
@@ -208,7 +205,7 @@ public class BlockPreviewRenderer {
                                                 boolean isBreaking, boolean isUnbreakable) {
         Set<BlockPos> posSet = new HashSet<>(positions);
 
-        var consumer = bufferSource.getBuffer(RenderType.entityTranslucentCull(CHECKERBOARD_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderType.entityTranslucent(CHECKERBOARD_TEXTURE));
         var pose = poseStack.last();
         int r, g, b;
         if (isUnbreakable) {

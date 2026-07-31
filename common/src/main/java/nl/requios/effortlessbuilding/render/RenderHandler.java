@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -292,12 +291,8 @@ public class RenderHandler {
 
         graphics.pose().pushPose();
         graphics.pose().translate(screenWidth / 2.0, screenHeight - 54, 0.0);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         int w = font.width(text);
         graphics.drawString(font, text, -w / 2, -4, 0xffffffff, true);
-        RenderSystem.disableBlend();
         graphics.pose().popPose();
     }
 }
-

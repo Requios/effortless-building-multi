@@ -8,7 +8,9 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import nl.requios.effortlessbuilding.menu.ModMenus;
@@ -40,9 +42,11 @@ public class EffortlessBuilding implements ModInitializer {
     public void onInitialize() {
         Constants.LOG.info("Hello Fabric world!");
 
-        Item randomizerTool = Registry.register(BuiltInRegistries.ITEM,
-                ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool"),
-                new RandomizerToolItem(new Item.Properties().stacksTo(1)));
+        ResourceLocation randomizerToolId = ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool");
+        Item randomizerTool = Registry.register(BuiltInRegistries.ITEM, randomizerToolId,
+                new RandomizerToolItem(new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, randomizerToolId))
+                        .stacksTo(1)));
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
                 .register(entries -> entries.accept(randomizerTool));
         Registry.register(BuiltInRegistries.MENU,

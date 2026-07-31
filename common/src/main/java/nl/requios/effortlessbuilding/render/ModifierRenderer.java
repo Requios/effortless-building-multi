@@ -1,6 +1,5 @@
 package nl.requios.effortlessbuilding.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -42,9 +41,7 @@ public class ModifierRenderer {
         }
 
         // Flush all modifier visuals.
-        RenderSystem.depthMask(false);
         bufferSource.endBatch(RenderType.entityTranslucent(BLANK_TEXTURE));
-        RenderSystem.depthMask(true);
     }
 
     // =========================================================================
@@ -169,4 +166,3 @@ public class ModifierRenderer {
         consumer.addVertex(pose, x3, y3, z3).setColor(r, g, b, a).setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
     }
 }
-

@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import nl.requios.effortlessbuilding.Constants;
 
 /**
@@ -23,7 +24,9 @@ public record SyncAE2CountS2CPacket(Item item, int count) implements CustomPacke
                 buf.writeVarInt(p.count);
             },
             buf -> {
-                Item item = BuiltInRegistries.ITEM.get(buf.readResourceLocation());
+                Item item = BuiltInRegistries.ITEM.get(buf.readResourceLocation())
+                        .map(reference -> reference.value())
+                        .orElse(Items.AIR);
                 int count = buf.readVarInt();
                 return new SyncAE2CountS2CPacket(item, count);
             }

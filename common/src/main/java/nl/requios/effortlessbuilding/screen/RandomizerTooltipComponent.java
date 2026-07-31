@@ -21,7 +21,7 @@ public final class RandomizerTooltipComponent implements ClientTooltipComponent 
     }
 
     @Override
-    public int getHeight() {
+    public int getHeight(Font font) {
         return PADDING * 2 + SLOT_SIZE;
     }
 
@@ -36,9 +36,9 @@ public final class RandomizerTooltipComponent implements ClientTooltipComponent 
     }
 
     @Override
-    public void renderImage(Font font, int x, int y, GuiGraphics graphics) {
+    public void renderImage(Font font, int x, int y, int tooltipWidth, int tooltipHeight, GuiGraphics graphics) {
         int width = getWidth(font);
-        int height = getHeight();
+        int height = getHeight(font);
 //        graphics.fill(x, y, x + width, y + height, 0xFF202020);
 
         for (int i = 0; i < data.stacks().size(); i++) {

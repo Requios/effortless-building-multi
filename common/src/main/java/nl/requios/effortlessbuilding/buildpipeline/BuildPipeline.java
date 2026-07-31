@@ -1,10 +1,10 @@
 package nl.requios.effortlessbuilding.buildpipeline;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -89,7 +89,7 @@ public class BuildPipeline {
 
     /** Returns true for tools that interact with the clicked block on right-click. */
     public static boolean isToolInteractionItem(ItemStack stack) {
-        return stack.getItem() instanceof DiggerItem;
+        return stack.has(DataComponents.TOOL);
     }
 
     // Use this instead of player.getLookAngle() in any build-modes code.

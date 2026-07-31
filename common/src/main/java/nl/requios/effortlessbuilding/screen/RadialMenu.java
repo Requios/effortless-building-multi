@@ -1,17 +1,12 @@
 package nl.requios.effortlessbuilding.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -27,7 +22,6 @@ import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
 import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 
@@ -109,13 +103,6 @@ public class RadialMenu extends Screen {
 
 		graphics.fill(0, 0, width, height, bgColor);
 
-//		RenderSystem.disableTexture();
-		RenderSystem.disableDepthTest();
-		RenderSystem.enableBlend();
-		RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		final BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
 		final double middleX = width / 2.0;
 		final double middleY = height / 2.0;
 
@@ -133,6 +120,7 @@ public class RadialMenu extends Screen {
 		if (mouseRadians < -quarterCircle) {
 			mouseRadians = mouseRadians + Math.PI * 2;
 		}
+		final double adjustedMouseRadians = mouseRadians;
 
 		final ArrayList<MenuRegion> modes = new ArrayList<MenuRegion>();
 		final ArrayList<MenuButton> buttons = new ArrayList<MenuButton>();
@@ -178,18 +166,15 @@ public class RadialMenu extends Screen {
 		switchTo = null;
 		doAction = null;
 
-		//Draw buildmode backgrounds
-		drawRadialButtonBackgrounds(currentBuildMode, buffer, middleX, middleY, mouseXCenter, mouseYCenter, mouseRadians,
-				quarterCircle, modes, scale);
-
-		//Draw action backgrounds
-		drawSideButtonBackgrounds(buffer, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
-
-		MeshData meshData = buffer.buildOrThrow();
-		BufferUploader.drawWithShader(meshData);
-		RenderSystem.enableDepthTest();
-		RenderSystem.disableBlend();
-//		RenderSystem.enableTexture();
+		// 1.21.5 has neither BufferUploader nor the deferred GuiElementRenderState API.
+		// drawSpecial gives access to the GUI buffer source and flushes it around this batch.
+		graphics.drawSpecial(bufferSource -> {
+			VertexConsumer buffer = bufferSource.getBuffer(RenderType.gui());
+			PoseStack.Pose pose = graphics.pose().last();
+			drawRadialButtonBackgrounds(currentBuildMode, buffer, pose, middleX, middleY, mouseXCenter, mouseYCenter, adjustedMouseRadians,
+					quarterCircle, modes, scale);
+			drawSideButtonBackgrounds(buffer, pose, middleX, middleY, mouseXCenter, mouseYCenter, buttons, scale);
+		});
 
 		drawIcons(graphics, middleX, middleY, modes, buttons, scale);
 
@@ -198,8 +183,8 @@ public class RadialMenu extends Screen {
 		graphics.pose().popPose();
 	}
 
-	private void drawRadialButtonBackgrounds(BuildModeEnum currentBuildMode, BufferBuilder buffer, double middleX, double middleY,
-											 double mouseXCenter, double mouseYCenter, double mouseRadians, double quarterCircle, ArrayList<MenuRegion> modes, double scale) {
+	private void drawRadialButtonBackgrounds(BuildModeEnum currentBuildMode, VertexConsumer buffer, PoseStack.Pose pose, double middleX, double middleY,
+	                                         double mouseXCenter, double mouseYCenter, double mouseRadians, double quarterCircle, ArrayList<MenuRegion> modes, double scale) {
 		if (!modes.isEmpty()) {
 			final int totalModes = Math.max(3, modes.size());
 			final double fragment = Math.PI * 0.005; //gap between buttons in radians at inner edge
@@ -230,7 +215,7 @@ public class RadialMenu extends Screen {
 
 				final boolean isSelected = currentBuildMode.ordinal() == i;
 				final boolean isMouseInQuad = inTriangle(x1m1, y1m1, x2m2, y2m2, x2m1, y2m1, mouseXCenter, mouseYCenter)
-											  || inTriangle(x1m1, y1m1, x1m2, y1m2, x2m2, y2m2, mouseXCenter, mouseYCenter);
+						|| inTriangle(x1m1, y1m1, x1m2, y1m2, x2m2, y2m2, mouseXCenter, mouseYCenter);
 				final boolean isHighlighted = beginRadians <= mouseRadians && mouseRadians <= endRadians && isMouseInQuad;
 
 				Vector4f color = radialButtonColor;
@@ -243,13 +228,15 @@ public class RadialMenu extends Screen {
 					switchTo = menuRegion.mode;
 				}
 
-				buffer.addVertex((float)(middleX + x1m1), (float)(middleY + y1m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m1), (float)(middleY + y2m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m2), (float)(middleY + y2m2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x1m2), (float)(middleY + y1m2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+				addQuad(buffer, pose,
+						(float)(middleX + x1m1), (float)(middleY + y1m1),
+						(float)(middleX + x2m1), (float)(middleY + y2m1),
+						(float)(middleX + x2m2), (float)(middleY + y2m2),
+						(float)(middleX + x1m2), (float)(middleY + y1m2),
+						color.x(), color.y(), color.z(), color.w());
 
 				//Category line
-				color = menuRegion.mode.category.color;
+				Vector4f catColor = menuRegion.mode.category.color;
 				final double categoryLineOuterEdge = (ringInnerEdge + categoryLineWidth) * scale;
 
 				final double x1m3 = Math.cos(beginRadians + fragment) * categoryLineOuterEdge;
@@ -257,15 +244,17 @@ public class RadialMenu extends Screen {
 				final double y1m3 = Math.sin(beginRadians + fragment) * categoryLineOuterEdge;
 				final double y2m3 = Math.sin(endRadians - fragment) * categoryLineOuterEdge;
 
-				buffer.addVertex((float)(middleX + x1m1), (float)(middleY + y1m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m1), (float)(middleY + y2m1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x2m3), (float)(middleY + y2m3), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-				buffer.addVertex((float)(middleX + x1m3), (float)(middleY + y1m3), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+				addQuad(buffer, pose,
+						(float)(middleX + x1m1), (float)(middleY + y1m1),
+						(float)(middleX + x2m1), (float)(middleY + y2m1),
+						(float)(middleX + x2m3), (float)(middleY + y2m3),
+						(float)(middleX + x1m3), (float)(middleY + y1m3),
+						catColor.x(), catColor.y(), catColor.z(), catColor.w());
 			}
 		}
 	}
 
-	private void drawSideButtonBackgrounds(BufferBuilder buffer, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons, double scale) {
+	private void drawSideButtonBackgrounds(VertexConsumer buffer, PoseStack.Pose pose, double middleX, double middleY, double mouseXCenter, double mouseYCenter, ArrayList<MenuButton> buttons, double scale) {
 		for (final MenuButton btn : buttons) {
 
 			final double bx1 = btn.x1 * scale, bx2 = btn.x2 * scale, by1 = btn.y1 * scale, by2 = btn.y2 * scale;
@@ -297,20 +286,17 @@ public class RadialMenu extends Screen {
 				doAction = btn.action;
 			}
 
-			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx1), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by2), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
-			buffer.addVertex((float)(middleX + bx2), (float)(middleY + by1), (float)getBlitOffset()).setColor(color.x(), color.y(), color.z(), color.w());
+			addQuad(buffer, pose,
+					(float)(middleX + bx1), (float)(middleY + by1),
+					(float)(middleX + bx1), (float)(middleY + by2),
+					(float)(middleX + bx2), (float)(middleY + by2),
+					(float)(middleX + bx2), (float)(middleY + by1),
+					color.x(), color.y(), color.z(), color.w());
 		}
 	}
 
 	private void drawIcons(GuiGraphics graphics, double middleX, double middleY,
-						   ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, double scale) {
-		graphics.pose().pushPose();
-//		RenderSystem.enableTexture();
-		RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
+	                       ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, double scale) {
 		//Draw buildmode icons
 		for (final MenuRegion menuRegion : modes) {
 
@@ -329,7 +315,15 @@ public class RadialMenu extends Screen {
 			button.getIcon().render(graphics, (int) (middleX + x - 8), (int) (middleY + y - 8));
 		}
 
-		graphics.pose().popPose();
+	}
+
+	private static void addQuad(VertexConsumer buffer, PoseStack.Pose pose,
+							float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3,
+							float red, float green, float blue, float alpha) {
+		buffer.addVertex(pose, x0, y0, 0).setColor(red, green, blue, alpha);
+		buffer.addVertex(pose, x1, y1, 0).setColor(red, green, blue, alpha);
+		buffer.addVertex(pose, x2, y2, 0).setColor(red, green, blue, alpha);
+		buffer.addVertex(pose, x3, y3, 0).setColor(red, green, blue, alpha);
 	}
 
 	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {

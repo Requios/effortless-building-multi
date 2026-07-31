@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import nl.requios.effortlessbuilding.Constants;
 
 /**
@@ -20,7 +21,9 @@ public record QueryAE2CountC2SPacket(Item item) implements CustomPacketPayload {
     public static final StreamCodec<FriendlyByteBuf, QueryAE2CountC2SPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> buf.writeResourceLocation(BuiltInRegistries.ITEM.getKey(p.item)),
             buf -> {
-                Item item = BuiltInRegistries.ITEM.get(buf.readResourceLocation());
+                Item item = BuiltInRegistries.ITEM.get(buf.readResourceLocation())
+                        .map(reference -> reference.value())
+                        .orElse(Items.AIR);
                 return new QueryAE2CountC2SPacket(item);
             }
     );

@@ -26,12 +26,14 @@ public final class RandomizerToolData {
     public static List<Item> getItems(ItemStack tool) {
         List<Item> result = new ArrayList<>(SLOT_COUNT);
         ListTag tag = tool.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
-                .copyTag().getList(BLOCKS_TAG, Tag.TAG_STRING);
+                .copyTag().getListOrEmpty(BLOCKS_TAG);
         for (int i = 0; i < SLOT_COUNT; i++) {
             Item item = Items.AIR;
             if (i < tag.size()) {
-                ResourceLocation id = ResourceLocation.tryParse(tag.getString(i));
-                if (id != null) item = BuiltInRegistries.ITEM.get(id);
+                ResourceLocation id = ResourceLocation.tryParse(tag.getStringOr(i, ""));
+                if (id != null) item = BuiltInRegistries.ITEM.get(id)
+                        .map(reference -> reference.value())
+                        .orElse(Items.AIR);
             }
             result.add(item);
         }
@@ -49,14 +51,14 @@ public final class RandomizerToolData {
         var root = tool.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         Tag storedRatios = root.get(RATIOS_TAG);
         ListTag tag = storedRatios instanceof ListTag list ? list : new ListTag();
-        int[] ratioArray = storedRatios instanceof IntArrayTag ? root.getIntArray(RATIOS_TAG) : null;
+        int[] ratioArray = storedRatios instanceof IntArrayTag ? root.getIntArray(RATIOS_TAG).orElse(null) : null;
         List<Integer> result = new ArrayList<>(SLOT_COUNT);
         List<Item> items = getItems(tool);
         boolean hasStoredRatios = ratioArray != null || storedRatios instanceof ListTag;
         for (int i = 0; i < SLOT_COUNT; i++) {
             // Existing configured tools predate ratios, so retain their previous equal odds.
             int ratio = ratioArray != null && i < ratioArray.length ? ratioArray[i]
-                    : hasStoredRatios && i < tag.size() ? tag.getInt(i)
+                    : hasStoredRatios && i < tag.size() ? tag.getIntOr(i, 0)
                     : (items.get(i) == Items.AIR ? 0 : 1);
             result.add(Math.max(0, ratio));
         }
