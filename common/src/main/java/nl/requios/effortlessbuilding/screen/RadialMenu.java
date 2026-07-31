@@ -326,7 +326,7 @@ public class RadialMenu extends Screen {
 			String ae2Status = nl.requios.effortlessbuilding.compat.ae2.AE2Integration.getStatusString(minecraft.player);
 			if (!ae2Status.isEmpty()) {
 				int ae2Color = ae2Status.contains("\u2713") ? 0xff44dd44 : 0xffaaaaaa; // green if connected, gray if not
-				graphics.drawString(font, ae2Status, 4, height - 10, ae2Color, true);
+				graphics.text(font, ae2Status, 4, height - 10, ae2Color, true);
 			}
 		}
 
@@ -462,7 +462,7 @@ public class RadialMenu extends Screen {
 					performedActionUsingMouse = true;
 					minecraft.setScreen(new ServerConfigScreen());
 				} else if (minecraft.player != null) {
-					minecraft.player.displayClientMessage(Component.translatable("effortlessbuilding.message.not_operator"), true);
+					minecraft.player.sendOverlayMessage(Component.translatable("effortlessbuilding.message.not_operator"));
 					if (fromMouseClick) performedActionUsingMouse = true;
 				}
 				return;

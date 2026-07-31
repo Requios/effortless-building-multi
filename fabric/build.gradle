@@ -13,18 +13,15 @@ repositories {
     }
 }
 dependencies {
-    minecraft "com.mojang:minecraft:${minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    minecraft("com.mojang:minecraft:${minecraft_version}")
+    implementation("net.fabricmc:fabric-loader:${fabric_loader_version}")
+    implementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")    
+    
     implementation("com.terraformersmc:modmenu:18.0.0-beta.1") { transitive = false }
 //    modRuntimeOnly("maven.modrinth:sodium:mc1.21.11-0.8.11-fabric") { transitive = false }
 //    modRuntimeOnly("maven.modrinth:sodium-extra:mc1.21.11-0.8.3+fabric") { transitive = false }
-
-    // Required for compilation because common module source files are compiled here too.
-    // Only needed during compilation — the mod gracefully handles AE2 absence at runtime.
     compileOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
 //    modRuntimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}")
-    // Note: AE2 does not have a 1.21.1 fabric release yet
 }
 
 loom {
@@ -53,7 +50,7 @@ loom {
 // Implement mcgradleconventions loader attribute
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
 ['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
-    configurations.named("$variant") {
+    configurations.named(variant) {
         attributes {
             attribute(loaderAttribute, 'fabric')
         }
@@ -61,17 +58,10 @@ def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', Strin
 }
 sourceSets.configureEach {
     [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
-        configurations.named("$variant") {
+        configurations.named(variant) {
             attributes {
                 attribute(loaderAttribute, 'fabric')
             }
-        }
-    }
-}
-loom.remapConfigurations.configureEach {
-    configurations.named(it.name) {
-        attributes {
-            attribute(loaderAttribute, 'fabric')
         }
     }
 }

@@ -1,7 +1,7 @@
 package nl.requios.effortlessbuilding.screen;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import nl.requios.effortlessbuilding.item.RandomizerTooltipData;
@@ -29,12 +29,12 @@ public final class RandomizerTooltipComponent implements ClientTooltipComponent 
     }
 
     @Override
-    public void renderText(GuiGraphics graphics, Font font, int x, int y) {
+    public void extractText(GuiGraphicsExtractor graphics, Font font, int x, int y) {
         // This tooltip has no text portion; all information is rendered as item icons.
     }
 
     @Override
-    public void renderImage(Font font, int x, int y, int tooltipWidth, int tooltipHeight, GuiGraphics graphics) {
+    public void extractImage(Font font, int x, int y, int tooltipWidth, int tooltipHeight, GuiGraphicsExtractor graphics) {
         int width = getWidth(font);
         int height = getHeight(font);
 //        graphics.fill(x, y, x + width, y + height, 0xFF202020);
@@ -46,8 +46,8 @@ public final class RandomizerTooltipComponent implements ClientTooltipComponent 
 
             ItemStack stack = data.stacks().get(i);
             if (!stack.isEmpty()) {
-                graphics.renderItem(stack, itemX, itemY);
-                graphics.renderItemDecorations(font, stack, itemX, itemY);
+                graphics.item(stack, itemX, itemY);
+                graphics.itemDecorations(font, stack, itemX, itemY);
             }
         }
     }

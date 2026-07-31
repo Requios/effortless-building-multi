@@ -1,6 +1,6 @@
 package nl.requios.effortlessbuilding.screen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -20,9 +20,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
             Constants.MOD_ID, "textures/gui/container/randomizertool.png");
 
     public RandomizerScreen(RandomizerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        imageWidth = 176;
-        imageHeight = 150;
+        super(menu, playerInventory, title, 176, 150);
         inventoryLabelY = 56;
     }
 
@@ -32,10 +30,9 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-        renderRatios(graphics, mouseX, mouseY);
-        renderTooltip(graphics, mouseX, mouseY);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractRatios(graphics, mouseX, mouseY);
         int hoveredRatio = getHoveredRatio(mouseX, mouseY);
         if (hoveredRatio >= 0) {
             graphics.setTooltipForNextFrame(font,
@@ -62,11 +59,12 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
         graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, 256, 256);
     }
 
-    private void renderRatios(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void extractRatios(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         int hoveredRatio = getHoveredRatio(mouseX, mouseY);
         for (int i = 0; i < RandomizerToolData.SLOT_COUNT; i++) {
             int x = leftPos + 8 + i * 18;
@@ -75,7 +73,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
                 graphics.fill(x, y, x + RATIO_WIDTH, y + RATIO_HEIGHT, 0x998b8b8b);
             }
             String text = Integer.toString(menu.getRatio(i));
-            graphics.drawString(font, text, x + RATIO_WIDTH / 2 - font.width(text) / 2 - 3, y + 4, 0xFF404040, false);
+            graphics.text(font, text, x + RATIO_WIDTH / 2 - font.width(text) / 2 - 3, y + 4, 0xFF404040, false);
         }
     }
 

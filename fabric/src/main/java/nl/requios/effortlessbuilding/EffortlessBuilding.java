@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -47,7 +47,7 @@ public class EffortlessBuilding implements ModInitializer {
                 new RandomizerToolItem(new Item.Properties()
                         .setId(ResourceKey.create(Registries.ITEM, randomizerToolId))
                         .stacksTo(1)));
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
                 .register(entries -> entries.accept(randomizerTool));
         Registry.register(BuiltInRegistries.MENU,
                 Identifier.fromNamespaceAndPath(Constants.MOD_ID, "randomizer"), ModMenus.RANDOMIZER);
@@ -59,13 +59,13 @@ public class EffortlessBuilding implements ModInitializer {
         PayloadTypeRegistry.serverboundPlay().register(RedoPacket.TYPE, RedoPacket.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(UpdateModifiersC2SPacket.TYPE, UpdateModifiersC2SPacket.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(UpdateServerConfigC2SPacket.TYPE, UpdateServerConfigC2SPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(BuildModeHintC2SPacket.TYPE, BuildModeHintC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(QueryAE2CountC2SPacket.TYPE, QueryAE2CountC2SPacket.STREAM_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(BuildModeHintC2SPacket.TYPE, BuildModeHintC2SPacket.STREAM_CODEC);
 
         // Register S2C packets
         PayloadTypeRegistry.clientboundPlay().register(SyncModifiersS2CPacket.TYPE, SyncModifiersS2CPacket.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(SyncServerConfigS2CPacket.TYPE, SyncServerConfigS2CPacket.STREAM_CODEC);
-        PayloadTypeRegistry.playS2C().register(SyncAE2CountS2CPacket.TYPE, SyncAE2CountS2CPacket.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SyncAE2CountS2CPacket.TYPE, SyncAE2CountS2CPacket.STREAM_CODEC);
 
         // Register server-side handlers
         ServerPlayNetworking.registerGlobalReceiver(PlaceBuildModePacket.TYPE, (payload, context) ->

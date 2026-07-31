@@ -203,9 +203,9 @@ public class RenderHandler {
     }
 
     // Overload with network indicator
-    private static void drawItemStack(GuiGraphics guiGraphics, ItemStack stack, int x, int y,
+    private static void drawItemStack(GuiGraphicsExtractor guiGraphics, ItemStack stack, int x, int y,
                                        boolean missing, int textColor, @Nullable String suffix) {
-        guiGraphics.renderItem(stack, x, y);
+        guiGraphics.item(stack, x, y);
 
         Font font = Minecraft.getInstance().font;
         String count = String.valueOf(stack.getCount());
@@ -215,7 +215,7 @@ public class RenderHandler {
         int textY = y + 6 + 3;
 
         guiGraphics.nextStratum();
-        guiGraphics.drawString(font, text, textX, textY, color, true);
+        guiGraphics.text(font, text, textX, textY, color, true);
     }
 
     private static void drawBreakingStacks(GuiGraphicsExtractor guiGraphics, Minecraft mc, int x, int y) {

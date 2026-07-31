@@ -5,7 +5,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BlockItem;
@@ -68,15 +68,15 @@ public class RandomizerMenu extends AbstractContainerMenu {
     }
 
     @Override
-    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+    public void clicked(int slotId, int button, ContainerInput clickType, Player player) {
         if (slotId >= 0 && slotId < GHOST_SLOT_END) {
-            ItemStack source = clickType == ClickType.SWAP && button >= 0 && button < 9
+            ItemStack source = clickType == ContainerInput.SWAP && button >= 0 && button < 9
                     ? player.getInventory().getItem(button)
                     : getCarried();
             if (isSafePaletteBlock(source)) {
                 ghostSlots.setItem(slotId, source.copyWithCount(1));
                 if (ratios[slotId] == 0) ratios[slotId] = 1;
-            } else if (clickType == ClickType.PICKUP && source.isEmpty()) {
+            } else if (clickType == ContainerInput.PICKUP && source.isEmpty()) {
                 ghostSlots.setItem(slotId, ItemStack.EMPTY);
                 if (ratios[slotId] == 1) ratios[slotId] = 0;
             }

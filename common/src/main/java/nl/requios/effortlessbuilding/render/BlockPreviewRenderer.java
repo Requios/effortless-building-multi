@@ -131,6 +131,7 @@ public class BlockPreviewRenderer {
                 var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
                 var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
                 Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
+                Map<net.minecraft.world.item.Item, BlockState> randomStates = new HashMap<>();
 
                 // Set up ModelBlockRenderer for the new tesselateBlock API
                 BlockColors blockColors = mc.getBlockColors();

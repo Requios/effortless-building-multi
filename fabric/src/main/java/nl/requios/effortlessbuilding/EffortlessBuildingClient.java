@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
@@ -45,7 +46,7 @@ public class EffortlessBuildingClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientConfig.INSTANCE.load();
         MenuScreens.register(ModMenus.RANDOMIZER, RandomizerScreen::new);
-        TooltipComponentCallback.EVENT.register(data -> data instanceof RandomizerTooltipData randomizerData
+        ClientTooltipComponentCallback.EVENT.register(data -> data instanceof RandomizerTooltipData randomizerData
                 ? new RandomizerTooltipComponent(randomizerData) : null);
 
         KeyMappingHelper.registerKeyMapping(KeyBindings.openRadialMenu);
@@ -66,10 +67,6 @@ public class EffortlessBuildingClient implements ClientModInitializer {
         // Register client-side handler for AE2 count sync
         ClientPlayNetworking.registerGlobalReceiver(SyncAE2CountS2CPacket.TYPE, (payload, context) ->
                 context.client().execute(() -> PacketHandler.handleSyncAE2Count(payload)));
-
-
-        HudRenderCallback.EVENT.register((graphics, tickCounter) ->
-                RenderHandler.onRenderGui(graphics));
 
         LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
             if (context.bufferSource() == null || context.poseStack() == null) return;
