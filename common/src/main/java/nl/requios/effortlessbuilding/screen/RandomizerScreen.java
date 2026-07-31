@@ -75,7 +75,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
                 graphics.fill(x, y, x + RATIO_WIDTH, y + RATIO_HEIGHT, 0x998b8b8b);
             }
             String text = Integer.toString(menu.getRatio(i));
-            graphics.drawString(font, text, x + RATIO_WIDTH / 2 - font.width(text) / 2 - 3, y + 4, 0x404040, false);
+            graphics.drawString(font, text, x + RATIO_WIDTH / 2 - font.width(text) / 2 - 3, y + 4, 0xFF404040, false);
         }
     }
 
