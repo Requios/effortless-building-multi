@@ -3,9 +3,9 @@ package nl.requios.effortlessbuilding.screen;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import nl.requios.effortlessbuilding.Constants;
 import nl.requios.effortlessbuilding.item.RandomizerToolData;
@@ -16,7 +16,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
     private static final int RATIO_Y = 19;
     private static final int RATIO_WIDTH = 16;
     private static final int RATIO_HEIGHT = 14;
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(
             Constants.MOD_ID, "textures/gui/container/randomizertool.png");
 
     public RandomizerScreen(RandomizerMenu menu, Inventory playerInventory, Component title) {
@@ -38,7 +38,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
         renderTooltip(graphics, mouseX, mouseY);
         int hoveredRatio = getHoveredRatio(mouseX, mouseY);
         if (hoveredRatio >= 0) {
-            graphics.renderTooltip(font,
+            graphics.setTooltipForNextFrame(font,
                     Component.translatable("effortlessbuilding.screen.randomizer.ratio.tooltip"), mouseX, mouseY);
         }
     }
@@ -63,7 +63,7 @@ public class RandomizerScreen extends AbstractContainerScreen<RandomizerMenu> {
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(RenderType::guiTextured, BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, 256, 256);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, 256, 256);
     }
 
     private void renderRatios(GuiGraphics graphics, int mouseX, int mouseY) {

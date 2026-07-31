@@ -3,10 +3,8 @@ package nl.requios.effortlessbuilding.screen;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.item.ItemStack;
 import nl.requios.effortlessbuilding.item.RandomizerTooltipData;
-import org.joml.Matrix4f;
 
 /** Renders the randomizer palette as a compact inventory grid in an item tooltip. */
 public final class RandomizerTooltipComponent implements ClientTooltipComponent {
@@ -31,7 +29,7 @@ public final class RandomizerTooltipComponent implements ClientTooltipComponent 
     }
 
     @Override
-    public void renderText(Font font, int x, int y, Matrix4f matrix, MultiBufferSource.BufferSource bufferSource) {
+    public void renderText(GuiGraphics graphics, Font font, int x, int y) {
         // This tooltip has no text portion; all information is rendered as item icons.
     }
 

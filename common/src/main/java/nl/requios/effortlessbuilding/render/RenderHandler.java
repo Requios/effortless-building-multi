@@ -214,10 +214,8 @@ public class RenderHandler {
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 200);
+        guiGraphics.nextStratum();
         guiGraphics.drawString(font, text, textX, textY, color, true);
-        guiGraphics.pose().popPose();
     }
 
     private static void drawBreakingStacks(GuiGraphics guiGraphics, Minecraft mc, int x, int y) {

@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -42,7 +42,7 @@ public class EffortlessBuilding implements ModInitializer {
     public void onInitialize() {
         Constants.LOG.info("Hello Fabric world!");
 
-        ResourceLocation randomizerToolId = ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool");
+        Identifier randomizerToolId = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "randomizer_tool");
         Item randomizerTool = Registry.register(BuiltInRegistries.ITEM, randomizerToolId,
                 new RandomizerToolItem(new Item.Properties()
                         .setId(ResourceKey.create(Registries.ITEM, randomizerToolId))
@@ -50,7 +50,7 @@ public class EffortlessBuilding implements ModInitializer {
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
                 .register(entries -> entries.accept(randomizerTool));
         Registry.register(BuiltInRegistries.MENU,
-                ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "randomizer"), ModMenus.RANDOMIZER);
+                Identifier.fromNamespaceAndPath(Constants.MOD_ID, "randomizer"), ModMenus.RANDOMIZER);
 
         // Register C2S packets
         PayloadTypeRegistry.playC2S().register(PlaceBuildModePacket.TYPE, PlaceBuildModePacket.STREAM_CODEC);

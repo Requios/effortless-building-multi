@@ -18,6 +18,8 @@ import nl.requios.effortlessbuilding.buildmode.BuildSettings;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions;
 import nl.requios.effortlessbuilding.buildmode.ModeOptions.*;
 import nl.requios.effortlessbuilding.mixin.GuiGraphicsAccessor;
+import nl.requios.effortlessbuilding.network.BuildModeHintC2SPacket;
+import nl.requios.effortlessbuilding.network.PacketHandler;
 import nl.requios.effortlessbuilding.utilities.KeyBindings;
 import org.joml.Vector4f;
 
@@ -307,15 +309,6 @@ public class RadialMenu extends Screen {
 		}
 	}
 
-	private static void addQuad(VertexConsumer buffer, PoseStack.Pose pose,
-							float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3,
-							float red, float green, float blue, float alpha) {
-		buffer.addVertex(pose, x0, y0, 0).setColor(red, green, blue, alpha);
-		buffer.addVertex(pose, x1, y1, 0).setColor(red, green, blue, alpha);
-		buffer.addVertex(pose, x2, y2, 0).setColor(red, green, blue, alpha);
-		buffer.addVertex(pose, x3, y3, 0).setColor(red, green, blue, alpha);
-	}
-
 	private void drawTexts(GuiGraphics graphics, BuildModeEnum currentBuildMode, double middleX, double middleY, ArrayList<MenuRegion> modes, ArrayList<MenuButton> buttons, OptionEnum[] options, int mouseX, int mouseY, double scale) {
 		//font.drawStringWithShadow("Actions", (int) (middleX - buttonDistance - 13) - font.getStringWidth("Actions") * 0.5f, (int) middleY - 38, 0xffffffff);
 
@@ -464,7 +457,8 @@ public class RadialMenu extends Screen {
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
-				if (minecraft.isSingleplayer() || (minecraft.player != null && minecraft.player.hasPermissions(2))) {
+				if (minecraft.isSingleplayer() || (minecraft.player != null
+						&& minecraft.player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))) {
 					performedActionUsingMouse = true;
 					minecraft.setScreen(new ServerConfigScreen());
 				} else if (minecraft.player != null) {

@@ -39,7 +39,7 @@ public final class BuildModeHintStorage {
 
     public static void showIfNeeded(ServerPlayer player) {
         if (!ServerConfig.INSTANCE.showBuildModeHint || !shownPlayers.add(player.getUUID())) return;
-        save(player.server);
+        save(player.level().getServer());
         player.sendSystemMessage(Component.translatable(
                 "effortlessbuilding.message.build_mode_hint",
                 Component.keybind("key.effortlessbuilding.open_radial_menu").withStyle(ChatFormatting.BLUE)));

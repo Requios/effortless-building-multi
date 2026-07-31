@@ -60,12 +60,12 @@ public class NeoForgeNetworkHelper implements INetworkHelper {
 
     @Override
     public void sendToServer(QueryAE2CountC2SPacket packet) {
-        PacketDistributor.sendToServer(packet);
+        ClientPacketDistributor.sendToServer(packet);
     }
 
     @Override
     public void sendToServer(BuildModeHintC2SPacket packet) {
-        PacketDistributor.sendToServer(packet);
+        ClientPacketDistributor.sendToServer(packet);
     }
 
     @Override

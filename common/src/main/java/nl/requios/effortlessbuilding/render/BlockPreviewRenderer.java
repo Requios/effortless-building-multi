@@ -119,26 +119,26 @@ public class BlockPreviewRenderer {
             }
             boolean randomized = held.getItem() instanceof RandomizerToolItem;
             if (baseState != null || randomized) {
-                    var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
-                    var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
-                    Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
-                    Map<net.minecraft.world.item.Item, BlockState> randomStates = new HashMap<>();
-                    int rendered = 0;
-                    for (BlockPos pos : positions) {
-                        if (rendered >= maxPreviews) break;
-                        // Apply per-block mirror/rotation transforms from the modifier pipeline.
-                        BlockState state = baseState;
-                        BlockEntry entry = blockSet.get(pos);
-                        if (randomized && entry != null && entry.item instanceof BlockItem randomBlock) {
-                            state = randomStates.computeIfAbsent(entry.item,
-                                    item -> getPlacementState(randomBlock, mc, new ItemStack(item)));
-                        }
-                        if (state == null) continue;
-                        if (entry != null) {
-                            state = entry.applyTransforms(state);
-                        }
-                        boolean isMissing = missingPositions.contains(pos);
-                        poseStack.pushPose();
+                var wrappedSource = new AlphaMultiBufferSource(bufferSource, blockAlpha);
+                var missingSource = new TintedMultiBufferSource(bufferSource, 255, 80, 80, 200);
+                Set<BlockPos> missingPositions = BuildPipelineClient.ITEM_USAGE.missingPositions;
+                Map<net.minecraft.world.item.Item, BlockState> randomStates = new HashMap<>();
+                int rendered = 0;
+                for (BlockPos pos : positions) {
+                    if (rendered >= maxPreviews) break;
+                    // Apply per-block mirror/rotation transforms from the modifier pipeline.
+                    BlockState state = baseState;
+                    BlockEntry entry = blockSet.get(pos);
+                    if (randomized && entry != null && entry.item instanceof BlockItem randomBlock) {
+                        state = randomStates.computeIfAbsent(entry.item,
+                                item -> getPlacementState(randomBlock, mc, new ItemStack(item)));
+                    }
+                    if (state == null) continue;
+                    if (entry != null) {
+                        state = entry.applyTransforms(state);
+                    }
+                    boolean isMissing = missingPositions.contains(pos);
+                    poseStack.pushPose();
                     try {
                         poseStack.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
                         poseStack.translate(0.5, 0.5, 0.5);

@@ -44,7 +44,7 @@ public final class WelcomeMessageStorage {
     public static void showIfNeeded(ServerPlayer player) {
         if (!ServerConfig.INSTANCE.showWelcomeMessage || !shownPlayers.add(player.getUUID())) return;
 
-        save(player.server);
+        save(player.level().getServer());
         player.sendSystemMessage(Component.translatable(
                 "effortlessbuilding.message.welcome_message",
                 Component.keybind("key.effortlessbuilding.open_radial_menu").withStyle(ChatFormatting.BLUE)));
