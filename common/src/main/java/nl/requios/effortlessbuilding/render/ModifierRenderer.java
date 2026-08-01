@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -43,7 +42,7 @@ public class ModifierRenderer {
         }
 
         // Flush all modifier visuals.
-        bufferSource.endBatch(RenderTypes.entityTranslucent(BLANK_TEXTURE));
+        bufferSource.endBatch(RenderTypes.entityTranslucentEmissive(BLANK_TEXTURE));
     }
 
     // =========================================================================
@@ -52,7 +51,9 @@ public class ModifierRenderer {
 
     private static void renderMirrorPlanes(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                             MirrorModifier mirror, double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
+        // Do not write the plane into the depth buffer: water and previews on
+        // its far side must still pass their own translucent render passes.
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucentEmissive(BLANK_TEXTURE));
         var pose = poseStack.last();
         int radius = mirror.size / 2;
 
@@ -104,7 +105,7 @@ public class ModifierRenderer {
     private static void renderRadialBoundary(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                               RadialMirrorModifier radial,
                                               double camX, double camY, double camZ) {
-        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucent(BLANK_TEXTURE));
+        var consumer = bufferSource.getBuffer(RenderTypes.entityTranslucentEmissive(BLANK_TEXTURE));
         var pose = poseStack.last();
 
         float ox = (float)(radial.originX - camX);

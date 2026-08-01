@@ -210,7 +210,9 @@ public class RenderHandler {
         Font font = Minecraft.getInstance().font;
         String count = String.valueOf(stack.getCount());
         String text = suffix != null ? count + suffix : count;
-        int color = missing ? ChatFormatting.RED.getColor() : textColor;
+        // GuiGraphics expects ARGB. ChatFormatting supplies RGB, whose absent
+        // alpha channel otherwise makes the text fully transparent.
+        int color = 0xFF000000 | (missing ? ChatFormatting.RED.getColor() : textColor);
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
@@ -256,7 +258,9 @@ public class RenderHandler {
         // Draw count text, red if missing
         Font font = Minecraft.getInstance().font;
         String text = String.valueOf(stack.getCount());
-        int color = missing ? ChatFormatting.RED.getColor() : ChatFormatting.WHITE.getColor();
+        // GuiGraphics expects ARGB. ChatFormatting supplies RGB, whose absent
+        // alpha channel otherwise makes the text fully transparent.
+        int color = 0xFF000000 | (missing ? ChatFormatting.RED.getColor() : ChatFormatting.WHITE.getColor());
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
