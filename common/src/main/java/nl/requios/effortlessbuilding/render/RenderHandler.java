@@ -184,7 +184,7 @@ public class RenderHandler {
                 if (usingAE2) {
                     // Single icon: combined count, green, with "AE2" suffix
                     drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
-                            x + i * 20, y, false, 0x55FF55, "AE2");
+                            x + i * 20, y, false, 0xFF55FF55, "AE2");
                 } else {
                     // Single icon: plain inventory count, white
                     drawItemStack(guiGraphics, new ItemStack(entry.getKey(), available),
@@ -210,7 +210,7 @@ public class RenderHandler {
         Font font = Minecraft.getInstance().font;
         String count = String.valueOf(stack.getCount());
         String text = suffix != null ? count + suffix : count;
-        int color = missing ? 0xFF5555 : textColor;
+        int color = missing ? 0xFFFF5555 : textColor;
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
@@ -256,7 +256,7 @@ public class RenderHandler {
         // Draw count text, red if missing
         Font font = Minecraft.getInstance().font;
         String text = String.valueOf(stack.getCount());
-        int color = missing ? 0xFF5555 : 0xFFFFFF;
+        int color = missing ? 0xFFFF5555 : 0xFFFFFFFF;
         int textX = x + 19 - 2 - font.width(text);
         int textY = y + 6 + 3;
 
