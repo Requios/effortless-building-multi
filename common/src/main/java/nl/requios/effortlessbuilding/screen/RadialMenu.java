@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.locale.Language;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -67,7 +68,7 @@ public class RadialMenu extends Screen {
 	}
 
 	public boolean isVisible() {
-		return Minecraft.getInstance().screen instanceof RadialMenu;
+		return Minecraft.getInstance().gui.screen() instanceof RadialMenu;
 	}
 
 	@Override
@@ -150,7 +151,7 @@ public class RadialMenu extends Screen {
 		replaceBtn.name = I18n.get("effortlessbuilding.action.replace_mode");
 		// Subtitle: current mode name (rendered white), Description: its description
 		replaceBtn.subtitle = I18n.get(currentReplaceAction.getNameKey());
-		replaceBtn.description = I18n.exists(currentReplaceAction.getDescriptionKey())
+		replaceBtn.description = Language.getInstance().has(currentReplaceAction.getDescriptionKey())
 				? I18n.get(currentReplaceAction.getDescriptionKey()) : "";
 		buttons.add(replaceBtn);
 
@@ -452,15 +453,15 @@ public class RadialMenu extends Screen {
 				// Set the flag before calling setScreen so the onClose triggered by
 				// setScreen doesn't re-enter performAction a second time.
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ModifiersScreen());
+				minecraft.setScreenAndShow(new ModifiersScreen());
 				return;
 			}
 
 			if (action == ActionEnum.OPEN_SERVER_CONFIG) {
-				if (minecraft.isSingleplayer() || (minecraft.player != null
+				if (minecraft.isLocalServer() || (minecraft.player != null
 						&& minecraft.player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))) {
 					performedActionUsingMouse = true;
-					minecraft.setScreen(new ServerConfigScreen());
+					minecraft.setScreenAndShow(new ServerConfigScreen());
 				} else if (minecraft.player != null) {
 					minecraft.player.sendOverlayMessage(Component.translatable("effortlessbuilding.message.not_operator"));
 					if (fromMouseClick) performedActionUsingMouse = true;
@@ -470,7 +471,7 @@ public class RadialMenu extends Screen {
 
 			if (action == ActionEnum.OPEN_CLIENT_CONFIG) {
 				performedActionUsingMouse = true;
-				minecraft.setScreen(new ClientConfigScreen());
+				minecraft.setScreenAndShow(new ClientConfigScreen());
 				return;
 			}
 
@@ -513,7 +514,7 @@ public class RadialMenu extends Screen {
 				this.description += "[" + KeyBindings.openModifiersScreen.getTranslatedKeyMessage().getString() + "]";
 			}
 
-			if (I18n.exists(action.getDescriptionKey())) {
+			if (Language.getInstance().has(action.getDescriptionKey())) {
 				this.description = I18n.get(action.getDescriptionKey());
 			}
 
