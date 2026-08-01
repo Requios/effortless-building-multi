@@ -58,7 +58,7 @@ public class ModifierRenderer {
         // Small offset along the plane normal to avoid z-fighting with block faces.
         float e = 0.005f;
 
-        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(BLANK_TEXTURE), (pose, consumer) -> {
+        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucentEmissive(BLANK_TEXTURE), (pose, consumer) -> {
             // X plane (red) — YZ rectangle at originX
             if (mirror.mirrorX) {
                 addFace(consumer, pose,
@@ -107,7 +107,7 @@ public class ModifierRenderer {
         float r = radial.size / 2.0f;
         float halfWidth = 0.04f;
 
-        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(BLANK_TEXTURE), (pose, consumer) -> {
+        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucentEmissive(BLANK_TEXTURE), (pose, consumer) -> {
             // Radial slice lines from center out to radius.
             for (int i = 0; i < radial.slices; i++) {
             double angle = (2 * Math.PI * i) / radial.slices;
