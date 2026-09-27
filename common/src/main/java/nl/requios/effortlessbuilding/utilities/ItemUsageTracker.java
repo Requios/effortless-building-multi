@@ -126,7 +126,10 @@ public class ItemUsageTracker {
         }
 
         // Total available = inventory + AE2
-        int totalAvailable = have + fromNetwork.getOrDefault(heldItem, 0);
+        // AE2 may report Integer.MAX_VALUE for a cached network count. Keep the
+        // inventory contribution without overflowing into a negative value.
+        int totalAvailable = (int) Math.min(Integer.MAX_VALUE,
+                (long) have + fromNetwork.getOrDefault(heldItem, 0));
 
         int canPlace = Math.min(count, totalAvailable);
         placed.put(heldItem, canPlace);
